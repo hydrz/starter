@@ -10,7 +10,7 @@ Read `docs/development/vertical-slice.md` and the relevant standards. Use `$chan
 ## Workflow
 
 1. Inspect repository state and translate the request into acceptance criteria, authorization rules, invariants, public errors, and observable states. Ask when domain behavior is ambiguous.
-2. Identify the smallest coherent slice. Keep dependencies pointing from transport and persistence adapters toward the application boundary.
+2. Identify the smallest coherent slice. You can run `pnpm scaffold:slice <feature>` to generate initial contracts, migration, query, and service templates. Keep dependencies pointing from transport and persistence adapters toward the application boundary.
 3. If persistence changes, follow `$change-database-schema`; define application/domain behavior behind a minimal repository interface.
 4. If HTTP shape changes, follow `$change-api-contract`; implement the generated server interface and map domain failures to stable public errors.
 5. Build the React feature from generated Orval functions/hooks. Use TanStack Query for server state, React Hook Form plus Zod for forms, and Zustand only for genuine client-global state.

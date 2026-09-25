@@ -71,14 +71,6 @@ type AnnouncementInput struct {
 	Title   string             `json:"title"`
 }
 
-// AnnouncementPage defines model for AnnouncementPage.
-type AnnouncementPage struct {
-	Items  []Announcement `json:"items"`
-	Limit  int32          `json:"limit"`
-	Offset int32          `json:"offset"`
-	Total  int64          `json:"total"`
-}
-
 // AnnouncementStatus defines model for AnnouncementStatus.
 type AnnouncementStatus string
 
@@ -97,11 +89,32 @@ type HealthResponse struct {
 // HealthResponseStatus Current service status.
 type HealthResponseStatus string
 
+// PageAnnouncement defines model for Page_Announcement.
+type PageAnnouncement struct {
+	// Items 当前分页的项目列表
+	Items []Announcement `json:"items"`
+
+	// Limit 分页大小限制
+	Limit int32 `json:"limit"`
+
+	// Offset 分页偏移量
+	Offset int32 `json:"offset"`
+
+	// Total 符合过滤条件的总记录数
+	Total int64 `json:"total"`
+}
+
+// CommonPaginationQueryLimit defines model for Common.PaginationQuery.limit.
+type CommonPaginationQueryLimit = int32
+
+// CommonPaginationQueryOffset defines model for Common.PaginationQuery.offset.
+type CommonPaginationQueryOffset = int32
+
 // ListAnnouncementsParams defines parameters for ListAnnouncements.
 type ListAnnouncementsParams struct {
-	Limit  *int32              `form:"limit,omitempty" json:"limit,omitempty"`
-	Offset *int32              `form:"offset,omitempty" json:"offset,omitempty"`
-	Status *AnnouncementStatus `form:"status,omitempty" json:"status,omitempty"`
+	Limit  *CommonPaginationQueryLimit  `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *CommonPaginationQueryOffset `form:"offset,omitempty" json:"offset,omitempty"`
+	Status *AnnouncementStatus          `form:"status,omitempty" json:"status,omitempty"`
 }
 
 // CreateAnnouncementJSONRequestBody defines body for CreateAnnouncement for application/json ContentType.
@@ -512,23 +525,27 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

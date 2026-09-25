@@ -2,29 +2,16 @@ openapi: 3.0.0
 info:
   title: Starter API
   version: 0.1.0
-tags: []
+tags:
+  - name: Announcements
 paths:
   /api/announcements:
     get:
       operationId: listAnnouncements
       summary: List announcements
       parameters:
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-            default: 20
-          explode: false
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-            default: 0
-          explode: false
+        - $ref: '#/components/parameters/Common.PaginationQuery.limit'
+        - $ref: '#/components/parameters/Common.PaginationQuery.offset'
         - name: status
           in: query
           required: false
@@ -37,13 +24,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AnnouncementPage'
+                $ref: '#/components/schemas/Page_Announcement'
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
+      tags:
+        - Announcements
     post:
       operationId: createAnnouncement
       summary: Create an announcement
@@ -61,6 +50,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
+      tags:
+        - Announcements
       requestBody:
         required: true
         content:
@@ -97,6 +88,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
+      tags:
+        - Announcements
     put:
       operationId: updateAnnouncement
       summary: Update an announcement
@@ -126,6 +119,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
+      tags:
+        - Announcements
       requestBody:
         required: true
         content:
@@ -157,6 +152,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
+      tags:
+        - Announcements
   /api/healthz:
     get:
       operationId: getHealth
@@ -188,6 +185,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
 components:
+  parameters:
+    Common.PaginationQuery.limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        default: 20
+      explode: false
+    Common.PaginationQuery.offset:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+      explode: false
   schemas:
     Announcement:
       type: object
@@ -231,27 +250,6 @@ components:
           maxLength: 10000
         status:
           $ref: '#/components/schemas/AnnouncementStatus'
-    AnnouncementPage:
-      type: object
-      required:
-        - items
-        - total
-        - limit
-        - offset
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Announcement'
-        total:
-          type: integer
-          format: int64
-        limit:
-          type: integer
-          format: int32
-        offset:
-          type: integer
-          format: int32
     AnnouncementStatus:
       type: string
       enum:
@@ -278,6 +276,31 @@ components:
             - ok
           description: Current service status.
       description: Service health information.
+    Page_Announcement:
+      type: object
+      required:
+        - items
+        - total
+        - limit
+        - offset
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Announcement'
+          description: 当前分页的项目列表
+        total:
+          type: integer
+          format: int64
+          description: 符合过滤条件的总记录数
+        limit:
+          type: integer
+          format: int32
+          description: 分页大小限制
+        offset:
+          type: integer
+          format: int32
+          description: 分页偏移量
 servers:
   - url: http://localhost:8080
     description: Local development

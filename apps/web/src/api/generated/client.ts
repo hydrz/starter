@@ -55,13 +55,6 @@ export interface AnnouncementInput {
   status: AnnouncementStatus;
 }
 
-export interface AnnouncementPage {
-  items: Announcement[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
 export interface ApiError {
   code: string;
   message: string;
@@ -85,9 +78,31 @@ export interface HealthResponse {
   status: HealthResponseStatus;
 }
 
+export interface PageAnnouncement {
+  /** 当前分页的项目列表 */
+  items: Announcement[];
+  /** 符合过滤条件的总记录数 */
+  total: number;
+  /** 分页大小限制 */
+  limit: number;
+  /** 分页偏移量 */
+  offset: number;
+}
+
+export type CommonPaginationQueryLimitParameter = number;
+
+export type CommonPaginationQueryOffsetParameter = number;
+
 export type ListAnnouncementsParams = {
-limit?: number;
-offset?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: CommonPaginationQueryLimitParameter;
+/**
+ * @minimum 0
+ */
+offset?: CommonPaginationQueryOffsetParameter;
 status?: AnnouncementStatus;
 };
 
@@ -111,7 +126,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
 };
 
 export type listAnnouncementsResponse200 = {
-  data: AnnouncementPage
+  data: PageAnnouncement
   status: 200
 }
 

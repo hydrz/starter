@@ -14,13 +14,9 @@ type Querier interface {
 	CountAnnouncements(ctx context.Context, status NullAnnouncementStatus) (int64, error)
 	CreateAnnouncement(ctx context.Context, arg CreateAnnouncementParams) (Announcement, error)
 	DeleteAnnouncement(ctx context.Context, id pgtype.UUID) (int64, error)
-	DeleteSystemSetting(ctx context.Context, key string) (int64, error)
 	GetAnnouncement(ctx context.Context, id pgtype.UUID) (Announcement, error)
-	GetSystemSetting(ctx context.Context, key string) (SystemSetting, error)
 	ListAnnouncements(ctx context.Context, arg ListAnnouncementsParams) ([]Announcement, error)
-	ListSystemSettings(ctx context.Context) ([]SystemSetting, error)
 	UpdateAnnouncement(ctx context.Context, arg UpdateAnnouncementParams) (Announcement, error)
-	UpsertSystemSetting(ctx context.Context, arg UpsertSystemSettingParams) (SystemSetting, error)
 }
 
 var _ Querier = (*Queries)(nil)
