@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Change"
+  short_description: "Review changes against repository quality standards"
+  default_prompt: "Use $review-change to review this change, report prioritized findings, and run applicable checks."

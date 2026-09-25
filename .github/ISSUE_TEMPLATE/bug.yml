@@ -1,0 +1,47 @@
+name: 缺陷报告
+description: 报告可以稳定复现的错误或回归
+title: "[Bug]: "
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: 请勿提交密钥、个人信息、生产数据或未经脱敏的日志。
+  - type: textarea
+    id: impact
+    attributes:
+      label: 影响
+      description: 哪些用户或流程受影响，严重程度如何？
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 提供最小、可重复的步骤和输入。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期与实际结果
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: Git commit、tag 或镜像标识。
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 脱敏证据
+      description: 请求 ID、时间范围、错误信息或截图。
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: 数据安全确认
+      options:
+        - label: 我已确认内容不包含密钥、个人信息或生产数据。
+          required: true

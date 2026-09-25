@@ -1,0 +1,72 @@
+name: enterprise-platform
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        VERSION: ${APP_VERSION:-dev}
+        COMMIT: ${APP_COMMIT:-local}
+        BUILD_DATE: ${APP_BUILD_DATE:-unknown}
+    image: enterprise-platform:${APP_VERSION:-dev}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-enterprise}:${POSTGRES_PASSWORD:-enterprise}@postgres:5432/${POSTGRES_DB:-enterprise}?sslmode=disable
+      HTTP_ADDRESS: :8080
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "/app/server", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+
+  migrate:
+    image: enterprise-platform:${APP_VERSION:-dev}
+    build:
+      context: .
+      args:
+        VERSION: ${APP_VERSION:-dev}
+        COMMIT: ${APP_COMMIT:-local}
+        BUILD_DATE: ${APP_BUILD_DATE:-unknown}
+    command: ["migrate"]
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-enterprise}:${POSTGRES_PASSWORD:-enterprise}@postgres:5432/${POSTGRES_DB:-enterprise}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+
+  postgres:
+    image: postgres:17.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-enterprise}
+      POSTGRES_USER: ${POSTGRES_USER:-enterprise}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-enterprise}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+      start_period: 5s
+    stop_grace_period: 30s
+
+volumes:
+  postgres-data:

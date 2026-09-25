@@ -1,0 +1,4 @@
+interface:
+  display_name: "Change API Contract"
+  short_description: "Evolve TypeSpec and regenerate API clients safely"
+  default_prompt: "Use $change-api-contract to update this API contract and verify every generated artifact."
