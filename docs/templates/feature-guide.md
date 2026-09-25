@@ -1,6 +1,6 @@
 # [功能或开发任务名称]
 
-- **状态**：Draft
+- **状态**：Draft（可选值：Draft | Active | Superseded | Deprecated，详见 [文档规范与生命周期](../documentation-policy.md)）
 - **负责人**：[团队或角色]
 - **最后复审**：YYYY-MM-DD
 - **复审周期**：180 天
