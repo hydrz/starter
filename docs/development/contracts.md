@@ -42,7 +42,7 @@ packages/contracts/main.tsp
 - OpenAPI JSON：`http://127.0.0.1:8080/api/openapi.json`；
 - OpenAPI 源生成物：`spec/generated/openapi.yaml`。
 
-Scalar 页面加载固定入口并从当前服务获取 OpenAPI JSON；后续交付阶段会随前端静态资源一起完成离线打包。
+Scalar 交互文档已 100% 离线内嵌在服务二进制中（通过 `/api/docs/scalar.js` 提供资源），完全不依赖任何外部 CDN，支持在企业隔离内网与离线专网中完整浏览。
 
 ## 兼容性要求
 

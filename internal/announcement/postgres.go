@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/hydrz/starter/internal/platform/database"
 	"github.com/hydrz/starter/internal/store"
 )
 
@@ -20,6 +21,13 @@ func NewPostgresRepository(queries *store.Queries) *PostgresRepository {
 	return &PostgresRepository{queries: queries}
 }
 
+func (repository *PostgresRepository) q(ctx context.Context) *store.Queries {
+	if tx, ok := database.TxFromContext(ctx); ok {
+		return repository.queries.WithTx(tx)
+	}
+	return repository.queries
+}
+
 func (repository *PostgresRepository) List(ctx context.Context, filter Filter) ([]Announcement, int64, error) {
 	status := store.NullAnnouncementStatus{}
 	if filter.Status != nil {
@@ -29,11 +37,11 @@ func (repository *PostgresRepository) List(ctx context.Context, filter Filter) (
 		}
 	}
 
-	total, err := repository.queries.CountAnnouncements(ctx, status)
+	total, err := repository.q(ctx).CountAnnouncements(ctx, status)
 	if err != nil {
 		return nil, 0, fmt.Errorf("count: %w", err)
 	}
-	rows, err := repository.queries.ListAnnouncements(ctx, store.ListAnnouncementsParams{
+	rows, err := repository.q(ctx).ListAnnouncements(ctx, store.ListAnnouncementsParams{
 		Status: status,
 		Limit:  filter.Limit,
 		Offset: filter.Offset,
@@ -54,7 +62,7 @@ func (repository *PostgresRepository) Get(ctx context.Context, id string) (Annou
 	if err != nil {
 		return Announcement{}, err
 	}
-	row, err := repository.queries.GetAnnouncement(ctx, databaseID)
+	row, err := repository.q(ctx).GetAnnouncement(ctx, databaseID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Announcement{}, ErrNotFound
 	}
@@ -65,7 +73,7 @@ func (repository *PostgresRepository) Get(ctx context.Context, id string) (Annou
 }
 
 func (repository *PostgresRepository) Create(ctx context.Context, input Input) (Announcement, error) {
-	row, err := repository.queries.CreateAnnouncement(ctx, store.CreateAnnouncementParams{
+	row, err := repository.q(ctx).CreateAnnouncement(ctx, store.CreateAnnouncementParams{
 		Title:   input.Title,
 		Content: input.Content,
 		Status:  store.AnnouncementStatus(input.Status),
@@ -81,7 +89,7 @@ func (repository *PostgresRepository) Update(ctx context.Context, id string, inp
 	if err != nil {
 		return Announcement{}, err
 	}
-	row, err := repository.queries.UpdateAnnouncement(ctx, store.UpdateAnnouncementParams{
+	row, err := repository.q(ctx).UpdateAnnouncement(ctx, store.UpdateAnnouncementParams{
 		ID:      databaseID,
 		Title:   input.Title,
 		Content: input.Content,
@@ -101,7 +109,7 @@ func (repository *PostgresRepository) Delete(ctx context.Context, id string) err
 	if err != nil {
 		return err
 	}
-	count, err := repository.queries.DeleteAnnouncement(ctx, databaseID)
+	count, err := repository.q(ctx).DeleteAnnouncement(ctx, databaseID)
 	if err != nil {
 		return err
 	}

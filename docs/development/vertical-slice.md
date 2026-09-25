@@ -6,8 +6,8 @@
 
 | 层 | 公告实现 |
 | --- | --- |
-| Contract | `packages/contracts/main.tsp` 中的 `Announcements` 接口 |
-| Migration | `db/migrations/00002_create_announcements.sql` |
+| Contract | `packages/contracts/features/announcements/routes.tsp` 中的 `Announcements` 接口 |
+| Migration | `db/migrations/00001_create_announcements.sql` |
 | Query | `db/queries/announcements.sql` |
 | Generated store | `internal/store/announcements.sql.go` |
 | Application | `internal/announcement/service.go` |

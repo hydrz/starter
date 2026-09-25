@@ -98,10 +98,27 @@ func TestScalarReference(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read response: %v", err)
 	}
-	for _, expected := range [][]byte{[]byte(`data-url="/api/openapi.json"`), []byte("@scalar/api-reference@1.72.0")} {
+	for _, expected := range [][]byte{[]byte(`data-url="/api/openapi.json"`), []byte(`/api/docs/scalar.js`)} {
 		if !bytes.Contains(body, expected) {
 			t.Errorf("Scalar reference response does not contain %q", expected)
 		}
+	}
+}
+
+func TestScalarScript(t *testing.T) {
+	t.Parallel()
+
+	request := httptest.NewRequest(http.MethodGet, "/api/docs/scalar.js", nil)
+	recorder := httptest.NewRecorder()
+
+	newHandler(t, nil, nil).ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	contentType := recorder.Header().Get("Content-Type")
+	if !bytes.Contains([]byte(contentType), []byte("javascript")) {
+		t.Errorf("Content-Type = %q, want javascript", contentType)
 	}
 }
 

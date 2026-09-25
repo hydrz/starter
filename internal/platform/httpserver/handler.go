@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -32,6 +33,9 @@ type HealthChecker interface {
 	Ping(context.Context) error
 }
 
+//go:embed assets/*
+var docsAssets embed.FS
+
 func NewHandler(announcements *announcement.Service, readiness HealthChecker) (http.Handler, error) {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
@@ -42,6 +46,7 @@ func NewHandler(announcements *announcement.Service, readiness HealthChecker) (h
 	handler := &Handler{announcements: announcements, readiness: readiness}
 	router.Get("/api/openapi.json", openAPISpec)
 	router.Get("/api/docs", scalarReference)
+	router.Get("/api/docs/scalar.js", scalarScript)
 
 	apiHandler := api.HandlerWithOptions(handler, api.ChiServerOptions{
 		BaseRouter: router,
@@ -86,7 +91,7 @@ func (handler *Handler) ListAnnouncements(response http.ResponseWriter, request 
 	for _, item := range page.Items {
 		items = append(items, toAPIAnnouncement(item))
 	}
-	writeJSON(response, http.StatusOK, api.AnnouncementPage{
+	writeJSON(response, http.StatusOK, api.PageAnnouncement{
 		Items: items, Total: page.Total, Limit: page.Limit, Offset: page.Offset,
 	})
 }
@@ -147,8 +152,19 @@ func openAPISpec(response http.ResponseWriter, _ *http.Request) {
 
 func scalarReference(response http.ResponseWriter, _ *http.Request) {
 	response.Header().Set("Content-Type", "text/html; charset=utf-8")
-	response.Header().Set("Content-Security-Policy", "default-src 'none'; script-src https://cdn.jsdelivr.net; style-src 'unsafe-inline'; img-src data:; connect-src 'self'")
+	response.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src data: https:; font-src data:; connect-src 'self'")
 	_, _ = response.Write([]byte(scalarHTML))
+}
+
+func scalarScript(response http.ResponseWriter, _ *http.Request) {
+	script, err := docsAssets.ReadFile("assets/scalar.js")
+	if err != nil {
+		http.Error(response, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	response.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+	response.Header().Set("Cache-Control", "public, max-age=86400")
+	_, _ = response.Write(script)
 }
 
 func writeJSON(response http.ResponseWriter, status int, value any) {
@@ -214,6 +230,6 @@ const scalarHTML = `<!doctype html>
   </head>
   <body>
     <script id="api-reference" data-url="/api/openapi.json"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.72.0"></script>
+    <script src="/api/docs/scalar.js"></script>
   </body>
 </html>`

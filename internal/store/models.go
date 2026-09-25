@@ -61,10 +61,3 @@ type Announcement struct {
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
-
-type SystemSetting struct {
-	Key         string             `db:"key" json:"key"`
-	Value       []byte             `db:"value" json:"value"`
-	Description string             `db:"description" json:"description"`
-	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-}
