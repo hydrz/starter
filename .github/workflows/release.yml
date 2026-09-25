@@ -20,6 +20,22 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
       - name: Install pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
       - name: Install Node.js
@@ -36,32 +52,30 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Verify tag contents
         run: pnpm check && pnpm test && pnpm build
+      - name: Set build date
+        id: date
+        run: echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - name: Build release binary
         run: >-
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64
           go build -tags production -trimpath
-          -ldflags "-s -w -X main.version=$GITHUB_REF_NAME -X main.commit=$GITHUB_SHA -X main.buildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          -ldflags "-s -w -X main.version=$GITHUB_REF_NAME -X main.commit=$GITHUB_SHA -X main.buildDate=${{ steps.date.outputs.date }}"
           -o dist/server ./apps/server
       - name: Create binary checksum
         run: sha256sum dist/server > dist/server.sha256
-      - name: Build container image
-        env:
-          IMAGE: ghcr.io/${{ github.repository }}
-        run: |
-          docker build \
-            --build-arg VERSION="$GITHUB_REF_NAME" \
-            --build-arg COMMIT="$GITHUB_SHA" \
-            --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --tag "${IMAGE,,}:$GITHUB_REF_NAME" \
-            --tag "${IMAGE,,}:latest" .
-      - name: Push container image
-        env:
-          GH_TOKEN: ${{ github.token }}
-          IMAGE: ghcr.io/${{ github.repository }}
-        run: |
-          echo "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
-          docker push "${IMAGE,,}:$GITHUB_REF_NAME"
-          docker push "${IMAGE,,}:latest"
+      - name: Build and push container image
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            COMMIT=${{ github.sha }}
+            BUILD_DATE=${{ steps.date.outputs.date }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - name: Create draft GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
