@@ -14,9 +14,9 @@
     "check": "pnpm check:generated && pnpm check:format && pnpm check:docs && pnpm check:skills && pnpm check:actions && pnpm check:go && pnpm check:sql && pnpm check:web && pnpm check:shell",
     "check:actions": "go tool actionlint",
     "check:docs": "node tools/check-docs.mjs",
-    "check:format": "test -z \"$(gofmt -l apps db internal)\" && pnpm --filter @starter/contracts format:check && pnpm --filter @starter/web format:check",
+    "check:format": "node tools/check-gofmt.mjs apps db internal && pnpm --filter @starter/contracts format:check && pnpm --filter @starter/web format:check",
     "check:generated": "pnpm generate && git diff --exit-code -- spec/generated internal/api internal/store apps/web/src/api/generated",
-    "check:go": "test -z \"$(gofmt -l apps db internal)\" && go vet ./...",
+    "check:go": "node tools/check-gofmt.mjs apps db internal && go vet ./...",
     "check:shell": "sh -n tools/database-check.sh",
     "check:skills": "node tools/check-skills.mjs",
     "check:sql": "go tool sqlc vet -f db/sqlc.yaml",
@@ -42,16 +42,5 @@
   },
   "devDependencies": {
     "concurrently": "10.0.5"
-  },
-  "pnpm": {
-    "overrides": {
-      "@typespec/asset-emitter": "0.79.1",
-      "@typespec/events": "0.80.0",
-      "@typespec/json-schema": "1.10.0",
-      "@typespec/openapi": "1.10.0",
-      "@typespec/sse": "0.80.0",
-      "@typespec/streams": "0.80.0",
-      "@typespec/versioning": "0.80.0"
-    }
   }
 }

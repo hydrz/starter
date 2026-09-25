@@ -1,22 +1,36 @@
-import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { describe, expect, it } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
 describe("App", () => {
-  it("renders the foundation dashboard", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("renders the console shell and overview page", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ status: "ok" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    const markup = renderToStaticMarkup(
+
+    render(
       <QueryClientProvider client={queryClient}>
         <App />
       </QueryClientProvider>,
     );
 
-    expect(markup).toContain("工程控制台");
-    expect(markup).toContain("纵向业务切片");
-    expect(markup).toContain("契约中心");
-    expect(markup).toContain("运营公告");
+    await waitFor(() => {
+      expect(screen.getByText("工程控制台")).toBeInTheDocument();
+      expect(screen.getByText("Starter")).toBeInTheDocument();
+      expect(screen.getByText("能力模块")).toBeInTheDocument();
+      expect(screen.getByText("契约中心")).toBeInTheDocument();
+    });
   });
 });

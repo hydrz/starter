@@ -54,7 +54,7 @@ React/Vite ──> dist ──> go:embed ──> one executable
 
 | 内容 | 唯一事实来源 | 生成/消费结果 |
 | --- | --- | --- |
-| HTTP API | `spec/main.tsp` | OpenAPI、Go server contract、Web client、Scalar 文档 |
+| HTTP API | `packages/contracts/main.tsp` | OpenAPI、Go server contract、Web client、Scalar 文档 |
 | 数据库结构 | `db/migrations/*.sql` | PostgreSQL schema |
 | 数据访问 | `db/queries/*.sql` | sqlc Go 代码 |
 | 前端设计令牌 | Web 主题与 CSS variables | Tailwind/shadcn 组件样式 |
@@ -72,12 +72,13 @@ React/Vite ──> dist ──> go:embed ──> one executable
 │   ├── server/               # Go 入口、HTTP 服务和前端 embed
 │   └── web/                  # React + Vite 管理端
 ├── internal/                 # Go 内部业务模块
-├── spec/                     # TypeSpec 与生成配置
+├── spec/                     # OpenAPI 规范生成物
+├── packages/
+│   └── contracts/            # TypeSpec 契约定义与编译配置
 ├── db/
 │   ├── migrations/           # Goose migration
 │   ├── queries/              # sqlc SQL
 │   └── sqlc.yaml
-├── packages/                 # 可复用前端包（按需创建）
 ├── docs/
 │   ├── adr/                  # 架构决策记录
 │   ├── development/          # 开发与调试说明

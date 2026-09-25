@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -35,6 +36,7 @@ func NewHandler(announcements *announcement.Service, readiness HealthChecker) (h
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
+	router.Use(AccessLog(slog.Default()))
 	router.Use(middleware.Recoverer)
 
 	handler := &Handler{announcements: announcements, readiness: readiness}

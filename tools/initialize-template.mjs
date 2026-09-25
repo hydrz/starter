@@ -51,6 +51,18 @@ for (const file of trackedFiles()) {
 
 for (const file of excluded) rmSync(file, { force: true });
 
+if (!process.argv.includes("--no-generate")) {
+  console.log("Updating lockfile and regenerating contract artifacts...");
+  execFileSync("pnpm", ["install"], {
+    stdio: "inherit",
+    shell: process.platform === "win32",
+  });
+  execFileSync("pnpm", ["generate"], {
+    stdio: "inherit",
+    shell: process.platform === "win32",
+  });
+}
+
 console.log(
   JSON.stringify(
     { repository, modulePath, packageScope: `@${scope}`, projectSlug: slug, displayName, changed },

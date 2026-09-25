@@ -6,10 +6,13 @@ export default defineConfig({
     output: {
       target: "./src/api/generated/client.ts",
       client: "react-query",
-      httpClient: "fetch",
       clean: true,
       prettier: false,
       override: {
+        mutator: {
+          path: "./src/api/client.ts",
+          name: "customClient",
+        },
         query: {
           signal: true,
         },

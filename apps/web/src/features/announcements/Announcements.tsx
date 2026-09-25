@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { HttpError } from "../../api/client";
 import {
   getListAnnouncementsQueryKey,
   useCreateAnnouncement,
@@ -9,6 +10,10 @@ import {
   useListAnnouncements,
   useUpdateAnnouncement,
 } from "../../api/generated/client";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
 
 const announcementSchema = z.object({
   title: z
@@ -34,41 +39,36 @@ const initialValues: AnnouncementForm = {
 
 export function Announcements() {
   const queryClient = useQueryClient();
-  const announcements = useListAnnouncements({ limit: 3, offset: 0 });
+  const announcements = useListAnnouncements({ limit: 10, offset: 0 });
   const form = useForm<AnnouncementForm>({
     resolver: zodResolver(announcementSchema),
     defaultValues: initialValues,
   });
-  const createAnnouncement = useCreateAnnouncement({
-    mutation: {
-      onSuccess: async (response) => {
-        if (response.status !== 201) {
-          return;
-        }
-        form.reset(initialValues);
-        await queryClient.invalidateQueries({
-          queryKey: getListAnnouncementsQueryKey(),
-        });
-      },
-    },
-  });
+
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: getListAnnouncementsQueryKey() });
-  const updateAnnouncement = useUpdateAnnouncement({
+
+  const createAnnouncement = useCreateAnnouncement({
     mutation: {
-      onSuccess: async (response) => {
-        if (response.status === 200) {
-          await refresh();
-        }
+      onSuccess: async () => {
+        form.reset(initialValues);
+        await refresh();
       },
     },
   });
+
+  const updateAnnouncement = useUpdateAnnouncement({
+    mutation: {
+      onSuccess: async () => {
+        await refresh();
+      },
+    },
+  });
+
   const deleteAnnouncement = useDeleteAnnouncement({
     mutation: {
-      onSuccess: async (response) => {
-        if (response.status === 204) {
-          await refresh();
-        }
+      onSuccess: async () => {
+        await refresh();
       },
     },
   });
@@ -78,6 +78,14 @@ export function Announcements() {
   const submit = form.handleSubmit((data) =>
     createAnnouncement.mutate({ data }),
   );
+
+  const errorMessage = createAnnouncement.error
+    ? createAnnouncement.error instanceof HttpError
+      ? createAnnouncement.error.data?.message ||
+        createAnnouncement.error.message
+      : ((createAnnouncement.error as unknown as { message?: string })
+          ?.message ?? "创建公告失败，请重试")
+    : null;
 
   return (
     <section className="announcements" aria-labelledby="announcements-title">
@@ -95,7 +103,7 @@ export function Announcements() {
         <form className="announcement-form" onSubmit={submit}>
           <label>
             <span>公告标题</span>
-            <input
+            <Input
               placeholder="例如：计划维护通知"
               {...form.register("title")}
             />
@@ -105,7 +113,7 @@ export function Announcements() {
           </label>
           <label>
             <span>公告内容</span>
-            <textarea
+            <Textarea
               rows={4}
               placeholder="填写需要向运营团队传达的内容"
               {...form.register("content")}
@@ -119,13 +127,11 @@ export function Announcements() {
               <option value="draft">保存为草稿</option>
               <option value="published">立即发布</option>
             </select>
-            <button type="submit" disabled={createAnnouncement.isPending}>
+            <Button type="submit" disabled={createAnnouncement.isPending}>
               {createAnnouncement.isPending ? "正在保存…" : "创建公告"}
-            </button>
+            </Button>
           </div>
-          {createAnnouncement.data?.status === 400 && (
-            <p className="form-error">{createAnnouncement.data.data.message}</p>
-          )}
+          {errorMessage && <p className="form-error">{errorMessage}</p>}
         </form>
 
         <div className="announcement-list" aria-live="polite">
@@ -141,9 +147,13 @@ export function Announcements() {
           {page?.items.map((item) => (
             <article className="announcement-item" key={item.id}>
               <div>
-                <span className={`status ${item.status}`}>
+                <Badge
+                  variant={
+                    item.status === "published" ? "default" : "secondary"
+                  }
+                >
                   {item.status === "published" ? "已发布" : "草稿"}
-                </span>
+                </Badge>
                 <time dateTime={item.updatedAt}>
                   {new Date(item.updatedAt).toLocaleDateString("zh-CN")}
                 </time>
@@ -151,8 +161,10 @@ export function Announcements() {
               <h4>{item.title}</h4>
               <p>{item.content}</p>
               <div className="item-actions">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={() =>
                     updateAnnouncement.mutate({
                       id: item.id,
@@ -165,14 +177,15 @@ export function Announcements() {
                   }
                 >
                   {item.status === "draft" ? "发布" : "转为草稿"}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className="danger"
+                  variant="destructive"
+                  size="sm"
                   onClick={() => deleteAnnouncement.mutate({ id: item.id })}
                 >
                   删除
-                </button>
+                </Button>
               </div>
             </article>
           ))}

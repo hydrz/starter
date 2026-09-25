@@ -8,8 +8,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
+
+	"github.com/joho/godotenv"
 
 	databaseMigrations "github.com/hydrz/starter/db"
 	"github.com/hydrz/starter/internal/announcement"
@@ -31,6 +34,8 @@ var (
 )
 
 func main() {
+	_ = godotenv.Load()
+	_ = godotenv.Load("../../.env")
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -100,7 +105,11 @@ func main() {
 func healthcheck() error {
 	url := os.Getenv("HEALTHCHECK_URL")
 	if url == "" {
-		url = "http://127.0.0.1:8080/api/readyz"
+		addr := address()
+		if strings.HasPrefix(addr, ":") {
+			addr = "127.0.0.1" + addr
+		}
+		url = "http://" + addr + "/api/readyz"
 	}
 	client := &http.Client{Timeout: 3 * time.Second}
 	response, err := client.Get(url)
@@ -124,6 +133,12 @@ func databaseURL() string {
 func address() string {
 	if value := os.Getenv("HTTP_ADDRESS"); value != "" {
 		return value
+	}
+	if port := os.Getenv("APP_PORT"); port != "" {
+		if strings.HasPrefix(port, ":") {
+			return port
+		}
+		return ":" + port
 	}
 	return defaultAddress
 }

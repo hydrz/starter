@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -165,4 +166,34 @@ func newHandler(t *testing.T, service *announcement.Service, checker httpserver.
 		t.Fatalf("NewHandler() error = %v", err)
 	}
 	return handler
+}
+
+func TestAccessLogMiddleware(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&buf, nil))
+	logMiddleware := httpserver.AccessLog(logger)
+
+	handler := logMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}))
+
+	request := httptest.NewRequest(http.MethodGet, "/test/path", nil)
+	request.Header.Set("User-Agent", "test-agent")
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+
+	logOutput := buf.String()
+	for _, expected := range []string{`"method":"GET"`, `"path":"/test/path"`, `"status":200`, `"user_agent":"test-agent"`} {
+		if !bytes.Contains([]byte(logOutput), []byte(expected)) {
+			t.Errorf("log output %s missing expected substring %s", logOutput, expected)
+		}
+	}
 }

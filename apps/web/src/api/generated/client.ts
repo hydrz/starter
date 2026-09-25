@@ -23,6 +23,7 @@ import type {
   UseQueryResult
 } from '@tanstack/react-query';
 
+import { customClient } from '../client';
 export type AnnouncementStatus = typeof AnnouncementStatus[keyof typeof AnnouncementStatus];
 
 
@@ -90,6 +91,10 @@ offset?: number;
 status?: AnnouncementStatus;
 };
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+
+
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
   const result = { queryKey } as T & { queryKey: K };
   for (const key of Object.keys(query)) {
@@ -142,23 +147,16 @@ export const getListAnnouncementsUrl = (params?: ListAnnouncementsParams,) => {
 /**
  * @summary List announcements
  */
-export const listAnnouncements = async (params?: ListAnnouncementsParams, options?: RequestInit): Promise<listAnnouncementsResponse> => {
+export const listAnnouncements = async (params?: ListAnnouncementsParams, options?: Parameters<typeof customClient>[1]): Promise<listAnnouncementsResponse> => {
 
-  const res = await fetch(getListAnnouncementsUrl(params),
+  return customClient<listAnnouncementsResponse>(getListAnnouncementsUrl(params),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: listAnnouncementsResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as listAnnouncementsResponse
-}
+);}
 
 
 
@@ -171,16 +169,16 @@ export const getListAnnouncementsQueryKey = (params?: ListAnnouncementsParams,) 
     }
 
 
-export const getListAnnouncementsQueryOptions = <TData = Awaited<ReturnType<typeof listAnnouncements>>, TError = ApiError>(params?: ListAnnouncementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>>, fetch?: RequestInit}
+export const getListAnnouncementsQueryOptions = <TData = Awaited<ReturnType<typeof listAnnouncements>>, TError = ApiError>(params?: ListAnnouncementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
 ) => {
 
-const {query: queryOptions, fetch: fetchOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getListAnnouncementsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAnnouncements>>> = ({ signal }) => listAnnouncements(params, { signal, ...fetchOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAnnouncements>>> = ({ signal }) => listAnnouncements(params, { signal, ...requestOptions });
 
 
 
@@ -200,7 +198,7 @@ export function useListAnnouncements<TData = Awaited<ReturnType<typeof listAnnou
           TError,
           Awaited<ReturnType<typeof listAnnouncements>>
         > , 'initialData'
-      >, fetch?: RequestInit}
+      >, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListAnnouncements<TData = Awaited<ReturnType<typeof listAnnouncements>>, TError = ApiError>(
@@ -210,11 +208,11 @@ export function useListAnnouncements<TData = Awaited<ReturnType<typeof listAnnou
           TError,
           Awaited<ReturnType<typeof listAnnouncements>>
         > , 'initialData'
-      >, fetch?: RequestInit}
+      >, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListAnnouncements<TData = Awaited<ReturnType<typeof listAnnouncements>>, TError = ApiError>(
- params?: ListAnnouncementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>>, fetch?: RequestInit}
+ params?: ListAnnouncementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -222,7 +220,7 @@ export function useListAnnouncements<TData = Awaited<ReturnType<typeof listAnnou
  */
 
 export function useListAnnouncements<TData = Awaited<ReturnType<typeof listAnnouncements>>, TError = ApiError>(
- params?: ListAnnouncementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>>, fetch?: RequestInit}
+ params?: ListAnnouncementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -269,7 +267,7 @@ export const getCreateAnnouncementUrl = () => {
 /**
  * @summary Create an announcement
  */
-export const createAnnouncement = async (announcementInput: AnnouncementInput, options?: RequestInit): Promise<createAnnouncementResponse> => {
+export const createAnnouncement = async (announcementInput: AnnouncementInput, options?: Parameters<typeof customClient>[1]): Promise<createAnnouncementResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -285,21 +283,14 @@ export const createAnnouncement = async (announcementInput: AnnouncementInput, o
     }
     return headers;
   };
-const res = await fetch(getCreateAnnouncementUrl(),
+return customClient<createAnnouncementResponse>(getCreateAnnouncementUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(announcementInput)
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: createAnnouncementResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as createAnnouncementResponse
-}
+);}
 
 
 
@@ -308,15 +299,15 @@ const res = await fetch(getCreateAnnouncementUrl(),
 export const getCreateAnnouncementMutationKey = () => ['createAnnouncement'] as const;
 
 export const getCreateAnnouncementMutationOptions = <TError = ApiError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAnnouncement>>, TError,CreateAnnouncementMutationVariables, TContext>, fetch?: RequestInit}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAnnouncement>>, TError,CreateAnnouncementMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createAnnouncement>>, TError,CreateAnnouncementMutationVariables, TContext> => {
 
 const mutationKey = getCreateAnnouncementMutationKey();
-const {mutation: mutationOptions, fetch: fetchOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, fetch: undefined};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -324,7 +315,7 @@ const {mutation: mutationOptions, fetch: fetchOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAnnouncement>>, CreateAnnouncementMutationVariables> = (props) => {
           const {data} = props ?? {};
 
-          return  createAnnouncement(data,fetchOptions)
+          return  createAnnouncement(data,requestOptions)
         }
 
 
@@ -343,7 +334,7 @@ const {mutation: mutationOptions, fetch: fetchOptions} = options ?
  * @summary Create an announcement
  */
 export const useCreateAnnouncement = <TError = ApiError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAnnouncement>>, TError,CreateAnnouncementMutationVariables, TContext>, fetch?: RequestInit}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAnnouncement>>, TError,CreateAnnouncementMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createAnnouncement>>,
         TError,
@@ -388,23 +379,16 @@ export const getGetAnnouncementUrl = (id: string,) => {
 /**
  * @summary Get an announcement
  */
-export const getAnnouncement = async (id: string, options?: RequestInit): Promise<getAnnouncementResponse> => {
+export const getAnnouncement = async (id: string, options?: Parameters<typeof customClient>[1]): Promise<getAnnouncementResponse> => {
 
-  const res = await fetch(getGetAnnouncementUrl(id),
+  return customClient<getAnnouncementResponse>(getGetAnnouncementUrl(id),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: getAnnouncementResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getAnnouncementResponse
-}
+);}
 
 
 
@@ -417,16 +401,16 @@ export const getGetAnnouncementQueryKey = (id: string,) => {
     }
 
 
-export const getGetAnnouncementQueryOptions = <TData = Awaited<ReturnType<typeof getAnnouncement>>, TError = ApiError>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>>, fetch?: RequestInit}
+export const getGetAnnouncementQueryOptions = <TData = Awaited<ReturnType<typeof getAnnouncement>>, TError = ApiError>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
 ) => {
 
-const {query: queryOptions, fetch: fetchOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetAnnouncementQueryKey(id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnnouncement>>> = ({ signal }) => getAnnouncement(id, { signal, ...fetchOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnnouncement>>> = ({ signal }) => getAnnouncement(id, { signal, ...requestOptions });
 
 
 
@@ -446,7 +430,7 @@ export function useGetAnnouncement<TData = Awaited<ReturnType<typeof getAnnounce
           TError,
           Awaited<ReturnType<typeof getAnnouncement>>
         > , 'initialData'
-      >, fetch?: RequestInit}
+      >, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetAnnouncement<TData = Awaited<ReturnType<typeof getAnnouncement>>, TError = ApiError>(
@@ -456,11 +440,11 @@ export function useGetAnnouncement<TData = Awaited<ReturnType<typeof getAnnounce
           TError,
           Awaited<ReturnType<typeof getAnnouncement>>
         > , 'initialData'
-      >, fetch?: RequestInit}
+      >, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetAnnouncement<TData = Awaited<ReturnType<typeof getAnnouncement>>, TError = ApiError>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>>, fetch?: RequestInit}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -468,7 +452,7 @@ export function useGetAnnouncement<TData = Awaited<ReturnType<typeof getAnnounce
  */
 
 export function useGetAnnouncement<TData = Awaited<ReturnType<typeof getAnnouncement>>, TError = ApiError>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>>, fetch?: RequestInit}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -521,7 +505,7 @@ export const getUpdateAnnouncementUrl = (id: string,) => {
  * @summary Update an announcement
  */
 export const updateAnnouncement = async (id: string,
-    announcementInput: AnnouncementInput, options?: RequestInit): Promise<updateAnnouncementResponse> => {
+    announcementInput: AnnouncementInput, options?: Parameters<typeof customClient>[1]): Promise<updateAnnouncementResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -537,21 +521,14 @@ export const updateAnnouncement = async (id: string,
     }
     return headers;
   };
-const res = await fetch(getUpdateAnnouncementUrl(id),
+return customClient<updateAnnouncementResponse>(getUpdateAnnouncementUrl(id),
   {
     ...options,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(announcementInput)
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: updateAnnouncementResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateAnnouncementResponse
-}
+);}
 
 
 
@@ -560,15 +537,15 @@ const res = await fetch(getUpdateAnnouncementUrl(id),
 export const getUpdateAnnouncementMutationKey = () => ['updateAnnouncement'] as const;
 
 export const getUpdateAnnouncementMutationOptions = <TError = ApiError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAnnouncement>>, TError,UpdateAnnouncementMutationVariables, TContext>, fetch?: RequestInit}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAnnouncement>>, TError,UpdateAnnouncementMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateAnnouncement>>, TError,UpdateAnnouncementMutationVariables, TContext> => {
 
 const mutationKey = getUpdateAnnouncementMutationKey();
-const {mutation: mutationOptions, fetch: fetchOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, fetch: undefined};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -576,7 +553,7 @@ const {mutation: mutationOptions, fetch: fetchOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAnnouncement>>, UpdateAnnouncementMutationVariables> = (props) => {
           const {id,data} = props ?? {};
 
-          return  updateAnnouncement(id,data,fetchOptions)
+          return  updateAnnouncement(id,data,requestOptions)
         }
 
 
@@ -595,7 +572,7 @@ const {mutation: mutationOptions, fetch: fetchOptions} = options ?
  * @summary Update an announcement
  */
 export const useUpdateAnnouncement = <TError = ApiError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAnnouncement>>, TError,UpdateAnnouncementMutationVariables, TContext>, fetch?: RequestInit}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAnnouncement>>, TError,UpdateAnnouncementMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateAnnouncement>>,
         TError,
@@ -640,23 +617,16 @@ export const getDeleteAnnouncementUrl = (id: string,) => {
 /**
  * @summary Delete an announcement
  */
-export const deleteAnnouncement = async (id: string, options?: RequestInit): Promise<deleteAnnouncementResponse> => {
+export const deleteAnnouncement = async (id: string, options?: Parameters<typeof customClient>[1]): Promise<deleteAnnouncementResponse> => {
 
-  const res = await fetch(getDeleteAnnouncementUrl(id),
+  return customClient<deleteAnnouncementResponse>(getDeleteAnnouncementUrl(id),
   {
     ...options,
     method: 'DELETE'
 
 
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: deleteAnnouncementResponse['data'] = body ? JSON.parse(body) : undefined
-  return { data, status: res.status, headers: res.headers } as deleteAnnouncementResponse
-}
+);}
 
 
 
@@ -665,15 +635,15 @@ export const deleteAnnouncement = async (id: string, options?: RequestInit): Pro
 export const getDeleteAnnouncementMutationKey = () => ['deleteAnnouncement'] as const;
 
 export const getDeleteAnnouncementMutationOptions = <TError = ApiError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAnnouncement>>, TError,DeleteAnnouncementMutationVariables, TContext>, fetch?: RequestInit}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAnnouncement>>, TError,DeleteAnnouncementMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteAnnouncement>>, TError,DeleteAnnouncementMutationVariables, TContext> => {
 
 const mutationKey = getDeleteAnnouncementMutationKey();
-const {mutation: mutationOptions, fetch: fetchOptions} = options ?
+const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, fetch: undefined};
+      : {mutation: { mutationKey, }, request: undefined};
 
 
 
@@ -681,7 +651,7 @@ const {mutation: mutationOptions, fetch: fetchOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAnnouncement>>, DeleteAnnouncementMutationVariables> = (props) => {
           const {id} = props ?? {};
 
-          return  deleteAnnouncement(id,fetchOptions)
+          return  deleteAnnouncement(id,requestOptions)
         }
 
 
@@ -700,7 +670,7 @@ const {mutation: mutationOptions, fetch: fetchOptions} = options ?
  * @summary Delete an announcement
  */
 export const useDeleteAnnouncement = <TError = ApiError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAnnouncement>>, TError,DeleteAnnouncementMutationVariables, TContext>, fetch?: RequestInit}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAnnouncement>>, TError,DeleteAnnouncementMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteAnnouncement>>,
         TError,
@@ -733,23 +703,16 @@ export const getGetHealthUrl = () => {
 /**
  * @summary Check service health
  */
-export const getHealth = async ( options?: RequestInit): Promise<getHealthResponse> => {
+export const getHealth = async ( options?: Parameters<typeof customClient>[1]): Promise<getHealthResponse> => {
 
-  const res = await fetch(getGetHealthUrl(),
+  return customClient<getHealthResponse>(getGetHealthUrl(),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: getHealthResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getHealthResponse
-}
+);}
 
 
 
@@ -762,16 +725,16 @@ export const getGetHealthQueryKey = () => {
     }
 
 
-export const getGetHealthQueryOptions = <TData = Awaited<ReturnType<typeof getHealth>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>>, fetch?: RequestInit}
+export const getGetHealthQueryOptions = <TData = Awaited<ReturnType<typeof getHealth>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
 ) => {
 
-const {query: queryOptions, fetch: fetchOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetHealthQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHealth>>> = ({ signal }) => getHealth({ signal, ...fetchOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHealth>>> = ({ signal }) => getHealth({ signal, ...requestOptions });
 
 
 
@@ -791,7 +754,7 @@ export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TErr
           TError,
           Awaited<ReturnType<typeof getHealth>>
         > , 'initialData'
-      >, fetch?: RequestInit}
+      >, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TError = unknown>(
@@ -801,11 +764,11 @@ export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TErr
           TError,
           Awaited<ReturnType<typeof getHealth>>
         > , 'initialData'
-      >, fetch?: RequestInit}
+      >, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>>, fetch?: RequestInit}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -813,7 +776,7 @@ export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TErr
  */
 
 export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>>, fetch?: RequestInit}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
@@ -860,23 +823,16 @@ export const getGetReadinessUrl = () => {
 /**
  * @summary Check service readiness
  */
-export const getReadiness = async ( options?: RequestInit): Promise<getReadinessResponse> => {
+export const getReadiness = async ( options?: Parameters<typeof customClient>[1]): Promise<getReadinessResponse> => {
 
-  const res = await fetch(getGetReadinessUrl(),
+  return customClient<getReadinessResponse>(getGetReadinessUrl(),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: getReadinessResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getReadinessResponse
-}
+);}
 
 
 
@@ -889,16 +845,16 @@ export const getGetReadinessQueryKey = () => {
     }
 
 
-export const getGetReadinessQueryOptions = <TData = Awaited<ReturnType<typeof getReadiness>>, TError = ApiError>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReadiness>>, TError, TData>>, fetch?: RequestInit}
+export const getGetReadinessQueryOptions = <TData = Awaited<ReturnType<typeof getReadiness>>, TError = ApiError>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReadiness>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
 ) => {
 
-const {query: queryOptions, fetch: fetchOptions} = options ?? {};
+const {query: queryOptions, request: requestOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetReadinessQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReadiness>>> = ({ signal }) => getReadiness({ signal, ...fetchOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReadiness>>> = ({ signal }) => getReadiness({ signal, ...requestOptions });
 
 
 
@@ -918,7 +874,7 @@ export function useGetReadiness<TData = Awaited<ReturnType<typeof getReadiness>>
           TError,
           Awaited<ReturnType<typeof getReadiness>>
         > , 'initialData'
-      >, fetch?: RequestInit}
+      >, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetReadiness<TData = Awaited<ReturnType<typeof getReadiness>>, TError = ApiError>(
@@ -928,11 +884,11 @@ export function useGetReadiness<TData = Awaited<ReturnType<typeof getReadiness>>
           TError,
           Awaited<ReturnType<typeof getReadiness>>
         > , 'initialData'
-      >, fetch?: RequestInit}
+      >, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetReadiness<TData = Awaited<ReturnType<typeof getReadiness>>, TError = ApiError>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReadiness>>, TError, TData>>, fetch?: RequestInit}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReadiness>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -940,7 +896,7 @@ export function useGetReadiness<TData = Awaited<ReturnType<typeof getReadiness>>
  */
 
 export function useGetReadiness<TData = Awaited<ReturnType<typeof getReadiness>>, TError = ApiError>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReadiness>>, TError, TData>>, fetch?: RequestInit}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReadiness>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 

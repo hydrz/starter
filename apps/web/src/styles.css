@@ -1,9 +1,32 @@
+@import "tailwindcss";
+
 :root {
   font-family: Inter, "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
   color: #17201c;
   background: #f1f3ef;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+
+  --background: 120 7% 95%;
+  --foreground: 153 17% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 153 17% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 153 17% 11%;
+  --primary: 153 25% 18%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 120 7% 90%;
+  --secondary-foreground: 153 17% 11%;
+  --muted: 120 7% 92%;
+  --muted-foreground: 150 5% 45%;
+  --accent: 81 65% 68%;
+  --accent-foreground: 153 25% 12%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 135 7% 85%;
+  --input: 135 7% 85%;
+  --ring: 81 65% 68%;
+  --radius: 0.5rem;
 }
 
 * {
