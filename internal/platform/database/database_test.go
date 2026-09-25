@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/example/enterprise-platform/internal/platform/database"
+	"github.com/hydrz/starter/internal/platform/database"
 )
 
 func TestOpenRejectsInvalidURL(t *testing.T) {

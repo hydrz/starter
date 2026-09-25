@@ -13,9 +13,9 @@ import (
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
-	"github.com/example/enterprise-platform/internal/announcement"
-	"github.com/example/enterprise-platform/internal/api"
-	"github.com/example/enterprise-platform/internal/platform/webui"
+	"github.com/hydrz/starter/internal/announcement"
+	"github.com/hydrz/starter/internal/api"
+	"github.com/hydrz/starter/internal/platform/webui"
 )
 
 const maxRequestBodySize = 1 << 20
@@ -208,7 +208,7 @@ const scalarHTML = `<!doctype html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Enterprise Platform API</title>
+    <title>Starter API</title>
   </head>
   <body>
     <script id="api-reference" data-url="/api/openapi.json"></script>

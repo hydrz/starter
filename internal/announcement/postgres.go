@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"github.com/example/enterprise-platform/internal/store"
+	"github.com/hydrz/starter/internal/store"
 )
 
 type PostgresRepository struct {

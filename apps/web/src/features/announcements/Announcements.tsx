@@ -8,7 +8,7 @@ import {
   useDeleteAnnouncement,
   useListAnnouncements,
   useUpdateAnnouncement,
-} from "../../api/generated/enterprise";
+} from "../../api/generated/client";
 
 const announcementSchema = z.object({
   title: z

@@ -1,4 +1,4 @@
-name: enterprise-platform
+name: starter
 
 services:
   app:
@@ -8,10 +8,10 @@ services:
         VERSION: ${APP_VERSION:-dev}
         COMMIT: ${APP_COMMIT:-local}
         BUILD_DATE: ${APP_BUILD_DATE:-unknown}
-    image: enterprise-platform:${APP_VERSION:-dev}
+    image: starter:${APP_VERSION:-dev}
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-enterprise}:${POSTGRES_PASSWORD:-enterprise}@postgres:5432/${POSTGRES_DB:-enterprise}?sslmode=disable
+      DATABASE_URL: postgres://${POSTGRES_USER:-starter}:${POSTGRES_PASSWORD:-starter}@postgres:5432/${POSTGRES_DB:-starter}?sslmode=disable
       HTTP_ADDRESS: :8080
     ports:
       - "127.0.0.1:${APP_PORT:-8080}:8080"
@@ -31,7 +31,7 @@ services:
       - no-new-privileges:true
 
   migrate:
-    image: enterprise-platform:${APP_VERSION:-dev}
+    image: starter:${APP_VERSION:-dev}
     build:
       context: .
       args:
@@ -40,7 +40,7 @@ services:
         BUILD_DATE: ${APP_BUILD_DATE:-unknown}
     command: ["migrate"]
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-enterprise}:${POSTGRES_PASSWORD:-enterprise}@postgres:5432/${POSTGRES_DB:-enterprise}?sslmode=disable
+      DATABASE_URL: postgres://${POSTGRES_USER:-starter}:${POSTGRES_PASSWORD:-starter}@postgres:5432/${POSTGRES_DB:-starter}?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,9 +53,9 @@ services:
     image: postgres:17.6-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-enterprise}
-      POSTGRES_USER: ${POSTGRES_USER:-enterprise}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-enterprise}
+      POSTGRES_DB: ${POSTGRES_DB:-starter}
+      POSTGRES_USER: ${POSTGRES_USER:-starter}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-starter}
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:

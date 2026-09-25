@@ -19,6 +19,7 @@
 | [GitHub 仓库治理](../.github/README.md) | Active | Platform Engineering | 2026-09-25 | 90 天 |
 | [交付与运维](deployment.md) | Active | Platform Engineering | 2026-09-25 | 90 天 |
 | [Agent Skills 规范与实现](agent-skills.md) | Active | Developer Experience | 2026-09-25 | 90 天 |
+| [GitHub 模板仓库指南](template-repository.md) | Active | Developer Experience | 2026-09-25 | 90 天 |
 
 ## 维护规则
 

@@ -10,8 +10,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/example/enterprise-platform/internal/announcement"
-	"github.com/example/enterprise-platform/internal/platform/httpserver"
+	"github.com/hydrz/starter/internal/announcement"
+	"github.com/hydrz/starter/internal/platform/httpserver"
 )
 
 type announcementRepository struct{}

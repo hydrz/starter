@@ -1,4 +1,4 @@
-module github.com/example/enterprise-platform
+module github.com/hydrz/starter
 
 go 1.24.3
 

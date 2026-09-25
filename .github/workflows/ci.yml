@@ -90,7 +90,7 @@ jobs:
       - name: Build production outputs
         run: pnpm build
       - name: Build container image
-        run: docker build --build-arg COMMIT="$GITHUB_SHA" --tag enterprise-platform:ci .
+        run: docker build --build-arg COMMIT="$GITHUB_SHA" --tag starter:ci .
       - name: Upload build outputs
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

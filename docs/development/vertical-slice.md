@@ -13,7 +13,7 @@
 | Application | `internal/announcement/service.go` |
 | Repository adapter | `internal/announcement/postgres.go` |
 | HTTP adapter | `internal/platform/httpserver/handler.go` |
-| Generated client | `apps/web/src/api/generated/enterprise.ts` |
+| Generated client | `apps/web/src/api/generated/client.ts` |
 | React feature | `apps/web/src/features/announcements/Announcements.tsx` |
 
 ## 依赖方向

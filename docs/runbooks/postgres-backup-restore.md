@@ -14,8 +14,8 @@
 ```bash
 mkdir -p backups
 docker compose exec -T postgres \
-  pg_dump --username="${POSTGRES_USER:-enterprise}" --dbname="${POSTGRES_DB:-enterprise}" --format=custom \
-  > "backups/enterprise-$(date -u +%Y%m%dT%H%M%SZ).dump"
+  pg_dump --username="${POSTGRES_USER:-starter}" --dbname="${POSTGRES_DB:-starter}" --format=custom \
+  > "backups/starter-$(date -u +%Y%m%dT%H%M%SZ).dump"
 ```
 
 记录应用版本、最新 Goose migration 版本、数据库版本、文件大小和 SHA-256。将备份复制到 Compose 主机之外的受控存储，并按组织策略验证加密和保留期。
@@ -45,7 +45,7 @@ sha256sum backups/<backup-file>.dump
 
 ```bash
 cat backups/<backup-file>.dump | docker compose exec -T postgres \
-  pg_restore --username="${POSTGRES_USER:-enterprise}" --dbname="${POSTGRES_DB:-enterprise}" \
+  pg_restore --username="${POSTGRES_USER:-starter}" --dbname="${POSTGRES_DB:-starter}" \
   --clean --if-exists --no-owner --no-privileges
 ```
 

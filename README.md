@@ -1,12 +1,12 @@
-# 企业应用工程化工具链
+# Starter 企业应用模板
 
-这个仓库用于逐步沉淀一套面向企业内部运营管理平台的工程化方案。最终交付形态是一个包含前端静态资源的 Go 二进制文件，并通过 Docker Compose 部署。
+这个 GitHub Template Repository 提供一套面向企业内部运营管理平台的工程化基线。最终交付形态是一个包含前端静态资源的 Go 二进制文件，并通过 Docker Compose 部署。
 
-## 当前进度
+## 从模板创建项目
 
-当前完成 **第 9 部分：交付与运维**。Vite 产物已嵌入 Go 单二进制，并通过最小容器、Compose migration job、健康检查和发布制品完成部署闭环。
+在 GitHub 上选择 **Use this template** 并指定新仓库名。首次 `main` push 会触发一次性初始化工作流，根据 `owner/repository` 替换 Go module、pnpm package scope、Compose/image/database 标识和展示名称，然后删除初始化工作流。
 
-第 10 部分暂未开始实现；当前先评审 [Agent Skills 规范与实施提案](docs/agent-skills.md)，确认正确的发现目录、职责边界与验证方法。
+初始化完成前不要开始业务开发。等待 `Initialize template repository` 工作流提交 `chore: initialize project from template`，再按[模板仓库指南](docs/template-repository.md)验证结果。
 
 - [工程蓝图](docs/engineering-blueprint.md)
 - [分阶段实施路线](docs/delivery-roadmap.md)
@@ -15,6 +15,7 @@
 - [契约开发指南](docs/development/contracts.md)
 - [数据库开发指南](docs/development/database.md)
 - [纵向切片开发指南](docs/development/vertical-slice.md)
+- [模板仓库指南](docs/template-repository.md)
 - [工程规范索引](docs/standards/README.md)
 - [贡献指南](CONTRIBUTING.md)
 

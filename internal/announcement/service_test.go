@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/example/enterprise-platform/internal/announcement"
+	"github.com/hydrz/starter/internal/announcement"
 )
 
 type repositoryStub struct {
