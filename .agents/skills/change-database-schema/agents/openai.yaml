@@ -1,0 +1,4 @@
+interface:
+  display_name: "Change Database Schema"
+  short_description: "Evolve Goose migrations and sqlc safely"
+  default_prompt: "Use $change-database-schema to implement this database schema change and verify migrations and generated queries."

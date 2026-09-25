@@ -1,0 +1,36 @@
+# 分阶段实施路线
+
+## 实施规则
+
+- 每次只交付一个可独立评审的部分；
+- 当前部分经确认后，才进入下一部分；
+- 每部分必须同时包含实现、文档与可执行验证；
+- 新增工具必须有明确用途、固定版本和统一的 pnpm script 入口；
+- 对不可逆或影响团队协作的选择使用 ADR 记录。
+
+## 路线图
+
+| 阶段 | 交付内容 | 验收重点 | 状态 |
+| --- | --- | --- | --- |
+| 1. 工程蓝图 | 架构原则、SSOT、目标目录、关键数据流、阶段计划 | 边界清晰，技术选择之间无职责冲突 | 已完成 |
+| 2. 基础脚手架 | pnpm workspace、Go module、Vite/React、Chi、统一 scripts | 一条命令启动最小前后端 | 已完成 |
+| 3. 契约流水线 | TypeSpec、OpenAPI、Scalar、oapi-codegen、Orval | 修改契约可稳定生成前后端代码 | 已完成 |
+| 4. 数据流水线 | PostgreSQL Compose、Goose、sqlc、pgx | migration 与查询生成可重复 | 已完成 |
+| 5. 纵向业务切片 | 一个完整 CRUD/查询示例 | 契约、后端、数据库、前端贯通 | 已完成 |
+| 6. 工程规范 | Go/TS/React/SQL/测试/错误处理规范 | 规范可由工具自动检查 | 已完成 |
+| 7. 文档规范 | README、ADR、API、runbook、变更说明模板 | 文档有所有者、生命周期和模板 | 已完成 |
+| 8. GitHub 工作流 | CI、依赖更新、发布、PR/Issue 模板、CODEOWNERS | 分支保护所需检查完整 | 已完成 |
+| 9. 交付与运维 | embed、容器镜像、Compose、健康检查、升级流程 | 单二进制和 Compose 可部署 | 已完成 |
+| 10. Agent Skills | 契约变更、数据库变更、业务切片、评审和发布技能 | Skill 可正确发现、准确触发并安全执行常见任务 | 已完成 |
+
+## Agent Skills 交付结果
+
+本阶段已按 [Agent Skills 规范与实现](agent-skills.md) 交付：
+
+1. 契约变更 Skill；
+2. 数据库 migration 与 sqlc Skill；
+3. 纵向业务切片 Skill；
+4. 代码评审与质量门禁 Skill；
+5. 发布准备 Skill。
+
+Skills 位于 `.agents/skills/`，复用已有脚本和文档，不复制生成实现或绕过人工确认点。统一质量门禁通过 `pnpm check:skills` 执行。

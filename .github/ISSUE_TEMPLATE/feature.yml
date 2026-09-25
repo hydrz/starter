@@ -1,0 +1,43 @@
+name: 功能建议
+description: 提议可验证的产品或工程能力
+title: "[Feature]: "
+labels: [enhancement, triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题
+      description: 描述使用者遇到的问题，不要先限定解决方案。
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: 期望结果
+      description: 如何判断问题已被解决？
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 范围与约束
+      description: 包括不做什么、兼容性、安全或时间约束。
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 已考虑的替代方案
+  - type: dropdown
+    id: area
+    attributes:
+      label: 影响区域
+      options:
+        - API / Contract
+        - Backend
+        - Web
+        - Database
+        - Delivery / Operations
+        - Developer Experience
+    validations:
+      required: true

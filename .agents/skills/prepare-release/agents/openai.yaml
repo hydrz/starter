@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prepare Release"
+  short_description: "Validate artifacts and prepare a safe draft release"
+  default_prompt: "Use $prepare-release to validate this version and prepare its release without deploying to production."

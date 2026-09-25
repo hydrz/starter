@@ -1,0 +1,9 @@
+emit:
+  - "@typespec/openapi3"
+
+options:
+  "@typespec/openapi3":
+    emitter-output-dir: "{cwd}/../../spec/generated"
+    output-file: openapi.yaml
+
+warn-as-error: true

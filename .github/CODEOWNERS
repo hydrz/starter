@@ -1,0 +1,9 @@
+# Replace the example organization with the repository's real GitHub teams
+# before enabling required CODEOWNERS reviews in branch protection.
+* @example/platform-engineering
+
+/packages/contracts/ @example/api-guild
+/spec/ @example/api-guild
+/db/ @example/data-platform
+/docs/ @example/developer-experience
+/.github/ @example/platform-engineering

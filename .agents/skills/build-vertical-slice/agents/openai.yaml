@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Vertical Slice"
+  short_description: "Build a feature through contract, data, Go, and React"
+  default_prompt: "Use $build-vertical-slice to implement this feature end to end with tests and documentation."

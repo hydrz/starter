@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+apps/web/dist/
+internal/platform/webui/dist/
+
+# Tooling
+.idea/
+.vscode/
+*.log
+.DS_Store
+
+# Local configuration
+.env
+.env.local
+!.env.example
+
+# Local database state
+.data/
