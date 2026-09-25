@@ -16,7 +16,7 @@
 | [数据库开发](development/database.md) | Active | Data Platform | 2026-09-24 | 180 天 |
 | [纵向业务切片](development/vertical-slice.md) | Active | Platform Engineering | 2026-09-24 | 180 天 |
 | [工程规范](standards/README.md) | Active | Platform Engineering | 2026-09-25 | 90 天 |
-| [GitHub 仓库治理](../.github/README.md) | Active | Platform Engineering | 2026-09-25 | 90 天 |
+| [GitHub 仓库治理](../.github/GOVERNANCE.md) | Active | Platform Engineering | 2026-09-25 | 90 天 |
 | [交付与运维](deployment.md) | Active | Platform Engineering | 2026-09-25 | 90 天 |
 | [Agent Skills 规范与实现](agent-skills.md) | Active | Developer Experience | 2026-09-25 | 90 天 |
 | [GitHub 模板仓库指南](template-repository.md) | Active | Developer Experience | 2026-09-25 | 90 天 |
