@@ -11,7 +11,7 @@
 2. 等待 `Initialize template repository` GitHub Actions 工作流完成。
 3. 确认 `main` 中出现 `chore: initialize project from template` 提交。
 4. 检查 Go module、pnpm package scope、API 标题、Compose 项目、镜像和本地数据库名称。
-5. 按[首次启用清单](../.github/README.md)配置 CODEOWNERS、分支保护、安全地址和发布权限。
+5. 按[首次启用清单](../.github/GOVERNANCE.md)配置 CODEOWNERS、分支保护、安全地址和发布权限。
 
 ## 自动命名规则
 
