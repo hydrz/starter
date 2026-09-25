@@ -1,0 +1,53 @@
+name: Initialize template repository
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      display_name:
+        description: Optional human-readable project name
+        required: false
+        type: string
+      module:
+        description: Optional Go module path (defaults to github.com/owner/repository)
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: template-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  initialize:
+    if: github.repository != 'hydrz/starter'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Initialize names from repository
+        env:
+          DISPLAY_NAME: ${{ inputs.display_name }}
+          MODULE_PATH: ${{ inputs.module }}
+        run: |
+          args=(--repository "$GITHUB_REPOSITORY")
+          if [[ -n "$DISPLAY_NAME" ]]; then args+=(--display-name "$DISPLAY_NAME"); fi
+          if [[ -n "$MODULE_PATH" ]]; then args+=(--module "$MODULE_PATH"); fi
+          node tools/initialize-template.mjs "${args[@]}"
+      - name: Commit initialized project
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          if git diff --cached --quiet; then
+            echo "No template substitutions were required."
+            exit 0
+          fi
+          git commit -m "chore: initialize project from template"
+          git push

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/example/enterprise-platform/internal/platform/webui"
+	"github.com/hydrz/starter/internal/platform/webui"
 )
 
 func TestHandlerServesIndexAndSPAFallback(t *testing.T) {

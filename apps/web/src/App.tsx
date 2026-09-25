@@ -1,4 +1,4 @@
-import { useGetHealth } from "./api/generated/enterprise";
+import { useGetHealth } from "./api/generated/client";
 import { Announcements } from "./features/announcements/Announcements";
 
 const modules = [
@@ -19,9 +19,9 @@ function App() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <a className="brand" href="/" aria-label="Enterprise Console 首页">
+        <a className="brand" href="/" aria-label="Starter Console 首页">
           <span className="brand-mark">E</span>
-          <span>Enterprise</span>
+          <span>Starter</span>
         </a>
         <nav aria-label="主导航">
           <a className="nav-item active" href="#overview">

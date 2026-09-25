@@ -11,16 +11,16 @@ import (
 	"syscall"
 	"time"
 
-	databaseMigrations "github.com/example/enterprise-platform/db"
-	"github.com/example/enterprise-platform/internal/announcement"
-	"github.com/example/enterprise-platform/internal/platform/database"
-	apphttp "github.com/example/enterprise-platform/internal/platform/httpserver"
-	"github.com/example/enterprise-platform/internal/store"
+	databaseMigrations "github.com/hydrz/starter/db"
+	"github.com/hydrz/starter/internal/announcement"
+	"github.com/hydrz/starter/internal/platform/database"
+	apphttp "github.com/hydrz/starter/internal/platform/httpserver"
+	"github.com/hydrz/starter/internal/store"
 )
 
 const (
 	defaultAddress     = ":8080"
-	defaultDatabaseURL = "postgres://enterprise:enterprise@127.0.0.1:5432/enterprise?sslmode=disable"
+	defaultDatabaseURL = "postgres://starter:starter@127.0.0.1:5432/starter?sslmode=disable"
 	shutdownTimeout    = 10 * time.Second
 )
 

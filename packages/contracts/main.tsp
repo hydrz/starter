@@ -5,10 +5,10 @@ import "@typespec/openapi3";
 using TypeSpec.Http;
 using TypeSpec.OpenAPI;
 
-@service(#{ title: "Enterprise Platform API" })
+@service(#{ title: "Starter API" })
 @info(#{ version: "0.1.0" })
 @server("http://localhost:8080", "Local development")
-namespace Enterprise;
+namespace Starter;
 
 @doc("Service health information.")
 model HealthResponse {

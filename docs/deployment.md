@@ -43,7 +43,7 @@ Compose 按以下顺序运行：
 | `HEALTHCHECK_URL` | `http://127.0.0.1:8080/api/readyz` | 二进制 healthcheck 子命令目标 |
 | `APP_PORT` | `8080` | Compose 主机绑定端口 |
 | `APP_VERSION` | `dev` | Compose 镜像标签和构建版本 |
-| `POSTGRES_*` | `enterprise` 本地值 | Compose PostgreSQL 初始化参数 |
+| `POSTGRES_*` | `starter` 本地值 | Compose PostgreSQL 初始化参数 |
 
 默认凭据只适用于本地。共享环境使用 secret manager 或受控环境注入，不将 `.env`、连接串或凭据提交到 Git。
 

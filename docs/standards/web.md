@@ -27,4 +27,4 @@
 
 ## 最低验证
 
-Web 变更至少运行 `pnpm check:web`、`pnpm --filter @enterprise/web test` 和 `pnpm build:web`。
+Web 变更至少运行 `pnpm check:web`、`pnpm --filter @starter/web test` 和 `pnpm build:web`。

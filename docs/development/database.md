@@ -21,7 +21,7 @@ pnpm generate:db
 pnpm test
 ```
 
-本地默认连接地址为 `postgres://enterprise:enterprise@127.0.0.1:5432/enterprise?sslmode=disable`。默认凭据只允许用于本地开发，不得复制到共享或生产环境。
+本地默认连接地址为 `postgres://starter:starter@127.0.0.1:5432/starter?sslmode=disable`。默认凭据只允许用于本地开发，不得复制到共享或生产环境。
 
 ## Schema 变更流程
 
