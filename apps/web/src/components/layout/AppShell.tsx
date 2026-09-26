@@ -34,6 +34,10 @@ export interface AppShellProps {
   secondaryNavItems?: Array<AppNavItem>;
   organizations?: Array<OrgSwitcherOrganization>;
   activeOrganizationId?: string;
+  /** 组织切换器里选中一个组织（Stage 3：接线到 `/app/$orgSlug` 导航） */
+  onSelectOrganization?: (organization: OrgSwitcherOrganization) => void;
+  /** 组织切换器的"创建组织" */
+  onCreateOrganization?: () => void;
   pageTitle: ReactNode;
   breadcrumb?: ReactNode;
   headerActions?: ReactNode;
@@ -146,6 +150,8 @@ export function AppShell({
   secondaryNavItems = [],
   organizations = [],
   activeOrganizationId,
+  onSelectOrganization,
+  onCreateOrganization,
   pageTitle,
   breadcrumb,
   headerActions,
@@ -193,6 +199,8 @@ export function AppShell({
           <OrgSwitcher
             organizations={organizations}
             activeOrganizationId={activeOrganizationId}
+            onSelect={onSelectOrganization}
+            onCreate={onCreateOrganization}
             collapsed={collapsed}
           />
         </div>
