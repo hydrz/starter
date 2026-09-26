@@ -387,6 +387,9 @@ type fHarness struct {
 	oauthAccounts *memoryOAuthAccounts
 	oauthStates   *memoryOAuthStates
 	oauthClients  map[string]auth.OAuthClient
+
+	webauthnCredentials *memoryWebAuthnCredentials
+	webauthnChallenges  *memoryWebAuthnChallenges
 }
 
 func newFHarness(t *testing.T) *fHarness {
@@ -413,6 +416,11 @@ func newFHarness(t *testing.T) *fHarness {
 		t.Fatalf("NewTOTPCipher() error = %v", err)
 	}
 
+	webauthnCeremonies, err := auth.NewWebAuthnCeremonies(testWebAuthnRPID, "Starter Test", []string{testWebAuthnOrigin})
+	if err != nil {
+		t.Fatalf("NewWebAuthnCeremonies() error = %v", err)
+	}
+
 	fh := &fHarness{
 		clock:   clock,
 		users:   newMemoryUsers(),
@@ -426,6 +434,9 @@ func newFHarness(t *testing.T) *fHarness {
 		oauthAccounts: newMemoryOAuthAccounts(),
 		oauthStates:   newMemoryOAuthStates(),
 		oauthClients:  map[string]auth.OAuthClient{},
+
+		webauthnCredentials: newMemoryWebAuthnCredentials(),
+		webauthnChallenges:  newMemoryWebAuthnChallenges(),
 	}
 
 	service, err := auth.NewService(auth.Dependencies{
@@ -452,6 +463,10 @@ func newFHarness(t *testing.T) *fHarness {
 		OAuthAccounts: fh.oauthAccounts,
 		OAuthStates:   fh.oauthStates,
 		OAuthClients:  fh.oauthClients,
+
+		WebAuthn:            webauthnCeremonies,
+		WebAuthnCredentials: fh.webauthnCredentials,
+		WebAuthnChallenges:  fh.webauthnChallenges,
 	})
 	if err != nil {
 		t.Fatalf("NewService() error = %v", err)

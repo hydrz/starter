@@ -98,3 +98,78 @@ func TestWebhookHTTPHandler_GetNotAllowed(t *testing.T) {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
 	}
 }
+
+// TestWebhookHTTPHandler_RateLimitsPerSourceIP exercises the per-IP webhook
+// rate limiter (internal/billing/webhook_ratelimit.go, ceiling
+// webhookRateLimitPerWindow requests per webhookRateLimitWindow) added so
+// an attacker cannot cheaply force repeated HMAC verification work by
+// hammering this unauthenticated endpoint. Requests carry no signature so
+// they are fast (rejected at 400) until the limiter itself starts
+// rejecting at 429 — before any body is read for the over-limit request.
+func TestWebhookHTTPHandler_RateLimitsPerSourceIP(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t, billing.Catalog{})
+	handler := billing.NewWebhookHTTPHandler(h.service)
+
+	// Matches internal/billing/webhook_ratelimit.go's
+	// webhookRateLimitPerWindow; kept in sync by this test's comment rather
+	// than an export, since the constant is intentionally unexported.
+	const limit = 300
+
+	newRequest := func() *http.Request {
+		req := httptest.NewRequest(http.MethodPost, "/api/billing/webhooks/stripe", bytes.NewBufferString(`{}`))
+		// httptest.NewRequest defaults RemoteAddr to a fixed value, so every
+		// call in this test shares one source IP key.
+		req.RemoteAddr = "203.0.113.7:54321"
+		return req
+	}
+
+	sawTooManyRequests := false
+	for i := 0; i < limit+10; i++ {
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, newRequest())
+		if rec.Code == http.StatusTooManyRequests {
+			sawTooManyRequests = true
+			if body := rec.Body.String(); body != "" {
+				t.Fatalf("429 response body = %q, want empty (no diagnostic detail)", body)
+			}
+			break
+		}
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("request %d: status = %d, want %d (missing signature) or eventually %d", i, rec.Code, http.StatusBadRequest, http.StatusTooManyRequests)
+		}
+	}
+
+	if !sawTooManyRequests {
+		t.Fatalf("expected a 429 within %d requests from one source IP, never saw one", limit+10)
+	}
+}
+
+// TestWebhookHTTPHandler_RateLimitIsPerIP confirms the limiter keys by
+// source IP: a different IP is unaffected by another IP's requests within
+// the same window.
+func TestWebhookHTTPHandler_RateLimitIsPerIP(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t, billing.Catalog{})
+	handler := billing.NewWebhookHTTPHandler(h.service)
+
+	const limit = 300
+	exhaust := func(ip string) {
+		for i := 0; i < limit; i++ {
+			req := httptest.NewRequest(http.MethodPost, "/api/billing/webhooks/stripe", bytes.NewBufferString(`{}`))
+			req.RemoteAddr = ip + ":1"
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+		}
+	}
+	exhaust("198.51.100.1")
+
+	req := httptest.NewRequest(http.MethodPost, "/api/billing/webhooks/stripe", bytes.NewBufferString(`{}`))
+	req.RemoteAddr = "198.51.100.2:1"
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("a different source IP's request status = %d, want %d (not rate limited by another IP's requests)", rec.Code, http.StatusBadRequest)
+	}
+}
