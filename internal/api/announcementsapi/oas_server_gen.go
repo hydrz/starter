@@ -12,31 +12,31 @@ type Handler interface {
 	//
 	// Create an announcement.
 	//
-	// POST /api/announcements
-	CreateAnnouncement(ctx context.Context, req *AnnouncementInput) (CreateAnnouncementRes, error)
+	// POST /api/organizations/{organizationId}/announcements
+	CreateAnnouncement(ctx context.Context, req *AnnouncementInput, params CreateAnnouncementParams) (CreateAnnouncementRes, error)
 	// DeleteAnnouncement implements deleteAnnouncement operation.
 	//
 	// Delete an announcement.
 	//
-	// DELETE /api/announcements/{id}
+	// DELETE /api/organizations/{organizationId}/announcements/{id}
 	DeleteAnnouncement(ctx context.Context, params DeleteAnnouncementParams) (DeleteAnnouncementRes, error)
 	// GetAnnouncement implements getAnnouncement operation.
 	//
 	// Get an announcement.
 	//
-	// GET /api/announcements/{id}
+	// GET /api/organizations/{organizationId}/announcements/{id}
 	GetAnnouncement(ctx context.Context, params GetAnnouncementParams) (GetAnnouncementRes, error)
 	// ListAnnouncements implements listAnnouncements operation.
 	//
 	// List announcements.
 	//
-	// GET /api/announcements
+	// GET /api/organizations/{organizationId}/announcements
 	ListAnnouncements(ctx context.Context, params ListAnnouncementsParams) (ListAnnouncementsRes, error)
 	// UpdateAnnouncement implements updateAnnouncement operation.
 	//
 	// Update an announcement.
 	//
-	// PUT /api/announcements/{id}
+	// PUT /api/organizations/{organizationId}/announcements/{id}
 	UpdateAnnouncement(ctx context.Context, req *AnnouncementInput, params UpdateAnnouncementParams) (UpdateAnnouncementRes, error)
 }
 

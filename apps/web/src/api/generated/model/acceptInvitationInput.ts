@@ -4,8 +4,7 @@
  * Starter API
  * OpenAPI spec version: 0.1.0
  */
-import type { ApiError } from './apiError';
 
-export interface CommonForbiddenResponse {
-  body: ApiError;
+export interface AcceptInvitationInput {
+  token: string;
 }

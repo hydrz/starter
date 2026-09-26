@@ -47,6 +47,8 @@ type Service struct {
 	digester *SecretDigester
 	clock    Clock
 
+	personalOrgCreator PersonalOrgCreator
+
 	accessTokenTTL  time.Duration
 	refreshTokenTTL time.Duration
 }
@@ -64,6 +66,8 @@ type Dependencies struct {
 	Verifier *Verifier
 	Digester *SecretDigester
 	Clock    Clock
+
+	PersonalOrgCreator PersonalOrgCreator
 
 	AccessTokenTTL  time.Duration
 	RefreshTokenTTL time.Duration
@@ -85,18 +89,19 @@ func NewService(deps Dependencies) (*Service, error) {
 		clock = SystemClock{}
 	}
 	return &Service{
-		users:           deps.Users,
-		refreshTokens:   deps.RefreshTokens,
-		oneTimeTokens:   deps.OneTimeTokens,
-		apiKeys:         deps.APIKeys,
-		outbox:          deps.Outbox,
-		transactor:      deps.Transactor,
-		issuer:          deps.Issuer,
-		verifier:        deps.Verifier,
-		digester:        deps.Digester,
-		clock:           clock,
-		accessTokenTTL:  deps.AccessTokenTTL,
-		refreshTokenTTL: deps.RefreshTokenTTL,
+		users:              deps.Users,
+		refreshTokens:      deps.RefreshTokens,
+		oneTimeTokens:      deps.OneTimeTokens,
+		apiKeys:            deps.APIKeys,
+		outbox:             deps.Outbox,
+		transactor:         deps.Transactor,
+		issuer:             deps.Issuer,
+		verifier:           deps.Verifier,
+		digester:           deps.Digester,
+		clock:              clock,
+		personalOrgCreator: deps.PersonalOrgCreator,
+		accessTokenTTL:     deps.AccessTokenTTL,
+		refreshTokenTTL:    deps.RefreshTokenTTL,
 	}, nil
 }
 
@@ -124,6 +129,12 @@ func (service *Service) SignUp(ctx context.Context, input SignUpInput) (User, er
 			return err
 		}
 		created = user
+
+		if service.personalOrgCreator != nil {
+			if err := service.personalOrgCreator.CreatePersonalOrg(ctx, user); err != nil {
+				return fmt.Errorf("create personal org: %w", err)
+			}
+		}
 
 		if err := service.writeOneTimeTokenAndOutbox(ctx, user, PurposeEmailVerification, verificationTokenTTL, outboxTopicVerificationRequested); err != nil {
 			return err

@@ -55,12 +55,13 @@ func (ns NullAnnouncementStatus) Value() (driver.Value, error) {
 }
 
 type Announcement struct {
-	ID        pgtype.UUID        `db:"id" json:"id"`
-	Title     string             `db:"title" json:"title"`
-	Content   string             `db:"content" json:"content"`
-	Status    AnnouncementStatus `db:"status" json:"status"`
-	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	Title          string             `db:"title" json:"title"`
+	Content        string             `db:"content" json:"content"`
+	Status         AnnouncementStatus `db:"status" json:"status"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	OrganizationID pgtype.UUID        `db:"organization_id" json:"organization_id"`
 }
 
 type ApiKey struct {
@@ -74,6 +75,17 @@ type ApiKey struct {
 	RevokedAt      pgtype.Timestamptz `db:"revoked_at" json:"revoked_at"`
 	LastUsedAt     pgtype.Timestamptz `db:"last_used_at" json:"last_used_at"`
 	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type CasbinRule struct {
+	ID    int64  `db:"id" json:"id"`
+	Ptype string `db:"ptype" json:"ptype"`
+	V0    string `db:"v0" json:"v0"`
+	V1    string `db:"v1" json:"v1"`
+	V2    string `db:"v2" json:"v2"`
+	V3    string `db:"v3" json:"v3"`
+	V4    string `db:"v4" json:"v4"`
+	V5    string `db:"v5" json:"v5"`
 }
 
 type DeliveryAttempt struct {
@@ -116,6 +128,35 @@ type OneTimeToken struct {
 	ExpiresAt   pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
 	ConsumedAt  pgtype.Timestamptz `db:"consumed_at" json:"consumed_at"`
 	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type Organization struct {
+	ID        pgtype.UUID        `db:"id" json:"id"`
+	Slug      string             `db:"slug" json:"slug"`
+	Name      string             `db:"name" json:"name"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type OrganizationInvitation struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	OrganizationID pgtype.UUID        `db:"organization_id" json:"organization_id"`
+	Email          string             `db:"email" json:"email"`
+	Role           string             `db:"role" json:"role"`
+	TokenDigest    []byte             `db:"token_digest" json:"token_digest"`
+	ExpiresAt      pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	AcceptedAt     pgtype.Timestamptz `db:"accepted_at" json:"accepted_at"`
+	RevokedAt      pgtype.Timestamptz `db:"revoked_at" json:"revoked_at"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type OrganizationMembership struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	OrganizationID pgtype.UUID        `db:"organization_id" json:"organization_id"`
+	UserID         pgtype.UUID        `db:"user_id" json:"user_id"`
+	Role           string             `db:"role" json:"role"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type OutboxEvent struct {

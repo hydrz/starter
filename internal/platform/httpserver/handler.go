@@ -16,8 +16,11 @@ import (
 	"github.com/hydrz/starter/internal/announcement"
 	"github.com/hydrz/starter/internal/api/announcementsapi"
 	"github.com/hydrz/starter/internal/api/authapi"
+	"github.com/hydrz/starter/internal/api/organizationsapi"
 	"github.com/hydrz/starter/internal/api/systemapi"
 	"github.com/hydrz/starter/internal/auth"
+	"github.com/hydrz/starter/internal/authorization"
+	"github.com/hydrz/starter/internal/organization"
 	"github.com/hydrz/starter/internal/platform/webui"
 )
 
@@ -48,7 +51,13 @@ func (h *SystemHandler) GetReadiness(ctx context.Context) (systemapi.GetReadines
 	return &systemapi.HealthResponse{Status: systemapi.HealthResponseStatusOk}, nil
 }
 
-func NewHandler(announcements *announcement.Service, readiness HealthChecker, identity *auth.Service) (http.Handler, error) {
+func NewHandler(
+	announcements *announcement.Service,
+	readiness HealthChecker,
+	identity *auth.Service,
+	orgs *organization.Service,
+	authorizer authorization.PermissionEnforcer,
+) (http.Handler, error) {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
@@ -67,16 +76,9 @@ func NewHandler(announcements *announcement.Service, readiness HealthChecker, id
 	router.Handle("/api/healthz", systemServer)
 	router.Handle("/api/readyz", systemServer)
 
-	if announcements != nil {
-		announcementServer, err := announcementsapi.NewServer(announcement.NewHTTPHandler(announcements))
-		if err != nil {
-			return nil, fmt.Errorf("initialize announcements api server: %w", err)
-		}
-		router.Handle("/api/announcements", announcementServer)
-		router.Handle("/api/announcements/*", announcementServer)
-	}
-
+	var authMiddleware func(http.Handler) http.Handler
 	if identity != nil {
+		authMiddleware = identity.AuthenticationMiddleware
 		authServer, err := authapi.NewServer(auth.NewHTTPHandler(identity))
 		if err != nil {
 			return nil, fmt.Errorf("initialize auth api server: %w", err)
@@ -90,6 +92,66 @@ func NewHandler(announcements *announcement.Service, readiness HealthChecker, id
 		// directly rather than mounted with path-stripping.
 		authHandler := auth.WithHTTPContext(identity.AuthenticationMiddleware(authServer))
 		router.Handle("/api/auth/*", authHandler)
+	}
+
+	if orgs != nil {
+		orgServer, err := organizationsapi.NewServer(organization.NewHTTPHandler(orgs))
+		if err != nil {
+			return nil, fmt.Errorf("initialize organizations api server: %w", err)
+		}
+
+		router.Route("/api/organizations", func(r chi.Router) {
+			if authMiddleware != nil {
+				r.Use(authMiddleware)
+			}
+
+			// Top-level operations
+			r.Get("/", orgServer.ServeHTTP)
+			r.Post("/", orgServer.ServeHTTP)
+			r.Post("/invitations/accept", orgServer.ServeHTTP)
+
+			// Domain-scoped operations
+			r.Route("/{organizationId}", func(r chi.Router) {
+				if authorizer != nil {
+					r.With(authorization.RequirePermission(authorizer, "organizations", "read")).Get("/", orgServer.ServeHTTP)
+					r.With(authorization.RequirePermission(authorizer, "organizations", "update")).Put("/", orgServer.ServeHTTP)
+					r.With(authorization.RequirePermission(authorizer, "organizations", "delete")).Delete("/", orgServer.ServeHTTP)
+
+					r.With(authorization.RequirePermission(authorizer, "members", "read")).Get("/members", orgServer.ServeHTTP)
+					r.With(authorization.RequirePermission(authorizer, "members", "update")).Put("/members/{userId}", orgServer.ServeHTTP)
+					r.With(authorization.RequirePermission(authorizer, "members", "delete")).Delete("/members/{userId}", orgServer.ServeHTTP)
+
+					r.With(authorization.RequirePermission(authorizer, "invitations", "read")).Get("/invitations", orgServer.ServeHTTP)
+					r.With(authorization.RequirePermission(authorizer, "invitations", "create")).Post("/invitations", orgServer.ServeHTTP)
+					r.With(authorization.RequirePermission(authorizer, "invitations", "delete")).Delete("/invitations/{invitationId}", orgServer.ServeHTTP)
+				} else {
+					r.HandleFunc("/*", orgServer.ServeHTTP)
+				}
+			})
+		})
+	}
+
+	if announcements != nil {
+		announcementServer, err := announcementsapi.NewServer(announcement.NewHTTPHandler(announcements))
+		if err != nil {
+			return nil, fmt.Errorf("initialize announcements api server: %w", err)
+		}
+
+		router.Route("/api/organizations/{organizationId}/announcements", func(r chi.Router) {
+			if authMiddleware != nil {
+				r.Use(authMiddleware)
+			}
+			if authorizer != nil {
+				r.With(authorization.RequirePermission(authorizer, "announcements", "read")).Get("/", announcementServer.ServeHTTP)
+				r.With(authorization.RequirePermission(authorizer, "announcements", "create")).Post("/", announcementServer.ServeHTTP)
+				r.With(authorization.RequirePermission(authorizer, "announcements", "read")).Get("/{id}", announcementServer.ServeHTTP)
+				r.With(authorization.RequirePermission(authorizer, "announcements", "update")).Put("/{id}", announcementServer.ServeHTTP)
+				r.With(authorization.RequirePermission(authorizer, "announcements", "delete")).Delete("/{id}", announcementServer.ServeHTTP)
+			} else {
+				r.HandleFunc("/*", announcementServer.ServeHTTP)
+				r.HandleFunc("/", announcementServer.ServeHTTP)
+			}
+		})
 	}
 
 	webHandler, err := webui.NewHandler()

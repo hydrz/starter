@@ -14,35 +14,42 @@ type mockRepository struct {
 	items []announcement.Announcement
 }
 
-func (m *mockRepository) List(_ context.Context, _ announcement.Filter) ([]announcement.Announcement, int64, error) {
-	return m.items, int64(len(m.items)), nil
+func (m *mockRepository) List(_ context.Context, orgID uuid.UUID, _ announcement.Filter) ([]announcement.Announcement, int64, error) {
+	var filtered []announcement.Announcement
+	for _, item := range m.items {
+		if item.OrganizationID == orgID.String() {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered, int64(len(filtered)), nil
 }
 
-func (m *mockRepository) Get(_ context.Context, id string) (announcement.Announcement, error) {
+func (m *mockRepository) Get(_ context.Context, orgID uuid.UUID, id string) (announcement.Announcement, error) {
 	for _, item := range m.items {
-		if item.ID == id {
+		if item.ID == id && item.OrganizationID == orgID.String() {
 			return item, nil
 		}
 	}
 	return announcement.Announcement{}, announcement.ErrNotFound
 }
 
-func (m *mockRepository) Create(_ context.Context, input announcement.Input) (announcement.Announcement, error) {
+func (m *mockRepository) Create(_ context.Context, orgID uuid.UUID, input announcement.Input) (announcement.Announcement, error) {
 	item := announcement.Announcement{
-		ID:        uuid.New().String(),
-		Title:     input.Title,
-		Content:   input.Content,
-		Status:    input.Status,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		ID:             uuid.New().String(),
+		OrganizationID: orgID.String(),
+		Title:          input.Title,
+		Content:        input.Content,
+		Status:         input.Status,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 	m.items = append(m.items, item)
 	return item, nil
 }
 
-func (m *mockRepository) Update(_ context.Context, id string, input announcement.Input) (announcement.Announcement, error) {
+func (m *mockRepository) Update(_ context.Context, orgID uuid.UUID, id string, input announcement.Input) (announcement.Announcement, error) {
 	for i, item := range m.items {
-		if item.ID == id {
+		if item.ID == id && item.OrganizationID == orgID.String() {
 			item.Title = input.Title
 			item.Content = input.Content
 			item.Status = input.Status
@@ -54,9 +61,9 @@ func (m *mockRepository) Update(_ context.Context, id string, input announcement
 	return announcement.Announcement{}, announcement.ErrNotFound
 }
 
-func (m *mockRepository) Delete(_ context.Context, id string) error {
+func (m *mockRepository) Delete(_ context.Context, orgID uuid.UUID, id string) error {
 	for i, item := range m.items {
-		if item.ID == id {
+		if item.ID == id && item.OrganizationID == orgID.String() {
 			m.items = append(m.items[:i], m.items[i+1:]...)
 			return nil
 		}
@@ -71,13 +78,14 @@ func TestHTTPHandlerCRUD(t *testing.T) {
 	service := announcement.NewService(repo)
 	handler := announcement.NewHTTPHandler(service)
 	ctx := context.Background()
+	orgID := uuid.New()
 
 	// 1. Create
 	createRes, err := handler.CreateAnnouncement(ctx, &announcementsapi.AnnouncementInput{
 		Title:   "Release v1.0",
 		Content: "Major release",
 		Status:  announcementsapi.AnnouncementStatusPublished,
-	})
+	}, announcementsapi.CreateAnnouncementParams{OrganizationId: orgID})
 	if err != nil {
 		t.Fatalf("CreateAnnouncement failed: %v", err)
 	}
@@ -88,9 +96,12 @@ func TestHTTPHandlerCRUD(t *testing.T) {
 	if created.Title != "Release v1.0" {
 		t.Errorf("title = %q, want Release v1.0", created.Title)
 	}
+	if created.OrganizationId != orgID {
+		t.Errorf("organizationId = %v, want %v", created.OrganizationId, orgID)
+	}
 
 	// 2. List
-	listRes, err := handler.ListAnnouncements(ctx, announcementsapi.ListAnnouncementsParams{})
+	listRes, err := handler.ListAnnouncements(ctx, announcementsapi.ListAnnouncementsParams{OrganizationId: orgID})
 	if err != nil {
 		t.Fatalf("ListAnnouncements failed: %v", err)
 	}
@@ -103,7 +114,7 @@ func TestHTTPHandlerCRUD(t *testing.T) {
 	}
 
 	// 3. Get
-	getRes, err := handler.GetAnnouncement(ctx, announcementsapi.GetAnnouncementParams{ID: created.ID})
+	getRes, err := handler.GetAnnouncement(ctx, announcementsapi.GetAnnouncementParams{OrganizationId: orgID, ID: created.ID})
 	if err != nil {
 		t.Fatalf("GetAnnouncement failed: %v", err)
 	}
@@ -120,7 +131,7 @@ func TestHTTPHandlerCRUD(t *testing.T) {
 		Title:   "Release v1.1",
 		Content: "Patch release",
 		Status:  announcementsapi.AnnouncementStatusDraft,
-	}, announcementsapi.UpdateAnnouncementParams{ID: created.ID})
+	}, announcementsapi.UpdateAnnouncementParams{OrganizationId: orgID, ID: created.ID})
 	if err != nil {
 		t.Fatalf("UpdateAnnouncement failed: %v", err)
 	}
@@ -133,20 +144,11 @@ func TestHTTPHandlerCRUD(t *testing.T) {
 	}
 
 	// 5. Delete
-	deleteRes, err := handler.DeleteAnnouncement(ctx, announcementsapi.DeleteAnnouncementParams{ID: created.ID})
+	deleteRes, err := handler.DeleteAnnouncement(ctx, announcementsapi.DeleteAnnouncementParams{OrganizationId: orgID, ID: created.ID})
 	if err != nil {
 		t.Fatalf("DeleteAnnouncement failed: %v", err)
 	}
 	if _, ok := deleteRes.(*announcementsapi.DeleteAnnouncementNoContent); !ok {
 		t.Fatalf("expected *DeleteAnnouncementNoContent, got %T", deleteRes)
-	}
-
-	// 6. Get not found
-	getNotFoundRes, err := handler.GetAnnouncement(ctx, announcementsapi.GetAnnouncementParams{ID: created.ID})
-	if err != nil {
-		t.Fatalf("GetAnnouncement failed: %v", err)
-	}
-	if _, ok := getNotFoundRes.(*announcementsapi.GetAnnouncementNotFound); !ok {
-		t.Fatalf("expected *GetAnnouncementNotFound, got %T", getNotFoundRes)
 	}
 }

@@ -28,10 +28,10 @@ func (h *HTTPHandler) ListAnnouncements(ctx context.Context, params announcement
 		filter.Status = &status
 	}
 
-	page, err := h.service.List(ctx, filter)
+	page, err := h.service.List(ctx, params.OrganizationId, filter)
 	if err != nil {
 		if errors.Is(err, ErrInvalidInput) {
-			return &announcementsapi.ApiError{Code: "invalid_request", Message: err.Error()}, nil
+			return &announcementsapi.ListAnnouncementsBadRequest{Code: "invalid_request", Message: err.Error()}, nil
 		}
 		return nil, err
 	}
@@ -49,17 +49,17 @@ func (h *HTTPHandler) ListAnnouncements(ctx context.Context, params announcement
 	}, nil
 }
 
-func (h *HTTPHandler) CreateAnnouncement(ctx context.Context, req *announcementsapi.AnnouncementInput) (announcementsapi.CreateAnnouncementRes, error) {
+func (h *HTTPHandler) CreateAnnouncement(ctx context.Context, req *announcementsapi.AnnouncementInput, params announcementsapi.CreateAnnouncementParams) (announcementsapi.CreateAnnouncementRes, error) {
 	input := Input{
 		Title:   req.Title,
 		Content: req.Content,
 		Status:  Status(req.Status),
 	}
 
-	item, err := h.service.Create(ctx, input)
+	item, err := h.service.Create(ctx, params.OrganizationId, input)
 	if err != nil {
 		if errors.Is(err, ErrInvalidInput) {
-			return &announcementsapi.ApiError{Code: "invalid_request", Message: err.Error()}, nil
+			return &announcementsapi.CreateAnnouncementBadRequest{Code: "invalid_request", Message: err.Error()}, nil
 		}
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (h *HTTPHandler) CreateAnnouncement(ctx context.Context, req *announcements
 }
 
 func (h *HTTPHandler) GetAnnouncement(ctx context.Context, params announcementsapi.GetAnnouncementParams) (announcementsapi.GetAnnouncementRes, error) {
-	item, err := h.service.Get(ctx, params.ID.String())
+	item, err := h.service.Get(ctx, params.OrganizationId, params.ID.String())
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrNotFound):
@@ -92,7 +92,7 @@ func (h *HTTPHandler) UpdateAnnouncement(ctx context.Context, req *announcements
 		Status:  Status(req.Status),
 	}
 
-	item, err := h.service.Update(ctx, params.ID.String(), input)
+	item, err := h.service.Update(ctx, params.OrganizationId, params.ID.String(), input)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrNotFound):
@@ -109,7 +109,7 @@ func (h *HTTPHandler) UpdateAnnouncement(ctx context.Context, req *announcements
 }
 
 func (h *HTTPHandler) DeleteAnnouncement(ctx context.Context, params announcementsapi.DeleteAnnouncementParams) (announcementsapi.DeleteAnnouncementRes, error) {
-	if err := h.service.Delete(ctx, params.ID.String()); err != nil {
+	if err := h.service.Delete(ctx, params.OrganizationId, params.ID.String()); err != nil {
 		switch {
 		case errors.Is(err, ErrNotFound):
 			return &announcementsapi.DeleteAnnouncementNotFound{Code: "not_found", Message: "Announcement was not found."}, nil
@@ -124,12 +124,14 @@ func (h *HTTPHandler) DeleteAnnouncement(ctx context.Context, params announcemen
 }
 
 func toAPIAnnouncement(item Announcement) announcementsapi.Announcement {
+	orgID, _ := uuid.Parse(item.OrganizationID)
 	return announcementsapi.Announcement{
-		ID:        uuid.MustParse(item.ID),
-		Title:     item.Title,
-		Content:   item.Content,
-		Status:    announcementsapi.AnnouncementStatus(item.Status),
-		CreatedAt: item.CreatedAt,
-		UpdatedAt: item.UpdatedAt,
+		ID:             uuid.MustParse(item.ID),
+		OrganizationId: orgID,
+		Title:          item.Title,
+		Content:        item.Content,
+		Status:         announcementsapi.AnnouncementStatus(item.Status),
+		CreatedAt:      item.CreatedAt,
+		UpdatedAt:      item.UpdatedAt,
 	}
 }

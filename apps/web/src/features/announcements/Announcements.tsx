@@ -15,6 +15,8 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 
+const defaultOrganizationId = "00000000-0000-0000-0000-000000000001";
+
 const announcementSchema = z.object({
   title: z
     .string()
@@ -37,16 +39,27 @@ const initialValues: AnnouncementForm = {
   status: "draft",
 };
 
-export function Announcements() {
+interface AnnouncementsProps {
+  organizationId?: string;
+}
+
+export function Announcements({
+  organizationId = defaultOrganizationId,
+}: AnnouncementsProps = {}) {
   const queryClient = useQueryClient();
-  const announcements = useListAnnouncements({ limit: 10, offset: 0 });
+  const announcements = useListAnnouncements(organizationId, {
+    limit: 10,
+    offset: 0,
+  });
   const form = useForm<AnnouncementForm>({
     resolver: zodResolver(announcementSchema),
     defaultValues: initialValues,
   });
 
   const refresh = () =>
-    queryClient.invalidateQueries({ queryKey: getListAnnouncementsQueryKey() });
+    queryClient.invalidateQueries({
+      queryKey: getListAnnouncementsQueryKey(organizationId),
+    });
 
   const createAnnouncement = useCreateAnnouncement({
     mutation: {
@@ -76,7 +89,7 @@ export function Announcements() {
   const page =
     announcements.data?.status === 200 ? announcements.data.data : undefined;
   const submit = form.handleSubmit((data) =>
-    createAnnouncement.mutate({ data }),
+    createAnnouncement.mutate({ organizationId, data }),
   );
 
   const errorMessage = createAnnouncement.error
@@ -167,6 +180,7 @@ export function Announcements() {
                   size="sm"
                   onClick={() =>
                     updateAnnouncement.mutate({
+                      organizationId,
                       id: item.id,
                       data: {
                         title: item.title,
@@ -182,7 +196,9 @@ export function Announcements() {
                   type="button"
                   variant="destructive"
                   size="sm"
-                  onClick={() => deleteAnnouncement.mutate({ id: item.id })}
+                  onClick={() =>
+                    deleteAnnouncement.mutate({ organizationId, id: item.id })
+                  }
                 >
                   删除
                 </Button>

@@ -17,8 +17,8 @@ var _ Handler = UnimplementedHandler{}
 //
 // Create an announcement.
 //
-// POST /api/announcements
-func (UnimplementedHandler) CreateAnnouncement(ctx context.Context, req *AnnouncementInput) (r CreateAnnouncementRes, _ error) {
+// POST /api/organizations/{organizationId}/announcements
+func (UnimplementedHandler) CreateAnnouncement(ctx context.Context, req *AnnouncementInput, params CreateAnnouncementParams) (r CreateAnnouncementRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -26,7 +26,7 @@ func (UnimplementedHandler) CreateAnnouncement(ctx context.Context, req *Announc
 //
 // Delete an announcement.
 //
-// DELETE /api/announcements/{id}
+// DELETE /api/organizations/{organizationId}/announcements/{id}
 func (UnimplementedHandler) DeleteAnnouncement(ctx context.Context, params DeleteAnnouncementParams) (r DeleteAnnouncementRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -35,7 +35,7 @@ func (UnimplementedHandler) DeleteAnnouncement(ctx context.Context, params Delet
 //
 // Get an announcement.
 //
-// GET /api/announcements/{id}
+// GET /api/organizations/{organizationId}/announcements/{id}
 func (UnimplementedHandler) GetAnnouncement(ctx context.Context, params GetAnnouncementParams) (r GetAnnouncementRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -44,7 +44,7 @@ func (UnimplementedHandler) GetAnnouncement(ctx context.Context, params GetAnnou
 //
 // List announcements.
 //
-// GET /api/announcements
+// GET /api/organizations/{organizationId}/announcements
 func (UnimplementedHandler) ListAnnouncements(ctx context.Context, params ListAnnouncementsParams) (r ListAnnouncementsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -53,7 +53,7 @@ func (UnimplementedHandler) ListAnnouncements(ctx context.Context, params ListAn
 //
 // Update an announcement.
 //
-// PUT /api/announcements/{id}
+// PUT /api/organizations/{organizationId}/announcements/{id}
 func (UnimplementedHandler) UpdateAnnouncement(ctx context.Context, req *AnnouncementInput, params UpdateAnnouncementParams) (r UpdateAnnouncementRes, _ error) {
 	return r, ht.ErrNotImplemented
 }

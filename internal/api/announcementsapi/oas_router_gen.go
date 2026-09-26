@@ -11,10 +11,10 @@ import (
 )
 
 var (
-	rn1AllowedHeaders = map[string]string{
+	rn3AllowedHeaders = map[string]string{
 		"POST": "Content-Type",
 	}
-	rn3AllowedHeaders = map[string]string{
+	rn5AllowedHeaders = map[string]string{
 		"PUT": "Content-Type",
 	}
 )
@@ -49,7 +49,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.notFound(w, r)
 		return
 	}
-	args := [1]string{}
+	args := [2]string{}
 
 	// Static code generated router with unwrapped path search.
 	switch {
@@ -58,74 +58,104 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		switch elem[0] {
-		case '/': // Prefix: "/api/announcements"
+		case '/': // Prefix: "/api/organizations/"
 
-			if l := len("/api/announcements"); len(elem) >= l && elem[0:l] == "/api/announcements" {
+			if l := len("/api/organizations/"); len(elem) >= l && elem[0:l] == "/api/organizations/" {
 				elem = elem[l:]
 			} else {
 				break
 			}
 
-			if len(elem) == 0 {
-				switch r.Method {
-				case "GET":
-					s.handleListAnnouncementsRequest([0]string{}, elemIsEscaped, w, r)
-				case "POST":
-					s.handleCreateAnnouncementRequest([0]string{}, elemIsEscaped, w, r)
-				default:
-					s.notAllowed(w, r, notAllowedParams{
-						allowedMethods: "GET,POST",
-						allowedHeaders: rn1AllowedHeaders,
-						acceptPost:     "application/json",
-						acceptPatch:    "",
-					})
-				}
+			// Param: "organizationId"
+			// Match until "/"
+			idx := strings.IndexByte(elem, '/')
+			if idx < 0 {
+				idx = len(elem)
+			}
+			args[0] = elem[:idx]
+			elem = elem[idx:]
 
-				return
+			if len(elem) == 0 {
+				break
 			}
 			switch elem[0] {
-			case '/': // Prefix: "/"
+			case '/': // Prefix: "/announcements"
 
-				if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+				if l := len("/announcements"); len(elem) >= l && elem[0:l] == "/announcements" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
-				// Param: "id"
-				// Leaf parameter, slashes are prohibited
-				idx := strings.IndexByte(elem, '/')
-				if idx >= 0 {
-					break
-				}
-				args[0] = elem
-				elem = ""
-
 				if len(elem) == 0 {
-					// Leaf node.
 					switch r.Method {
-					case "DELETE":
-						s.handleDeleteAnnouncementRequest([1]string{
-							args[0],
-						}, elemIsEscaped, w, r)
 					case "GET":
-						s.handleGetAnnouncementRequest([1]string{
+						s.handleListAnnouncementsRequest([1]string{
 							args[0],
 						}, elemIsEscaped, w, r)
-					case "PUT":
-						s.handleUpdateAnnouncementRequest([1]string{
+					case "POST":
+						s.handleCreateAnnouncementRequest([1]string{
 							args[0],
 						}, elemIsEscaped, w, r)
 					default:
 						s.notAllowed(w, r, notAllowedParams{
-							allowedMethods: "DELETE,GET,PUT",
+							allowedMethods: "GET,POST",
 							allowedHeaders: rn3AllowedHeaders,
-							acceptPost:     "",
+							acceptPost:     "application/json",
 							acceptPatch:    "",
 						})
 					}
 
 					return
+				}
+				switch elem[0] {
+				case '/': // Prefix: "/"
+
+					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					// Param: "id"
+					// Leaf parameter, slashes are prohibited
+					idx := strings.IndexByte(elem, '/')
+					if idx >= 0 {
+						break
+					}
+					args[1] = elem
+					elem = ""
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "DELETE":
+							s.handleDeleteAnnouncementRequest([2]string{
+								args[0],
+								args[1],
+							}, elemIsEscaped, w, r)
+						case "GET":
+							s.handleGetAnnouncementRequest([2]string{
+								args[0],
+								args[1],
+							}, elemIsEscaped, w, r)
+						case "PUT":
+							s.handleUpdateAnnouncementRequest([2]string{
+								args[0],
+								args[1],
+							}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "DELETE,GET,PUT",
+								allowedHeaders: rn5AllowedHeaders,
+								acceptPost:     "",
+								acceptPatch:    "",
+							})
+						}
+
+						return
+					}
+
 				}
 
 			}
@@ -143,7 +173,7 @@ type Route struct {
 	operationGroup string
 	pathPattern    string
 	count          int
-	args           [1]string
+	args           [2]string
 }
 
 // Name returns ogen operation name.
@@ -216,89 +246,112 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 			break
 		}
 		switch elem[0] {
-		case '/': // Prefix: "/api/announcements"
+		case '/': // Prefix: "/api/organizations/"
 
-			if l := len("/api/announcements"); len(elem) >= l && elem[0:l] == "/api/announcements" {
+			if l := len("/api/organizations/"); len(elem) >= l && elem[0:l] == "/api/organizations/" {
 				elem = elem[l:]
 			} else {
 				break
 			}
 
+			// Param: "organizationId"
+			// Match until "/"
+			idx := strings.IndexByte(elem, '/')
+			if idx < 0 {
+				idx = len(elem)
+			}
+			args[0] = elem[:idx]
+			elem = elem[idx:]
+
 			if len(elem) == 0 {
-				switch method {
-				case "GET":
-					r.name = ListAnnouncementsOperation
-					r.summary = "List announcements"
-					r.operationID = "listAnnouncements"
-					r.operationGroup = ""
-					r.pathPattern = "/api/announcements"
-					r.args = args
-					r.count = 0
-					return r, true
-				case "POST":
-					r.name = CreateAnnouncementOperation
-					r.summary = "Create an announcement"
-					r.operationID = "createAnnouncement"
-					r.operationGroup = ""
-					r.pathPattern = "/api/announcements"
-					r.args = args
-					r.count = 0
-					return r, true
-				default:
-					return
-				}
+				break
 			}
 			switch elem[0] {
-			case '/': // Prefix: "/"
+			case '/': // Prefix: "/announcements"
 
-				if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+				if l := len("/announcements"); len(elem) >= l && elem[0:l] == "/announcements" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
-				// Param: "id"
-				// Leaf parameter, slashes are prohibited
-				idx := strings.IndexByte(elem, '/')
-				if idx >= 0 {
-					break
-				}
-				args[0] = elem
-				elem = ""
-
 				if len(elem) == 0 {
-					// Leaf node.
 					switch method {
-					case "DELETE":
-						r.name = DeleteAnnouncementOperation
-						r.summary = "Delete an announcement"
-						r.operationID = "deleteAnnouncement"
-						r.operationGroup = ""
-						r.pathPattern = "/api/announcements/{id}"
-						r.args = args
-						r.count = 1
-						return r, true
 					case "GET":
-						r.name = GetAnnouncementOperation
-						r.summary = "Get an announcement"
-						r.operationID = "getAnnouncement"
+						r.name = ListAnnouncementsOperation
+						r.summary = "List announcements"
+						r.operationID = "listAnnouncements"
 						r.operationGroup = ""
-						r.pathPattern = "/api/announcements/{id}"
+						r.pathPattern = "/api/organizations/{organizationId}/announcements"
 						r.args = args
 						r.count = 1
 						return r, true
-					case "PUT":
-						r.name = UpdateAnnouncementOperation
-						r.summary = "Update an announcement"
-						r.operationID = "updateAnnouncement"
+					case "POST":
+						r.name = CreateAnnouncementOperation
+						r.summary = "Create an announcement"
+						r.operationID = "createAnnouncement"
 						r.operationGroup = ""
-						r.pathPattern = "/api/announcements/{id}"
+						r.pathPattern = "/api/organizations/{organizationId}/announcements"
 						r.args = args
 						r.count = 1
 						return r, true
 					default:
 						return
 					}
+				}
+				switch elem[0] {
+				case '/': // Prefix: "/"
+
+					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					// Param: "id"
+					// Leaf parameter, slashes are prohibited
+					idx := strings.IndexByte(elem, '/')
+					if idx >= 0 {
+						break
+					}
+					args[1] = elem
+					elem = ""
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch method {
+						case "DELETE":
+							r.name = DeleteAnnouncementOperation
+							r.summary = "Delete an announcement"
+							r.operationID = "deleteAnnouncement"
+							r.operationGroup = ""
+							r.pathPattern = "/api/organizations/{organizationId}/announcements/{id}"
+							r.args = args
+							r.count = 2
+							return r, true
+						case "GET":
+							r.name = GetAnnouncementOperation
+							r.summary = "Get an announcement"
+							r.operationID = "getAnnouncement"
+							r.operationGroup = ""
+							r.pathPattern = "/api/organizations/{organizationId}/announcements/{id}"
+							r.args = args
+							r.count = 2
+							return r, true
+						case "PUT":
+							r.name = UpdateAnnouncementOperation
+							r.summary = "Update an announcement"
+							r.operationID = "updateAnnouncement"
+							r.operationGroup = ""
+							r.pathPattern = "/api/organizations/{organizationId}/announcements/{id}"
+							r.args = args
+							r.count = 2
+							return r, true
+						default:
+							return
+						}
+					}
+
 				}
 
 			}

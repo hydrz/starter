@@ -7,6 +7,7 @@ import "./common/responses.tsp";
 import "./features/system/routes.tsp";
 import "./features/announcements/routes.tsp";
 import "./features/auth/routes.tsp";
+import "./features/organizations/routes.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.OpenAPI;

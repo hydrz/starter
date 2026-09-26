@@ -5,11 +5,17 @@ info:
 tags:
   - name: Announcements
 paths:
-  /api/announcements:
+  /api/organizations/{organizationId}/announcements:
     get:
       operationId: listAnnouncements
       summary: List announcements
       parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
         - $ref: '#/components/parameters/Starter.Common.PaginationQuery.limit'
         - $ref: '#/components/parameters/Starter.Common.PaginationQuery.offset'
         - name: status
@@ -31,12 +37,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
       tags:
         - Announcements
     post:
       operationId: createAnnouncement
       summary: Create an announcement
-      parameters: []
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         '201':
           description: The request has succeeded and a new resource has been created as a result.
@@ -50,6 +74,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
       tags:
         - Announcements
       requestBody:
@@ -58,11 +94,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AnnouncementInput'
-  /api/announcements/{id}:
+  /api/organizations/{organizationId}/announcements/{id}:
     get:
       operationId: getAnnouncement
       summary: Get an announcement
       parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
         - name: id
           in: path
           required: true
@@ -78,6 +120,18 @@ paths:
                 $ref: '#/components/schemas/Announcement'
         '400':
           description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Access is forbidden.
           content:
             application/json:
               schema:
@@ -94,6 +148,12 @@ paths:
       operationId: updateAnnouncement
       summary: Update an announcement
       parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
         - name: id
           in: path
           required: true
@@ -109,6 +169,18 @@ paths:
                 $ref: '#/components/schemas/Announcement'
         '400':
           description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Access is forbidden.
           content:
             application/json:
               schema:
@@ -131,6 +203,12 @@ paths:
       operationId: deleteAnnouncement
       summary: Delete an announcement
       parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
         - name: id
           in: path
           required: true
@@ -142,6 +220,18 @@ paths:
           description: 'There is no content to send for this request, but the headers may be useful. '
         '400':
           description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Access is forbidden.
           content:
             application/json:
               schema:
@@ -182,6 +272,7 @@ components:
       type: object
       required:
         - id
+        - organizationId
         - title
         - content
         - status
@@ -189,6 +280,9 @@ components:
         - updatedAt
       properties:
         id:
+          type: string
+          format: uuid
+        organizationId:
           type: string
           format: uuid
         title:

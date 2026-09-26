@@ -442,6 +442,76 @@ func TestSignUpRejectsDuplicateEmail(t *testing.T) {
 	}
 }
 
+type fakeOrgCreator struct {
+	calledWith auth.User
+	err        error
+}
+
+func (f *fakeOrgCreator) CreatePersonalOrg(_ context.Context, user auth.User) error {
+	f.calledWith = user
+	return f.err
+}
+
+func TestSignUpProvisionsPersonalOrganization(t *testing.T) {
+	t.Parallel()
+
+	public, private, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		t.Fatalf("ed25519.GenerateKey() error = %v", err)
+	}
+	clock := &fakeClock{now: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
+	issuer, err := auth.NewIssuer("kid-1", private, "starter", clock)
+	if err != nil {
+		t.Fatalf("NewIssuer() error = %v", err)
+	}
+	verifier, err := auth.NewVerifier(map[string]ed25519.PublicKey{"kid-1": public}, "starter", clock)
+	if err != nil {
+		t.Fatalf("NewVerifier() error = %v", err)
+	}
+	digester, err := auth.NewSecretDigester(1, []byte("test-pepper"))
+	if err != nil {
+		t.Fatalf("NewSecretDigester() error = %v", err)
+	}
+
+	orgCreator := &fakeOrgCreator{}
+	users := newMemoryUsers()
+	outbox := &memoryOutbox{}
+
+	service, err := auth.NewService(auth.Dependencies{
+		Users:              users,
+		RefreshTokens:      newMemoryRefreshTokens(clock),
+		OneTimeTokens:      newMemoryOneTimeTokens(clock),
+		APIKeys:            newMemoryAPIKeys(),
+		Outbox:             outbox,
+		Transactor:         passthroughTransactor{},
+		Issuer:             issuer,
+		Verifier:           verifier,
+		Digester:           digester,
+		Clock:              clock,
+		PersonalOrgCreator: orgCreator,
+		AccessTokenTTL:     15 * time.Minute,
+		RefreshTokenTTL:    30 * 24 * time.Hour,
+	})
+	if err != nil {
+		t.Fatalf("NewService() error = %v", err)
+	}
+
+	user, err := service.SignUp(context.Background(), auth.SignUpInput{
+		Email:    "newuser@example.com",
+		Password: "correct-horse",
+	})
+	if err != nil {
+		t.Fatalf("SignUp() error = %v", err)
+	}
+
+	if orgCreator.calledWith.ID != user.ID {
+		t.Errorf("orgCreator called with ID %q, want %q", orgCreator.calledWith.ID, user.ID)
+	}
+	if orgCreator.calledWith.Email != "newuser@example.com" {
+		t.Errorf("orgCreator called with Email %q, want newuser@example.com", orgCreator.calledWith.Email)
+	}
+}
+
 func TestSignUpRejectsWeakPassword(t *testing.T) {
 	t.Parallel()
 	h := newHarness(t)

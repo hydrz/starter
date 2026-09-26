@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -26,12 +28,13 @@ const (
 )
 
 type Announcement struct {
-	ID        string
-	Title     string
-	Content   string
-	Status    Status
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID             string
+	OrganizationID string
+	Title          string
+	Content        string
+	Status         Status
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 type Input struct {
@@ -54,11 +57,11 @@ type Page struct {
 }
 
 type Repository interface {
-	List(context.Context, Filter) ([]Announcement, int64, error)
-	Get(context.Context, string) (Announcement, error)
-	Create(context.Context, Input) (Announcement, error)
-	Update(context.Context, string, Input) (Announcement, error)
-	Delete(context.Context, string) error
+	List(context.Context, uuid.UUID, Filter) ([]Announcement, int64, error)
+	Get(context.Context, uuid.UUID, string) (Announcement, error)
+	Create(context.Context, uuid.UUID, Input) (Announcement, error)
+	Update(context.Context, uuid.UUID, string, Input) (Announcement, error)
+	Delete(context.Context, uuid.UUID, string) error
 }
 
 type Service struct {
@@ -69,7 +72,7 @@ func NewService(repository Repository) *Service {
 	return &Service{repository: repository}
 }
 
-func (service *Service) List(ctx context.Context, filter Filter) (Page, error) {
+func (service *Service) List(ctx context.Context, organizationID uuid.UUID, filter Filter) (Page, error) {
 	if filter.Limit == 0 {
 		filter.Limit = DefaultPageSize
 	}
@@ -83,47 +86,47 @@ func (service *Service) List(ctx context.Context, filter Filter) (Page, error) {
 		return Page{}, fmt.Errorf("%w: status must be draft or published", ErrInvalidInput)
 	}
 
-	items, total, err := service.repository.List(ctx, filter)
+	items, total, err := service.repository.List(ctx, organizationID, filter)
 	if err != nil {
 		return Page{}, fmt.Errorf("list announcements: %w", err)
 	}
 	return Page{Items: items, Total: total, Limit: filter.Limit, Offset: filter.Offset}, nil
 }
 
-func (service *Service) Get(ctx context.Context, id string) (Announcement, error) {
-	item, err := service.repository.Get(ctx, id)
+func (service *Service) Get(ctx context.Context, organizationID uuid.UUID, id string) (Announcement, error) {
+	item, err := service.repository.Get(ctx, organizationID, id)
 	if err != nil {
 		return Announcement{}, fmt.Errorf("get announcement: %w", err)
 	}
 	return item, nil
 }
 
-func (service *Service) Create(ctx context.Context, input Input) (Announcement, error) {
+func (service *Service) Create(ctx context.Context, organizationID uuid.UUID, input Input) (Announcement, error) {
 	input, err := validateInput(input)
 	if err != nil {
 		return Announcement{}, err
 	}
-	item, err := service.repository.Create(ctx, input)
+	item, err := service.repository.Create(ctx, organizationID, input)
 	if err != nil {
 		return Announcement{}, fmt.Errorf("create announcement: %w", err)
 	}
 	return item, nil
 }
 
-func (service *Service) Update(ctx context.Context, id string, input Input) (Announcement, error) {
+func (service *Service) Update(ctx context.Context, organizationID uuid.UUID, id string, input Input) (Announcement, error) {
 	input, err := validateInput(input)
 	if err != nil {
 		return Announcement{}, err
 	}
-	item, err := service.repository.Update(ctx, id, input)
+	item, err := service.repository.Update(ctx, organizationID, id, input)
 	if err != nil {
 		return Announcement{}, fmt.Errorf("update announcement: %w", err)
 	}
 	return item, nil
 }
 
-func (service *Service) Delete(ctx context.Context, id string) error {
-	if err := service.repository.Delete(ctx, id); err != nil {
+func (service *Service) Delete(ctx context.Context, organizationID uuid.UUID, id string) error {
+	if err := service.repository.Delete(ctx, organizationID, id); err != nil {
 		return fmt.Errorf("delete announcement: %w", err)
 	}
 	return nil

@@ -18,8 +18,13 @@ import (
 	databaseMigrations "github.com/hydrz/starter/db"
 	"github.com/hydrz/starter/internal/announcement"
 	"github.com/hydrz/starter/internal/auth"
+<<<<<<< HEAD
 	"github.com/hydrz/starter/internal/delivery"
 	"github.com/hydrz/starter/internal/notification"
+=======
+	"github.com/hydrz/starter/internal/authorization"
+	"github.com/hydrz/starter/internal/organization"
+>>>>>>> 9e3f5da (feat: implement workstream C organizations, tenant-scoped resources, and casbin rbac)
 	"github.com/hydrz/starter/internal/platform/config"
 	"github.com/hydrz/starter/internal/platform/database"
 	apphttp "github.com/hydrz/starter/internal/platform/httpserver"
@@ -83,11 +88,30 @@ func main() {
 	}
 	defer pool.Close()
 
-	announcementService := announcement.NewService(announcement.NewPostgresRepository(store.New(pool)))
+	queries := store.New(pool)
+	announcementService := announcement.NewService(announcement.NewPostgresRepository(queries))
+
+	adapter := authorization.NewDatabaseAdapter(queries)
+	enforcer, err := authorization.NewEnforcer(adapter)
+	if err != nil {
+		logger.Error("authorization enforcer initialization failed", "error", err)
+		os.Exit(1)
+	}
+	authzService := authorization.NewService(enforcer)
+
+	orgService, err := organization.NewService(organization.Dependencies{
+		Repository: organization.NewPostgresRepository(queries),
+		Transactor: database.NewTransactor(pool),
+		Enforcer:   enforcer,
+	})
+	if err != nil {
+		logger.Error("organization service initialization failed", "error", err)
+		os.Exit(1)
+	}
 
 	var identityService *auth.Service
 	if cfg.Auth.Enabled {
-		identityService, err = buildIdentityService(cfg.Auth, store.New(pool), pool)
+		identityService, err = buildIdentityService(cfg.Auth, queries, pool, orgService)
 		if err != nil {
 			logger.Error("identity service initialization failed", "error", err)
 			os.Exit(1)
@@ -107,7 +131,7 @@ func main() {
 		}
 	}
 
-	handler, err := apphttp.NewHandler(announcementService, pool, identityService)
+	handler, err := apphttp.NewHandler(announcementService, pool, identityService, orgService, authzService)
 	if err != nil {
 		logger.Error("http handler initialization failed", "error", err)
 		os.Exit(1)
@@ -173,7 +197,7 @@ func healthcheck(addr string) error {
 // AuthConfig and a pgxpool-backed store. SecretDigestPepper is independent,
 // high-entropy configuration (AUTH_SECRET_PEPPER) rather than being derived
 // from the JWT signing key, so rotating one never invalidates the other.
-func buildIdentityService(authConfig config.AuthConfig, queries *store.Queries, pool *pgxpool.Pool) (*auth.Service, error) {
+func buildIdentityService(authConfig config.AuthConfig, queries *store.Queries, pool *pgxpool.Pool, orgCreator auth.PersonalOrgCreator) (*auth.Service, error) {
 	issuer, err := auth.NewIssuer(authConfig.ActiveKID, authConfig.SigningPrivateKey, authConfig.JWTIssuer, auth.SystemClock{})
 	if err != nil {
 		return nil, fmt.Errorf("create token issuer: %w", err)
@@ -188,18 +212,19 @@ func buildIdentityService(authConfig config.AuthConfig, queries *store.Queries, 
 	}
 
 	return auth.NewService(auth.Dependencies{
-		Users:           auth.NewPostgresUserRepository(queries),
-		RefreshTokens:   auth.NewPostgresRefreshTokenRepository(queries),
-		OneTimeTokens:   auth.NewPostgresOneTimeTokenRepository(queries),
-		APIKeys:         auth.NewPostgresAPIKeyRepository(queries),
-		Outbox:          auth.NewPostgresOutboxWriter(queries),
-		Transactor:      database.NewTransactor(pool),
-		Issuer:          issuer,
-		Verifier:        verifier,
-		Digester:        digester,
-		Clock:           auth.SystemClock{},
-		AccessTokenTTL:  authConfig.AccessTokenTTL,
-		RefreshTokenTTL: authConfig.RefreshTokenTTL,
+		Users:              auth.NewPostgresUserRepository(queries),
+		RefreshTokens:      auth.NewPostgresRefreshTokenRepository(queries),
+		OneTimeTokens:      auth.NewPostgresOneTimeTokenRepository(queries),
+		APIKeys:            auth.NewPostgresAPIKeyRepository(queries),
+		Outbox:             auth.NewPostgresOutboxWriter(queries),
+		Transactor:         database.NewTransactor(pool),
+		Issuer:             issuer,
+		Verifier:           verifier,
+		Digester:           digester,
+		Clock:              auth.SystemClock{},
+		PersonalOrgCreator: orgCreator,
+		AccessTokenTTL:     authConfig.AccessTokenTTL,
+		RefreshTokenTTL:    authConfig.RefreshTokenTTL,
 	})
 }
 

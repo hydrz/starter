@@ -19,7 +19,7 @@
 | --- | --- | --- | --- | --- | --- |
 | A — Foundation, governance, configuration, shared infrastructure | Platform Architecture | In progress | Integrated | 主 Agent 已复核并合入；后续工作流只通过公开 config/TypeSpec 边界接入 | 配置加载器、通用错误响应、ADR、架构/契约图谱 |
 | B — Identity and sessions | Identity | Planned | Ready for integration | A 已就绪；认证契约和 schema 评审 | 账户、会话、JWT access/opaque refresh 实现 |
-| C — Organizations and authorization | Authorization | Planned | Planned | B account identity 稳定；三段授权输入评审 | 组织、成员关系、Casbin model/policy/adapters |
+| C — Organizations and authorization | Authorization | Planned | Ready for integration | B account identity 稳定；三段授权输入评审 | 组织、成员关系、Casbin model/policy/adapters、租户资源契约 |
 | D — Delivery and outbox | Messaging | Planned | Ready for integration | A/B 已就绪；通知 intent 和 outbox claim 评审 | outbox worker、channel 抽象、SMTP 适配器、邮件模板与通知路由 |
 | E — Stripe and entitlements | Billing | Planned | Planned | C 授权边界确认；webhook 安全评审 | Stripe projection、订阅、entitlement |
 | F — Product UI | Product Web | Planned | Planned | B/C 生成的公开契约与授权语义稳定 | Orval client usage、账户/组织界面 |
@@ -46,6 +46,16 @@
 - Public HTTP surface lives at `packages/contracts/features/auth/{models,routes,auth}.tsp`, imported from `main.tsp`, compiled only through `pnpm generate`; all operations are mounted at `/api/auth/*` (`internal/platform/httpserver/handler.go`), reusing A's common `ApiError`/`UnauthorizedResponse`/`ConflictResponse`/`TooManyRequestsResponse` models.
 - `httpserver.NewHandler` gained a third, optional `*auth.Service` parameter; when nil (auth disabled), no `/api/auth/*` route is registered and existing health/docs/announcements behavior is unchanged. `auth.AuthenticationMiddleware` only resolves an optional bearer principal into context for the auth handler's own operations (e.g. `GetCurrentIdentity`, session/API-key management); it does not protect any other route, per the integration gate reserving global authorization middleware for workstream C.
 - `apps/server/main.go` keeps A's config-driven `cfg.Address`/`cfg.DatabaseURL`/`cfg.AutoMigrate` startup logic unchanged and adds only identity-service wiring: when `cfg.Auth.Enabled`, it builds `auth.Service` via `buildIdentityService` and passes it into `apphttp.NewHandler`. `config.AuthConfig` gained one additional required field, `SecretDigestPepper` (env `AUTH_SECRET_PEPPER`), joining the existing all-or-none auth group; it is independent, high-entropy secret material unrelated to `SigningPrivateKey`, used only to key `auth.SecretDigester`.
+
+## C 的接口决策
+
+- Database schema migration `db/migrations/00003_create_organizations_and_authorization.sql` creates `organizations`, `organization_memberships`, `organization_invitations`, and `casbin_rules` tables with forward-only DDL, seeds the default role policies (`owner`, `admin`, `member`, `viewer`), scopes `announcements` by `organization_id`, and adds the foreign key from `api_keys.organization_id` to `organizations(id)`.
+- New domain package `internal/authorization` implements Casbin v2 enforcer initialization with standard domain RBAC model (`g = _, _, _`), `DatabaseAdapter` backed by `internal/store` queries and in-memory `MemoryAdapter` for hermetic testing. It provides a narrow `Authorizer` service interface (`Authorize(ctx, sub, dom, obj, act) (bool, error)`) and Chi middleware `RequirePermission(enforcer, resource, action)` that evaluates `sub` from the authenticated context, `dom` from URL parameter `organizationId`, verifies organization membership, and executes Casbin enforcement.
+- New domain package `internal/organization` implements `Service` with narrow ports over `Repository` and `database.Transactor`. It supports organization CRUD, atomic personal workspace provisioning on signup via `auth.PersonalOrgCreator`, membership management, invitation lifecycle with HMAC-SHA256 token digests, role updates, and last-owner protection.
+- `internal/auth.Service.SignUp` accepts optional `PersonalOrgCreator` in its dependencies, creating the new user's personal organization atomically within the same database transaction.
+- Resource tenant scoping: `internal/announcement` repository, service, and HTTP handler are updated to take `organizationID uuid.UUID` on all operations.
+- TypeSpec contracts: added `packages/contracts/features/organizations/{models.tsp, routes.tsp, organizations.tsp}` and scoped announcements under `/api/organizations/{organizationId}/announcements` in `features/announcements/routes.tsp`. Top-level contract `packages/contracts/main.tsp` imports both.
+- Server wiring: `internal/platform/httpserver.NewHandler` accepts `orgs *organization.Service` and `authorizer authorization.PermissionEnforcer`, exposing `/api/organizations` and protecting all tenant-scoped routes under `/api/organizations/{organizationId}/*` and `/api/organizations/{organizationId}/announcements/*` via `RequirePermission`. `apps/server/main.go` instantiates the database adapter, Casbin enforcer, authorization service, organization service, and passes the personal org provisioner to `buildIdentityService`.
 
 ## D 的接口决策
 
@@ -115,6 +125,16 @@
 | 2026-09-26 | D | `pnpm check:sql` | Passed (sqlc vet). |
 | 2026-09-26 | D | `pnpm check:web` | Passed (eslint and tsc). |
 | 2026-09-26 | D | `git diff --check` | Passed. |
+| 2026-09-26 | C | `pnpm generate` | Passed; compiled `features/organizations` and scoped `features/announcements` TypeSpec, generated `internal/api/organizationsapi` and updated `internal/api/announcementsapi`, Orval hooks in `apps/web/src/api/generated`, and sqlc store files. |
+| 2026-09-26 | C | `go test ./...` | Passed; unit tests in `internal/authorization` cover the full Casbin RBAC matrix across all roles and actions, domain isolation, and middleware enforcement; `internal/organization` tests cover organization CRUD, personal org provisioning, role updates, last-owner demotion/removal protection, and invitation acceptance/revocation; `internal/auth` tests cover atomic personal org creation on SignUp; `internal/platform/httpserver` tests cover end-to-end router wiring and Casbin permission enforcement. |
+| 2026-09-26 | C | `pnpm --filter @starter/web test` | Passed 23 unit tests. |
+| 2026-09-26 | C | `pnpm check:format` | Passed (gofmt, tsp format, prettier). |
+| 2026-09-26 | C | `pnpm check:docs` | Passed for 40 Markdown files. |
+| 2026-09-26 | C | `pnpm check:skills` | Passed. |
+| 2026-09-26 | C | `pnpm check:actions` | Passed. |
+| 2026-09-26 | C | `pnpm check:go` | Passed (`go vet ./...`). |
+| 2026-09-26 | C | `pnpm check:sql` | Passed (`sqlc vet`). |
+| 2026-09-26 | C | `pnpm check:web` | Passed (`eslint` + `tsc -b --noEmit`). |
 
 ## Integration checklist for later owners
 

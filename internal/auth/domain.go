@@ -59,6 +59,11 @@ type CreatedAPIKey struct {
 	Key string
 }
 
+// PersonalOrgCreator provisions a personal organization for a newly registered user.
+type PersonalOrgCreator interface {
+	CreatePersonalOrg(ctx context.Context, user User) error
+}
+
 // OneTimeTokenPurpose distinguishes verification tokens from reset tokens so
 // a token minted for one purpose can never be consumed for another.
 type OneTimeTokenPurpose string

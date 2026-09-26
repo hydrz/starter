@@ -14,13 +14,23 @@ import (
 // integration gate, global middleware wiring is out of scope for B).
 type principalContextKey struct{}
 
-func principalFromContext(ctx context.Context) (string, bool) {
+// PrincipalFromContext extracts the authenticated user ID from context.
+func PrincipalFromContext(ctx context.Context) (string, bool) {
 	userID, ok := ctx.Value(principalContextKey{}).(string)
 	return userID, ok && userID != ""
 }
 
-func contextWithPrincipal(ctx context.Context, userID string) context.Context {
+func principalFromContext(ctx context.Context) (string, bool) {
+	return PrincipalFromContext(ctx)
+}
+
+// ContextWithPrincipal returns a new context carrying the authenticated user ID.
+func ContextWithPrincipal(ctx context.Context, userID string) context.Context {
 	return context.WithValue(ctx, principalContextKey{}, userID)
+}
+
+func contextWithPrincipal(ctx context.Context, userID string) context.Context {
+	return ContextWithPrincipal(ctx, userID)
 }
 
 // AuthenticateRequest verifies the bearer access token found via
