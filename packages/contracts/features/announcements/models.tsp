@@ -13,6 +13,9 @@ model Announcement {
   @format("uuid")
   id: string;
 
+  @format("uuid")
+  organizationId: string;
+
   title: string;
   content: string;
   status: AnnouncementStatus;

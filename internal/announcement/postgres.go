@@ -28,21 +28,26 @@ func (repository *PostgresRepository) q(ctx context.Context) *store.Queries {
 	return repository.queries
 }
 
-func (repository *PostgresRepository) List(ctx context.Context, filter Filter) ([]Announcement, int64, error) {
+func (repository *PostgresRepository) List(ctx context.Context, organizationID uuid.UUID, filter Filter) ([]Announcement, int64, error) {
 	var status *store.AnnouncementStatus
 	if filter.Status != nil {
 		s := store.AnnouncementStatus(*filter.Status)
 		status = &s
 	}
+	orgUUID := pgtype.UUID{Bytes: organizationID, Valid: true}
 
-	total, err := repository.q(ctx).CountAnnouncements(ctx, status)
+	total, err := repository.q(ctx).CountAnnouncements(ctx, store.CountAnnouncementsParams{
+		OrganizationID: orgUUID,
+		Status:         status,
+	})
 	if err != nil {
 		return nil, 0, fmt.Errorf("count: %w", err)
 	}
 	rows, err := repository.q(ctx).ListAnnouncements(ctx, store.ListAnnouncementsParams{
-		Status: status,
-		Limit:  filter.Limit,
-		Offset: filter.Offset,
+		OrganizationID: orgUUID,
+		Status:         status,
+		Limit:          filter.Limit,
+		Offset:         filter.Offset,
 	})
 	if err != nil {
 		return nil, 0, fmt.Errorf("query: %w", err)
@@ -50,48 +55,53 @@ func (repository *PostgresRepository) List(ctx context.Context, filter Filter) (
 
 	items := make([]Announcement, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, fromStore(row))
+		items = append(items, announcementFromRow(row.ID, row.OrganizationID, row.Title, row.Content, row.Status, row.CreatedAt, row.UpdatedAt))
 	}
 	return items, total, nil
 }
 
-func (repository *PostgresRepository) Get(ctx context.Context, id string) (Announcement, error) {
+func (repository *PostgresRepository) Get(ctx context.Context, organizationID uuid.UUID, id string) (Announcement, error) {
 	databaseID, err := parseUUID(id)
 	if err != nil {
 		return Announcement{}, err
 	}
-	row, err := repository.q(ctx).GetAnnouncement(ctx, databaseID)
+	row, err := repository.q(ctx).GetAnnouncement(ctx, store.GetAnnouncementParams{
+		ID:             databaseID,
+		OrganizationID: pgtype.UUID{Bytes: organizationID, Valid: true},
+	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Announcement{}, ErrNotFound
 	}
 	if err != nil {
 		return Announcement{}, err
 	}
-	return fromStore(row), nil
+	return announcementFromRow(row.ID, row.OrganizationID, row.Title, row.Content, row.Status, row.CreatedAt, row.UpdatedAt), nil
 }
 
-func (repository *PostgresRepository) Create(ctx context.Context, input Input) (Announcement, error) {
+func (repository *PostgresRepository) Create(ctx context.Context, organizationID uuid.UUID, input Input) (Announcement, error) {
 	row, err := repository.q(ctx).CreateAnnouncement(ctx, store.CreateAnnouncementParams{
-		Title:   input.Title,
-		Content: input.Content,
-		Status:  store.AnnouncementStatus(input.Status),
+		OrganizationID: pgtype.UUID{Bytes: organizationID, Valid: true},
+		Title:          input.Title,
+		Content:        input.Content,
+		Status:         store.AnnouncementStatus(input.Status),
 	})
 	if err != nil {
 		return Announcement{}, err
 	}
-	return fromStore(row), nil
+	return announcementFromRow(row.ID, row.OrganizationID, row.Title, row.Content, row.Status, row.CreatedAt, row.UpdatedAt), nil
 }
 
-func (repository *PostgresRepository) Update(ctx context.Context, id string, input Input) (Announcement, error) {
+func (repository *PostgresRepository) Update(ctx context.Context, organizationID uuid.UUID, id string, input Input) (Announcement, error) {
 	databaseID, err := parseUUID(id)
 	if err != nil {
 		return Announcement{}, err
 	}
 	row, err := repository.q(ctx).UpdateAnnouncement(ctx, store.UpdateAnnouncementParams{
-		ID:      databaseID,
-		Title:   input.Title,
-		Content: input.Content,
-		Status:  store.AnnouncementStatus(input.Status),
+		ID:             databaseID,
+		OrganizationID: pgtype.UUID{Bytes: organizationID, Valid: true},
+		Title:          input.Title,
+		Content:        input.Content,
+		Status:         store.AnnouncementStatus(input.Status),
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Announcement{}, ErrNotFound
@@ -99,15 +109,18 @@ func (repository *PostgresRepository) Update(ctx context.Context, id string, inp
 	if err != nil {
 		return Announcement{}, err
 	}
-	return fromStore(row), nil
+	return announcementFromRow(row.ID, row.OrganizationID, row.Title, row.Content, row.Status, row.CreatedAt, row.UpdatedAt), nil
 }
 
-func (repository *PostgresRepository) Delete(ctx context.Context, id string) error {
+func (repository *PostgresRepository) Delete(ctx context.Context, organizationID uuid.UUID, id string) error {
 	databaseID, err := parseUUID(id)
 	if err != nil {
 		return err
 	}
-	count, err := repository.q(ctx).DeleteAnnouncement(ctx, databaseID)
+	count, err := repository.q(ctx).DeleteAnnouncement(ctx, store.DeleteAnnouncementParams{
+		ID:             databaseID,
+		OrganizationID: pgtype.UUID{Bytes: organizationID, Valid: true},
+	})
 	if err != nil {
 		return err
 	}
@@ -125,13 +138,14 @@ func parseUUID(value string) (pgtype.UUID, error) {
 	return pgtype.UUID{Bytes: id, Valid: true}, nil
 }
 
-func fromStore(value store.Announcement) Announcement {
+func announcementFromRow(id, orgID pgtype.UUID, title, content string, status store.AnnouncementStatus, createdAt, updatedAt pgtype.Timestamptz) Announcement {
 	return Announcement{
-		ID:        uuid.UUID(value.ID.Bytes).String(),
-		Title:     value.Title,
-		Content:   value.Content,
-		Status:    Status(value.Status),
-		CreatedAt: value.CreatedAt.Time,
-		UpdatedAt: value.UpdatedAt.Time,
+		ID:             uuid.UUID(id.Bytes).String(),
+		OrganizationID: uuid.UUID(orgID.Bytes).String(),
+		Title:          title,
+		Content:        content,
+		Status:         Status(status),
+		CreatedAt:      createdAt.Time,
+		UpdatedAt:      updatedAt.Time,
 	}
 }

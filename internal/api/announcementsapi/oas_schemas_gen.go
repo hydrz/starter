@@ -11,17 +11,23 @@ import (
 
 // Ref: #/components/schemas/Announcement
 type Announcement struct {
-	ID        uuid.UUID          `json:"id"`
-	Title     string             `json:"title"`
-	Content   string             `json:"content"`
-	Status    AnnouncementStatus `json:"status"`
-	CreatedAt time.Time          `json:"createdAt"`
-	UpdatedAt time.Time          `json:"updatedAt"`
+	ID             uuid.UUID          `json:"id"`
+	OrganizationId uuid.UUID          `json:"organizationId"`
+	Title          string             `json:"title"`
+	Content        string             `json:"content"`
+	Status         AnnouncementStatus `json:"status"`
+	CreatedAt      time.Time          `json:"createdAt"`
+	UpdatedAt      time.Time          `json:"updatedAt"`
 }
 
 // GetID returns the value of ID.
 func (s *Announcement) GetID() uuid.UUID {
 	return s.ID
+}
+
+// GetOrganizationId returns the value of OrganizationId.
+func (s *Announcement) GetOrganizationId() uuid.UUID {
+	return s.OrganizationId
 }
 
 // GetTitle returns the value of Title.
@@ -52,6 +58,11 @@ func (s *Announcement) GetUpdatedAt() time.Time {
 // SetID sets the value of ID.
 func (s *Announcement) SetID(val uuid.UUID) {
 	s.ID = val
+}
+
+// SetOrganizationId sets the value of OrganizationId.
+func (s *Announcement) SetOrganizationId(val uuid.UUID) {
+	s.OrganizationId = val
 }
 
 // SetTitle sets the value of Title.
@@ -188,12 +199,25 @@ func (s *ApiError) SetMessage(val string) {
 	s.Message = val
 }
 
-func (*ApiError) createAnnouncementRes() {}
-func (*ApiError) listAnnouncementsRes()  {}
+type CreateAnnouncementBadRequest ApiError
+
+func (*CreateAnnouncementBadRequest) createAnnouncementRes() {}
+
+type CreateAnnouncementForbidden ApiError
+
+func (*CreateAnnouncementForbidden) createAnnouncementRes() {}
+
+type CreateAnnouncementUnauthorized ApiError
+
+func (*CreateAnnouncementUnauthorized) createAnnouncementRes() {}
 
 type DeleteAnnouncementBadRequest ApiError
 
 func (*DeleteAnnouncementBadRequest) deleteAnnouncementRes() {}
+
+type DeleteAnnouncementForbidden ApiError
+
+func (*DeleteAnnouncementForbidden) deleteAnnouncementRes() {}
 
 // DeleteAnnouncementNoContent is response for DeleteAnnouncement operation.
 type DeleteAnnouncementNoContent struct{}
@@ -204,13 +228,37 @@ type DeleteAnnouncementNotFound ApiError
 
 func (*DeleteAnnouncementNotFound) deleteAnnouncementRes() {}
 
+type DeleteAnnouncementUnauthorized ApiError
+
+func (*DeleteAnnouncementUnauthorized) deleteAnnouncementRes() {}
+
 type GetAnnouncementBadRequest ApiError
 
 func (*GetAnnouncementBadRequest) getAnnouncementRes() {}
 
+type GetAnnouncementForbidden ApiError
+
+func (*GetAnnouncementForbidden) getAnnouncementRes() {}
+
 type GetAnnouncementNotFound ApiError
 
 func (*GetAnnouncementNotFound) getAnnouncementRes() {}
+
+type GetAnnouncementUnauthorized ApiError
+
+func (*GetAnnouncementUnauthorized) getAnnouncementRes() {}
+
+type ListAnnouncementsBadRequest ApiError
+
+func (*ListAnnouncementsBadRequest) listAnnouncementsRes() {}
+
+type ListAnnouncementsForbidden ApiError
+
+func (*ListAnnouncementsForbidden) listAnnouncementsRes() {}
+
+type ListAnnouncementsUnauthorized ApiError
+
+func (*ListAnnouncementsUnauthorized) listAnnouncementsRes() {}
 
 // NewOptAnnouncementStatus returns new OptAnnouncementStatus with value set to v.
 func NewOptAnnouncementStatus(v AnnouncementStatus) OptAnnouncementStatus {
@@ -362,6 +410,14 @@ type UpdateAnnouncementBadRequest ApiError
 
 func (*UpdateAnnouncementBadRequest) updateAnnouncementRes() {}
 
+type UpdateAnnouncementForbidden ApiError
+
+func (*UpdateAnnouncementForbidden) updateAnnouncementRes() {}
+
 type UpdateAnnouncementNotFound ApiError
 
 func (*UpdateAnnouncementNotFound) updateAnnouncementRes() {}
+
+type UpdateAnnouncementUnauthorized ApiError
+
+func (*UpdateAnnouncementUnauthorized) updateAnnouncementRes() {}

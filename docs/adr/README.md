@@ -8,6 +8,11 @@ ADR 记录影响多个模块、难以撤销或需要保存取舍背景的决策�
 | --- | --- | --- | --- |
 | [0001](0001-commit-generated-contract-artifacts.md) | 提交契约生成物 | 已接受 | 2026-09-24 |
 | [0002](0002-forward-only-production-migrations.md) | 生产数据库只向前迁移 | 已接受 | 2026-09-24 |
+| [0003](0003-jwt-access-and-opaque-refresh-sessions.md) | JWT access 与不透明 refresh 会话 | 已接受 | 2026-09-26 |
+| [0004](0004-casbin-domain-rbac-and-three-part-authorization.md) | Casbin 域 RBAC 与三段授权 | 已接受 | 2026-09-26 |
+| [0005](0005-separate-notification-intent-from-delivery.md) | 分离通知意图与交付 | 已接受 | 2026-09-26 |
+| [0006](0006-stripe-payments-subscriptions-and-entitlements.md) | Stripe 支付、订阅与 entitlement 投影 | 已接受 | 2026-09-26 |
+| [0007](0007-postgres-outbox-and-in-process-worker.md) | PostgreSQL outbox 与进程内 worker | 已接受 | 2026-09-26 |
 
 ## 决策状态定义
 

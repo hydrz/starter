@@ -8,6 +8,8 @@
 | --- | --- | --- |
 | 开发指南 | 完成具体开发任务 | [本地开发](development/getting-started.md)、[契约](development/contracts.md)、[数据库](development/database.md)、[纵向切片](development/vertical-slice.md) |
 | 工程规范 | 约束代码与评审质量 | [规范索引](standards/README.md) |
+| 架构 | 了解身份平台的边界、依赖与集成门 | [身份平台架构](architecture/identity-platform.md) |
+| 实施图谱 | 协调跨工作流状态、证据和 TypeSpec/Go/SQL 映射 | [身份平台台账](implementation/identity-platform-ledger.md)、[契约映射](implementation/identity-platform-contract-map.md) |
 | 架构决策 | 记录重要选择及其原因 | [ADR 目录](adr/README.md) |
 | 运维手册 | 在明确场景下执行诊断和恢复 | [Runbook 目录](runbooks/README.md) |
 | 模板 | 创建结构一致的新文档 | [模板目录](templates/README.md) |

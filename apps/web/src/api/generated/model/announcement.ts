@@ -8,6 +8,7 @@ import type { AnnouncementStatus } from './announcementStatus';
 
 export interface Announcement {
   id: string;
+  organizationId: string;
   title: string;
   content: string;
   status: AnnouncementStatus;

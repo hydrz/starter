@@ -14,34 +14,57 @@ import (
 const countAnnouncements = `-- name: CountAnnouncements :one
 SELECT count(*)
 FROM announcements
-WHERE $1::announcement_status IS NULL
-   OR status = $1::announcement_status
+WHERE organization_id = $1
+  AND ($2::announcement_status IS NULL
+       OR status = $2::announcement_status)
 `
 
-func (q *Queries) CountAnnouncements(ctx context.Context, status *AnnouncementStatus) (int64, error) {
-	row := q.db.QueryRow(ctx, countAnnouncements, status)
+type CountAnnouncementsParams struct {
+	OrganizationID pgtype.UUID         `db:"organization_id" json:"organization_id"`
+	Status         *AnnouncementStatus `db:"status" json:"status"`
+}
+
+func (q *Queries) CountAnnouncements(ctx context.Context, arg CountAnnouncementsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countAnnouncements, arg.OrganizationID, arg.Status)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
 
 const createAnnouncement = `-- name: CreateAnnouncement :one
-INSERT INTO announcements (title, content, status)
-VALUES ($1, $2, $3)
-RETURNING id, title, content, status, created_at, updated_at
+INSERT INTO announcements (organization_id, title, content, status)
+VALUES ($1, $2, $3, $4)
+RETURNING id, organization_id, title, content, status, created_at, updated_at
 `
 
 type CreateAnnouncementParams struct {
-	Title   string             `db:"title" json:"title"`
-	Content string             `db:"content" json:"content"`
-	Status  AnnouncementStatus `db:"status" json:"status"`
+	OrganizationID pgtype.UUID        `db:"organization_id" json:"organization_id"`
+	Title          string             `db:"title" json:"title"`
+	Content        string             `db:"content" json:"content"`
+	Status         AnnouncementStatus `db:"status" json:"status"`
 }
 
-func (q *Queries) CreateAnnouncement(ctx context.Context, arg CreateAnnouncementParams) (Announcement, error) {
-	row := q.db.QueryRow(ctx, createAnnouncement, arg.Title, arg.Content, arg.Status)
-	var i Announcement
+type CreateAnnouncementRow struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	OrganizationID pgtype.UUID        `db:"organization_id" json:"organization_id"`
+	Title          string             `db:"title" json:"title"`
+	Content        string             `db:"content" json:"content"`
+	Status         AnnouncementStatus `db:"status" json:"status"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+func (q *Queries) CreateAnnouncement(ctx context.Context, arg CreateAnnouncementParams) (CreateAnnouncementRow, error) {
+	row := q.db.QueryRow(ctx, createAnnouncement,
+		arg.OrganizationID,
+		arg.Title,
+		arg.Content,
+		arg.Status,
+	)
+	var i CreateAnnouncementRow
 	err := row.Scan(
 		&i.ID,
+		&i.OrganizationID,
 		&i.Title,
 		&i.Content,
 		&i.Status,
@@ -53,11 +76,16 @@ func (q *Queries) CreateAnnouncement(ctx context.Context, arg CreateAnnouncement
 
 const deleteAnnouncement = `-- name: DeleteAnnouncement :execrows
 DELETE FROM announcements
-WHERE id = $1
+WHERE id = $1 AND organization_id = $2
 `
 
-func (q *Queries) DeleteAnnouncement(ctx context.Context, id pgtype.UUID) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteAnnouncement, id)
+type DeleteAnnouncementParams struct {
+	ID             pgtype.UUID `db:"id" json:"id"`
+	OrganizationID pgtype.UUID `db:"organization_id" json:"organization_id"`
+}
+
+func (q *Queries) DeleteAnnouncement(ctx context.Context, arg DeleteAnnouncementParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteAnnouncement, arg.ID, arg.OrganizationID)
 	if err != nil {
 		return 0, err
 	}
@@ -65,16 +93,32 @@ func (q *Queries) DeleteAnnouncement(ctx context.Context, id pgtype.UUID) (int64
 }
 
 const getAnnouncement = `-- name: GetAnnouncement :one
-SELECT id, title, content, status, created_at, updated_at
+SELECT id, organization_id, title, content, status, created_at, updated_at
 FROM announcements
-WHERE id = $1
+WHERE id = $1 AND organization_id = $2
 `
 
-func (q *Queries) GetAnnouncement(ctx context.Context, id pgtype.UUID) (Announcement, error) {
-	row := q.db.QueryRow(ctx, getAnnouncement, id)
-	var i Announcement
+type GetAnnouncementParams struct {
+	ID             pgtype.UUID `db:"id" json:"id"`
+	OrganizationID pgtype.UUID `db:"organization_id" json:"organization_id"`
+}
+
+type GetAnnouncementRow struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	OrganizationID pgtype.UUID        `db:"organization_id" json:"organization_id"`
+	Title          string             `db:"title" json:"title"`
+	Content        string             `db:"content" json:"content"`
+	Status         AnnouncementStatus `db:"status" json:"status"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+func (q *Queries) GetAnnouncement(ctx context.Context, arg GetAnnouncementParams) (GetAnnouncementRow, error) {
+	row := q.db.QueryRow(ctx, getAnnouncement, arg.ID, arg.OrganizationID)
+	var i GetAnnouncementRow
 	err := row.Scan(
 		&i.ID,
+		&i.OrganizationID,
 		&i.Title,
 		&i.Content,
 		&i.Status,
@@ -85,31 +129,49 @@ func (q *Queries) GetAnnouncement(ctx context.Context, id pgtype.UUID) (Announce
 }
 
 const listAnnouncements = `-- name: ListAnnouncements :many
-SELECT id, title, content, status, created_at, updated_at
+SELECT id, organization_id, title, content, status, created_at, updated_at
 FROM announcements
-WHERE $1::announcement_status IS NULL
-   OR status = $1::announcement_status
+WHERE organization_id = $1
+  AND ($2::announcement_status IS NULL
+       OR status = $2::announcement_status)
 ORDER BY created_at DESC, id DESC
-LIMIT $3 OFFSET $2
+LIMIT $4 OFFSET $3
 `
 
 type ListAnnouncementsParams struct {
-	Status *AnnouncementStatus `db:"status" json:"status"`
-	Offset int32               `db:"offset" json:"offset"`
-	Limit  int32               `db:"limit" json:"limit"`
+	OrganizationID pgtype.UUID         `db:"organization_id" json:"organization_id"`
+	Status         *AnnouncementStatus `db:"status" json:"status"`
+	Offset         int32               `db:"offset" json:"offset"`
+	Limit          int32               `db:"limit" json:"limit"`
 }
 
-func (q *Queries) ListAnnouncements(ctx context.Context, arg ListAnnouncementsParams) ([]Announcement, error) {
-	rows, err := q.db.Query(ctx, listAnnouncements, arg.Status, arg.Offset, arg.Limit)
+type ListAnnouncementsRow struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	OrganizationID pgtype.UUID        `db:"organization_id" json:"organization_id"`
+	Title          string             `db:"title" json:"title"`
+	Content        string             `db:"content" json:"content"`
+	Status         AnnouncementStatus `db:"status" json:"status"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+func (q *Queries) ListAnnouncements(ctx context.Context, arg ListAnnouncementsParams) ([]ListAnnouncementsRow, error) {
+	rows, err := q.db.Query(ctx, listAnnouncements,
+		arg.OrganizationID,
+		arg.Status,
+		arg.Offset,
+		arg.Limit,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Announcement{}
+	items := []ListAnnouncementsRow{}
 	for rows.Next() {
-		var i Announcement
+		var i ListAnnouncementsRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.OrganizationID,
 			&i.Title,
 			&i.Content,
 			&i.Status,
@@ -128,31 +190,44 @@ func (q *Queries) ListAnnouncements(ctx context.Context, arg ListAnnouncementsPa
 
 const updateAnnouncement = `-- name: UpdateAnnouncement :one
 UPDATE announcements
-SET title = $2,
-    content = $3,
-    status = $4,
+SET title = $3,
+    content = $4,
+    status = $5,
     updated_at = now()
-WHERE id = $1
-RETURNING id, title, content, status, created_at, updated_at
+WHERE id = $1 AND organization_id = $2
+RETURNING id, organization_id, title, content, status, created_at, updated_at
 `
 
 type UpdateAnnouncementParams struct {
-	ID      pgtype.UUID        `db:"id" json:"id"`
-	Title   string             `db:"title" json:"title"`
-	Content string             `db:"content" json:"content"`
-	Status  AnnouncementStatus `db:"status" json:"status"`
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	OrganizationID pgtype.UUID        `db:"organization_id" json:"organization_id"`
+	Title          string             `db:"title" json:"title"`
+	Content        string             `db:"content" json:"content"`
+	Status         AnnouncementStatus `db:"status" json:"status"`
 }
 
-func (q *Queries) UpdateAnnouncement(ctx context.Context, arg UpdateAnnouncementParams) (Announcement, error) {
+type UpdateAnnouncementRow struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	OrganizationID pgtype.UUID        `db:"organization_id" json:"organization_id"`
+	Title          string             `db:"title" json:"title"`
+	Content        string             `db:"content" json:"content"`
+	Status         AnnouncementStatus `db:"status" json:"status"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+func (q *Queries) UpdateAnnouncement(ctx context.Context, arg UpdateAnnouncementParams) (UpdateAnnouncementRow, error) {
 	row := q.db.QueryRow(ctx, updateAnnouncement,
 		arg.ID,
+		arg.OrganizationID,
 		arg.Title,
 		arg.Content,
 		arg.Status,
 	)
-	var i Announcement
+	var i UpdateAnnouncementRow
 	err := row.Scan(
 		&i.ID,
+		&i.OrganizationID,
 		&i.Title,
 		&i.Content,
 		&i.Status,

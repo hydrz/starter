@@ -1,11 +1,12 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
+import { queryClient } from "./lib/query";
 import App from "./App";
 import "./styles.css";
 
 const root = document.getElementById("root");
-const queryClient = new QueryClient();
 
 if (!root) {
   throw new Error("Root element was not found");
@@ -14,7 +15,9 @@ if (!root) {
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <AppErrorBoundary>
+        <App />
+      </AppErrorBoundary>
     </QueryClientProvider>
   </StrictMode>,
 );

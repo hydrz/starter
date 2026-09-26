@@ -37,14 +37,14 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 //
 // Create an announcement.
 //
-// POST /api/announcements
-func (s *Server) handleCreateAnnouncementRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/organizations/{organizationId}/announcements
+func (s *Server) handleCreateAnnouncementRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("createAnnouncement"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/announcements"),
+		semconv.HTTPRouteKey.String("/api/organizations/{organizationId}/announcements"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -109,6 +109,16 @@ func (s *Server) handleCreateAnnouncementRequest(args [0]string, argsEscaped boo
 			ID:   "createAnnouncement",
 		}
 	)
+	params, err := decodeCreateAnnouncementParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
 
 	var rawBody []byte
 	request, rawBody, close, err := s.decodeCreateAnnouncementRequest(r)
@@ -136,13 +146,18 @@ func (s *Server) handleCreateAnnouncementRequest(args [0]string, argsEscaped boo
 			OperationID:      "createAnnouncement",
 			Body:             request,
 			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "organizationId",
+					In:   "path",
+				}: params.OrganizationId,
+			},
+			Raw: r,
 		}
 
 		type (
 			Request  = *AnnouncementInput
-			Params   = struct{}
+			Params   = CreateAnnouncementParams
 			Response = CreateAnnouncementRes
 		)
 		response, err = middleware.HookMiddleware[
@@ -152,14 +167,14 @@ func (s *Server) handleCreateAnnouncementRequest(args [0]string, argsEscaped boo
 		](
 			m,
 			mreq,
-			nil,
+			unpackCreateAnnouncementParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateAnnouncement(ctx, request)
+				response, err = s.h.CreateAnnouncement(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.CreateAnnouncement(ctx, request)
+		response, err = s.h.CreateAnnouncement(ctx, request, params)
 	}
 	if err != nil {
 		defer recordError("Internal", err)
@@ -180,14 +195,14 @@ func (s *Server) handleCreateAnnouncementRequest(args [0]string, argsEscaped boo
 //
 // Delete an announcement.
 //
-// DELETE /api/announcements/{id}
-func (s *Server) handleDeleteAnnouncementRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// DELETE /api/organizations/{organizationId}/announcements/{id}
+func (s *Server) handleDeleteAnnouncementRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("deleteAnnouncement"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/announcements/{id}"),
+		semconv.HTTPRouteKey.String("/api/organizations/{organizationId}/announcements/{id}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -276,6 +291,10 @@ func (s *Server) handleDeleteAnnouncementRequest(args [1]string, argsEscaped boo
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
+					Name: "organizationId",
+					In:   "path",
+				}: params.OrganizationId,
+				{
 					Name: "id",
 					In:   "path",
 				}: params.ID,
@@ -323,14 +342,14 @@ func (s *Server) handleDeleteAnnouncementRequest(args [1]string, argsEscaped boo
 //
 // Get an announcement.
 //
-// GET /api/announcements/{id}
-func (s *Server) handleGetAnnouncementRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/organizations/{organizationId}/announcements/{id}
+func (s *Server) handleGetAnnouncementRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("getAnnouncement"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/announcements/{id}"),
+		semconv.HTTPRouteKey.String("/api/organizations/{organizationId}/announcements/{id}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -419,6 +438,10 @@ func (s *Server) handleGetAnnouncementRequest(args [1]string, argsEscaped bool, 
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
+					Name: "organizationId",
+					In:   "path",
+				}: params.OrganizationId,
+				{
 					Name: "id",
 					In:   "path",
 				}: params.ID,
@@ -466,14 +489,14 @@ func (s *Server) handleGetAnnouncementRequest(args [1]string, argsEscaped bool, 
 //
 // List announcements.
 //
-// GET /api/announcements
-func (s *Server) handleListAnnouncementsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/organizations/{organizationId}/announcements
+func (s *Server) handleListAnnouncementsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("listAnnouncements"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/announcements"),
+		semconv.HTTPRouteKey.String("/api/organizations/{organizationId}/announcements"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -562,6 +585,10 @@ func (s *Server) handleListAnnouncementsRequest(args [0]string, argsEscaped bool
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
+					Name: "organizationId",
+					In:   "path",
+				}: params.OrganizationId,
+				{
 					Name: "limit",
 					In:   "query",
 				}: params.Limit,
@@ -617,14 +644,14 @@ func (s *Server) handleListAnnouncementsRequest(args [0]string, argsEscaped bool
 //
 // Update an announcement.
 //
-// PUT /api/announcements/{id}
-func (s *Server) handleUpdateAnnouncementRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// PUT /api/organizations/{organizationId}/announcements/{id}
+func (s *Server) handleUpdateAnnouncementRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("updateAnnouncement"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.HTTPRouteKey.String("/api/announcements/{id}"),
+		semconv.HTTPRouteKey.String("/api/organizations/{organizationId}/announcements/{id}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -727,6 +754,10 @@ func (s *Server) handleUpdateAnnouncementRequest(args [1]string, argsEscaped boo
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "organizationId",
+					In:   "path",
+				}: params.OrganizationId,
 				{
 					Name: "id",
 					In:   "path",

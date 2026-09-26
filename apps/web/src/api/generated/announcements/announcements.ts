@@ -63,16 +63,27 @@ export type listAnnouncementsResponse400 = {
   status: 400
 }
 
+export type listAnnouncementsResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type listAnnouncementsResponse403 = {
+  data: ApiError
+  status: 403
+}
+
 export type listAnnouncementsResponseSuccess = (listAnnouncementsResponse200) & {
   headers: Headers;
 };
-export type listAnnouncementsResponseError = (listAnnouncementsResponse400) & {
+export type listAnnouncementsResponseError = (listAnnouncementsResponse400 | listAnnouncementsResponse401 | listAnnouncementsResponse403) & {
   headers: Headers;
 };
 
 export type listAnnouncementsResponse = (listAnnouncementsResponseSuccess | listAnnouncementsResponseError)
 
-export const getListAnnouncementsUrl = (params?: ListAnnouncementsParams,) => {
+export const getListAnnouncementsUrl = (organizationId: string,
+    params?: ListAnnouncementsParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -84,15 +95,16 @@ export const getListAnnouncementsUrl = (params?: ListAnnouncementsParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/announcements?${stringifiedParams}` : `/api/announcements`
+  return stringifiedParams.length > 0 ? `/api/organizations/${organizationId}/announcements?${stringifiedParams}` : `/api/organizations/${organizationId}/announcements`
 }
 
 /**
  * @summary List announcements
  */
-export const listAnnouncements = async (params?: ListAnnouncementsParams, options?: Parameters<typeof customClient>[1]): Promise<listAnnouncementsResponse> => {
+export const listAnnouncements = async (organizationId: string,
+    params?: ListAnnouncementsParams, options?: Parameters<typeof customClient>[1]): Promise<listAnnouncementsResponse> => {
 
-  return customClient<listAnnouncementsResponse>(getListAnnouncementsUrl(params),
+  return customClient<listAnnouncementsResponse>(getListAnnouncementsUrl(organizationId,params),
   {
     ...options,
     method: 'GET'
@@ -105,29 +117,31 @@ export const listAnnouncements = async (params?: ListAnnouncementsParams, option
 
 
 
-export const getListAnnouncementsQueryKey = (params?: ListAnnouncementsParams,) => {
+export const getListAnnouncementsQueryKey = (organizationId: string,
+    params?: ListAnnouncementsParams,) => {
     return [
-    `/api/announcements`, ...(params ? [params] : [])
+    `/api/organizations/${organizationId}/announcements`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListAnnouncementsQueryOptions = <TData = Awaited<ReturnType<typeof listAnnouncements>>, TError = ApiError>(params?: ListAnnouncementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
+export const getListAnnouncementsQueryOptions = <TData = Awaited<ReturnType<typeof listAnnouncements>>, TError = ApiError>(organizationId: string,
+    params?: ListAnnouncementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListAnnouncementsQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getListAnnouncementsQueryKey(organizationId,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAnnouncements>>> = ({ signal }) => listAnnouncements(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAnnouncements>>> = ({ signal }) => listAnnouncements(organizationId,params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: organizationId !== null && organizationId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type ListAnnouncementsQueryResult = NonNullable<Awaited<ReturnType<typeof listAnnouncements>>>
@@ -135,7 +149,8 @@ export type ListAnnouncementsQueryError = ApiError
 
 
 export function useListAnnouncements<TData = Awaited<ReturnType<typeof listAnnouncements>>, TError = ApiError>(
- params: undefined |  ListAnnouncementsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>> & Pick<
+ organizationId: string,
+    params: undefined |  ListAnnouncementsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listAnnouncements>>,
           TError,
@@ -145,7 +160,8 @@ export function useListAnnouncements<TData = Awaited<ReturnType<typeof listAnnou
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListAnnouncements<TData = Awaited<ReturnType<typeof listAnnouncements>>, TError = ApiError>(
- params?: ListAnnouncementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>> & Pick<
+ organizationId: string,
+    params?: ListAnnouncementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listAnnouncements>>,
           TError,
@@ -155,7 +171,8 @@ export function useListAnnouncements<TData = Awaited<ReturnType<typeof listAnnou
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useListAnnouncements<TData = Awaited<ReturnType<typeof listAnnouncements>>, TError = ApiError>(
- params?: ListAnnouncementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
+ organizationId: string,
+    params?: ListAnnouncementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -163,11 +180,12 @@ export function useListAnnouncements<TData = Awaited<ReturnType<typeof listAnnou
  */
 
 export function useListAnnouncements<TData = Awaited<ReturnType<typeof listAnnouncements>>, TError = ApiError>(
- params?: ListAnnouncementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
+ organizationId: string,
+    params?: ListAnnouncementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAnnouncements>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getListAnnouncementsQueryOptions(params,options)
+  const queryOptions = getListAnnouncementsQueryOptions(organizationId,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -189,27 +207,38 @@ export type createAnnouncementResponse400 = {
   status: 400
 }
 
+export type createAnnouncementResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type createAnnouncementResponse403 = {
+  data: ApiError
+  status: 403
+}
+
 export type createAnnouncementResponseSuccess = (createAnnouncementResponse201) & {
   headers: Headers;
 };
-export type createAnnouncementResponseError = (createAnnouncementResponse400) & {
+export type createAnnouncementResponseError = (createAnnouncementResponse400 | createAnnouncementResponse401 | createAnnouncementResponse403) & {
   headers: Headers;
 };
 
 export type createAnnouncementResponse = (createAnnouncementResponseSuccess | createAnnouncementResponseError)
 
-export const getCreateAnnouncementUrl = () => {
+export const getCreateAnnouncementUrl = (organizationId: string,) => {
 
 
 
 
-  return `/api/announcements`
+  return `/api/organizations/${organizationId}/announcements`
 }
 
 /**
  * @summary Create an announcement
  */
-export const createAnnouncement = async (announcementInput: AnnouncementInput, options?: Parameters<typeof customClient>[1]): Promise<createAnnouncementResponse> => {
+export const createAnnouncement = async (organizationId: string,
+    announcementInput: AnnouncementInput, options?: Parameters<typeof customClient>[1]): Promise<createAnnouncementResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -225,7 +254,7 @@ export const createAnnouncement = async (announcementInput: AnnouncementInput, o
     }
     return headers;
   };
-return customClient<createAnnouncementResponse>(getCreateAnnouncementUrl(),
+return customClient<createAnnouncementResponse>(getCreateAnnouncementUrl(organizationId),
   {
     ...options,
     method: 'POST',
@@ -255,9 +284,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAnnouncement>>, CreateAnnouncementMutationVariables> = (props) => {
-          const {data} = props ?? {};
+          const {organizationId,data} = props ?? {};
 
-          return  createAnnouncement(data,requestOptions)
+          return  createAnnouncement(organizationId,data,requestOptions)
         }
 
 
@@ -270,7 +299,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateAnnouncementMutationResult = NonNullable<Awaited<ReturnType<typeof createAnnouncement>>>
     export type CreateAnnouncementMutationBody = AnnouncementInput
     export type CreateAnnouncementMutationError = ApiError
-    export type CreateAnnouncementMutationVariables = {data: AnnouncementInput}
+    export type CreateAnnouncementMutationVariables = {organizationId: string;data: AnnouncementInput}
 
     /**
  * @summary Create an announcement
@@ -295,6 +324,16 @@ export type getAnnouncementResponse400 = {
   status: 400
 }
 
+export type getAnnouncementResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type getAnnouncementResponse403 = {
+  data: ApiError
+  status: 403
+}
+
 export type getAnnouncementResponse404 = {
   data: ApiError
   status: 404
@@ -303,26 +342,28 @@ export type getAnnouncementResponse404 = {
 export type getAnnouncementResponseSuccess = (getAnnouncementResponse200) & {
   headers: Headers;
 };
-export type getAnnouncementResponseError = (getAnnouncementResponse400 | getAnnouncementResponse404) & {
+export type getAnnouncementResponseError = (getAnnouncementResponse400 | getAnnouncementResponse401 | getAnnouncementResponse403 | getAnnouncementResponse404) & {
   headers: Headers;
 };
 
 export type getAnnouncementResponse = (getAnnouncementResponseSuccess | getAnnouncementResponseError)
 
-export const getGetAnnouncementUrl = (id: string,) => {
+export const getGetAnnouncementUrl = (organizationId: string,
+    id: string,) => {
 
 
 
 
-  return `/api/announcements/${id}`
+  return `/api/organizations/${organizationId}/announcements/${id}`
 }
 
 /**
  * @summary Get an announcement
  */
-export const getAnnouncement = async (id: string, options?: Parameters<typeof customClient>[1]): Promise<getAnnouncementResponse> => {
+export const getAnnouncement = async (organizationId: string,
+    id: string, options?: Parameters<typeof customClient>[1]): Promise<getAnnouncementResponse> => {
 
-  return customClient<getAnnouncementResponse>(getGetAnnouncementUrl(id),
+  return customClient<getAnnouncementResponse>(getGetAnnouncementUrl(organizationId,id),
   {
     ...options,
     method: 'GET'
@@ -335,29 +376,31 @@ export const getAnnouncement = async (id: string, options?: Parameters<typeof cu
 
 
 
-export const getGetAnnouncementQueryKey = (id: string,) => {
+export const getGetAnnouncementQueryKey = (organizationId: string,
+    id: string,) => {
     return [
-    `/api/announcements/${id}`
+    `/api/organizations/${organizationId}/announcements/${id}`
     ] as const;
     }
 
 
-export const getGetAnnouncementQueryOptions = <TData = Awaited<ReturnType<typeof getAnnouncement>>, TError = ApiError>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
+export const getGetAnnouncementQueryOptions = <TData = Awaited<ReturnType<typeof getAnnouncement>>, TError = ApiError>(organizationId: string,
+    id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAnnouncementQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getGetAnnouncementQueryKey(organizationId,id);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnnouncement>>> = ({ signal }) => getAnnouncement(id, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnnouncement>>> = ({ signal }) => getAnnouncement(organizationId,id, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: organizationId !== null && organizationId !== undefined && id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAnnouncementQueryResult = NonNullable<Awaited<ReturnType<typeof getAnnouncement>>>
@@ -365,7 +408,8 @@ export type GetAnnouncementQueryError = ApiError
 
 
 export function useGetAnnouncement<TData = Awaited<ReturnType<typeof getAnnouncement>>, TError = ApiError>(
- id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>> & Pick<
+ organizationId: string,
+    id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getAnnouncement>>,
           TError,
@@ -375,7 +419,8 @@ export function useGetAnnouncement<TData = Awaited<ReturnType<typeof getAnnounce
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetAnnouncement<TData = Awaited<ReturnType<typeof getAnnouncement>>, TError = ApiError>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>> & Pick<
+ organizationId: string,
+    id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getAnnouncement>>,
           TError,
@@ -385,7 +430,8 @@ export function useGetAnnouncement<TData = Awaited<ReturnType<typeof getAnnounce
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetAnnouncement<TData = Awaited<ReturnType<typeof getAnnouncement>>, TError = ApiError>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
+ organizationId: string,
+    id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -393,11 +439,12 @@ export function useGetAnnouncement<TData = Awaited<ReturnType<typeof getAnnounce
  */
 
 export function useGetAnnouncement<TData = Awaited<ReturnType<typeof getAnnouncement>>, TError = ApiError>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
+ organizationId: string,
+    id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnouncement>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetAnnouncementQueryOptions(id,options)
+  const queryOptions = getGetAnnouncementQueryOptions(organizationId,id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -419,6 +466,16 @@ export type updateAnnouncementResponse400 = {
   status: 400
 }
 
+export type updateAnnouncementResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type updateAnnouncementResponse403 = {
+  data: ApiError
+  status: 403
+}
+
 export type updateAnnouncementResponse404 = {
   data: ApiError
   status: 404
@@ -427,24 +484,26 @@ export type updateAnnouncementResponse404 = {
 export type updateAnnouncementResponseSuccess = (updateAnnouncementResponse200) & {
   headers: Headers;
 };
-export type updateAnnouncementResponseError = (updateAnnouncementResponse400 | updateAnnouncementResponse404) & {
+export type updateAnnouncementResponseError = (updateAnnouncementResponse400 | updateAnnouncementResponse401 | updateAnnouncementResponse403 | updateAnnouncementResponse404) & {
   headers: Headers;
 };
 
 export type updateAnnouncementResponse = (updateAnnouncementResponseSuccess | updateAnnouncementResponseError)
 
-export const getUpdateAnnouncementUrl = (id: string,) => {
+export const getUpdateAnnouncementUrl = (organizationId: string,
+    id: string,) => {
 
 
 
 
-  return `/api/announcements/${id}`
+  return `/api/organizations/${organizationId}/announcements/${id}`
 }
 
 /**
  * @summary Update an announcement
  */
-export const updateAnnouncement = async (id: string,
+export const updateAnnouncement = async (organizationId: string,
+    id: string,
     announcementInput: AnnouncementInput, options?: Parameters<typeof customClient>[1]): Promise<updateAnnouncementResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
@@ -461,7 +520,7 @@ export const updateAnnouncement = async (id: string,
     }
     return headers;
   };
-return customClient<updateAnnouncementResponse>(getUpdateAnnouncementUrl(id),
+return customClient<updateAnnouncementResponse>(getUpdateAnnouncementUrl(organizationId,id),
   {
     ...options,
     method: 'PUT',
@@ -491,9 +550,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAnnouncement>>, UpdateAnnouncementMutationVariables> = (props) => {
-          const {id,data} = props ?? {};
+          const {organizationId,id,data} = props ?? {};
 
-          return  updateAnnouncement(id,data,requestOptions)
+          return  updateAnnouncement(organizationId,id,data,requestOptions)
         }
 
 
@@ -506,7 +565,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UpdateAnnouncementMutationResult = NonNullable<Awaited<ReturnType<typeof updateAnnouncement>>>
     export type UpdateAnnouncementMutationBody = AnnouncementInput
     export type UpdateAnnouncementMutationError = ApiError
-    export type UpdateAnnouncementMutationVariables = {id: string;data: AnnouncementInput}
+    export type UpdateAnnouncementMutationVariables = {organizationId: string;id: string;data: AnnouncementInput}
 
     /**
  * @summary Update an announcement
@@ -531,6 +590,16 @@ export type deleteAnnouncementResponse400 = {
   status: 400
 }
 
+export type deleteAnnouncementResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type deleteAnnouncementResponse403 = {
+  data: ApiError
+  status: 403
+}
+
 export type deleteAnnouncementResponse404 = {
   data: ApiError
   status: 404
@@ -539,26 +608,28 @@ export type deleteAnnouncementResponse404 = {
 export type deleteAnnouncementResponseSuccess = (deleteAnnouncementResponse204) & {
   headers: Headers;
 };
-export type deleteAnnouncementResponseError = (deleteAnnouncementResponse400 | deleteAnnouncementResponse404) & {
+export type deleteAnnouncementResponseError = (deleteAnnouncementResponse400 | deleteAnnouncementResponse401 | deleteAnnouncementResponse403 | deleteAnnouncementResponse404) & {
   headers: Headers;
 };
 
 export type deleteAnnouncementResponse = (deleteAnnouncementResponseSuccess | deleteAnnouncementResponseError)
 
-export const getDeleteAnnouncementUrl = (id: string,) => {
+export const getDeleteAnnouncementUrl = (organizationId: string,
+    id: string,) => {
 
 
 
 
-  return `/api/announcements/${id}`
+  return `/api/organizations/${organizationId}/announcements/${id}`
 }
 
 /**
  * @summary Delete an announcement
  */
-export const deleteAnnouncement = async (id: string, options?: Parameters<typeof customClient>[1]): Promise<deleteAnnouncementResponse> => {
+export const deleteAnnouncement = async (organizationId: string,
+    id: string, options?: Parameters<typeof customClient>[1]): Promise<deleteAnnouncementResponse> => {
 
-  return customClient<deleteAnnouncementResponse>(getDeleteAnnouncementUrl(id),
+  return customClient<deleteAnnouncementResponse>(getDeleteAnnouncementUrl(organizationId,id),
   {
     ...options,
     method: 'DELETE'
@@ -588,9 +659,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAnnouncement>>, DeleteAnnouncementMutationVariables> = (props) => {
-          const {id} = props ?? {};
+          const {organizationId,id} = props ?? {};
 
-          return  deleteAnnouncement(id,requestOptions)
+          return  deleteAnnouncement(organizationId,id,requestOptions)
         }
 
 
@@ -603,7 +674,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type DeleteAnnouncementMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAnnouncement>>>
 
     export type DeleteAnnouncementMutationError = ApiError
-    export type DeleteAnnouncementMutationVariables = {id: string}
+    export type DeleteAnnouncementMutationVariables = {organizationId: string;id: string}
 
     /**
  * @summary Delete an announcement

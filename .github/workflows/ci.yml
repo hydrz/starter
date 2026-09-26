@@ -4,6 +4,10 @@ on:
   pull_request:
   push:
     branches: [main]
+  # merge_group 确保 Merge Queue 中的 group 也能触发必要检查。
+  # 未启用 Merge Queue 时此触发器不产生任何运行，可安全保留。
+  merge_group:
+    types: [checks_requested]
 
 permissions:
   contents: read

@@ -15,12 +15,85 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
+// CreateAnnouncementParams is parameters of createAnnouncement operation.
+type CreateAnnouncementParams struct {
+	OrganizationId uuid.UUID
+}
+
+func unpackCreateAnnouncementParams(packed middleware.Parameters) (params CreateAnnouncementParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "organizationId",
+			In:   "path",
+		}
+		params.OrganizationId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCreateAnnouncementParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateAnnouncementParams, _ error) {
+	// Decode path: organizationId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "organizationId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.OrganizationId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "organizationId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DeleteAnnouncementParams is parameters of deleteAnnouncement operation.
 type DeleteAnnouncementParams struct {
-	ID uuid.UUID
+	OrganizationId uuid.UUID
+	ID             uuid.UUID
 }
 
 func unpackDeleteAnnouncementParams(packed middleware.Parameters) (params DeleteAnnouncementParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "organizationId",
+			In:   "path",
+		}
+		params.OrganizationId = packed[key].(uuid.UUID)
+	}
 	{
 		key := middleware.ParameterKey{
 			Name: "id",
@@ -31,12 +104,57 @@ func unpackDeleteAnnouncementParams(packed middleware.Parameters) (params Delete
 	return params
 }
 
-func decodeDeleteAnnouncementParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteAnnouncementParams, _ error) {
-	// Decode path: id.
+func decodeDeleteAnnouncementParams(args [2]string, argsEscaped bool, r *http.Request) (params DeleteAnnouncementParams, _ error) {
+	// Decode path: organizationId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
 			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "organizationId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.OrganizationId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "organizationId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: id.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
 			if err != nil {
 				return errors.Wrap(err, "unescape path")
 			}
@@ -82,10 +200,18 @@ func decodeDeleteAnnouncementParams(args [1]string, argsEscaped bool, r *http.Re
 
 // GetAnnouncementParams is parameters of getAnnouncement operation.
 type GetAnnouncementParams struct {
-	ID uuid.UUID
+	OrganizationId uuid.UUID
+	ID             uuid.UUID
 }
 
 func unpackGetAnnouncementParams(packed middleware.Parameters) (params GetAnnouncementParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "organizationId",
+			In:   "path",
+		}
+		params.OrganizationId = packed[key].(uuid.UUID)
+	}
 	{
 		key := middleware.ParameterKey{
 			Name: "id",
@@ -96,12 +222,57 @@ func unpackGetAnnouncementParams(packed middleware.Parameters) (params GetAnnoun
 	return params
 }
 
-func decodeGetAnnouncementParams(args [1]string, argsEscaped bool, r *http.Request) (params GetAnnouncementParams, _ error) {
-	// Decode path: id.
+func decodeGetAnnouncementParams(args [2]string, argsEscaped bool, r *http.Request) (params GetAnnouncementParams, _ error) {
+	// Decode path: organizationId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
 			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "organizationId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.OrganizationId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "organizationId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: id.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
 			if err != nil {
 				return errors.Wrap(err, "unescape path")
 			}
@@ -147,12 +318,20 @@ func decodeGetAnnouncementParams(args [1]string, argsEscaped bool, r *http.Reque
 
 // ListAnnouncementsParams is parameters of listAnnouncements operation.
 type ListAnnouncementsParams struct {
-	Limit  OptInt32              `json:",omitempty,omitzero"`
-	Offset OptInt32              `json:",omitempty,omitzero"`
-	Status OptAnnouncementStatus `json:",omitempty,omitzero"`
+	OrganizationId uuid.UUID
+	Limit          OptInt32              `json:",omitempty,omitzero"`
+	Offset         OptInt32              `json:",omitempty,omitzero"`
+	Status         OptAnnouncementStatus `json:",omitempty,omitzero"`
 }
 
 func unpackListAnnouncementsParams(packed middleware.Parameters) (params ListAnnouncementsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "organizationId",
+			In:   "path",
+		}
+		params.OrganizationId = packed[key].(uuid.UUID)
+	}
 	{
 		key := middleware.ParameterKey{
 			Name: "limit",
@@ -183,8 +362,53 @@ func unpackListAnnouncementsParams(packed middleware.Parameters) (params ListAnn
 	return params
 }
 
-func decodeListAnnouncementsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListAnnouncementsParams, _ error) {
+func decodeListAnnouncementsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListAnnouncementsParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: organizationId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "organizationId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.OrganizationId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "organizationId",
+			In:   "path",
+			Err:  err,
+		}
+	}
 	// Set default value for query: limit.
 	{
 		val := int32(20)
@@ -388,10 +612,18 @@ func decodeListAnnouncementsParams(args [0]string, argsEscaped bool, r *http.Req
 
 // UpdateAnnouncementParams is parameters of updateAnnouncement operation.
 type UpdateAnnouncementParams struct {
-	ID uuid.UUID
+	OrganizationId uuid.UUID
+	ID             uuid.UUID
 }
 
 func unpackUpdateAnnouncementParams(packed middleware.Parameters) (params UpdateAnnouncementParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "organizationId",
+			In:   "path",
+		}
+		params.OrganizationId = packed[key].(uuid.UUID)
+	}
 	{
 		key := middleware.ParameterKey{
 			Name: "id",
@@ -402,12 +634,57 @@ func unpackUpdateAnnouncementParams(packed middleware.Parameters) (params Update
 	return params
 }
 
-func decodeUpdateAnnouncementParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateAnnouncementParams, _ error) {
-	// Decode path: id.
+func decodeUpdateAnnouncementParams(args [2]string, argsEscaped bool, r *http.Request) (params UpdateAnnouncementParams, _ error) {
+	// Decode path: organizationId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
 			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "organizationId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.OrganizationId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "organizationId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: id.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
 			if err != nil {
 				return errors.Wrap(err, "unescape path")
 			}

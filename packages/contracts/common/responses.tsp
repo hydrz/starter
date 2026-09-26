@@ -23,8 +23,33 @@ model BadRequestResponse {
   @TypeSpec.Http.body body: ApiError;
 }
 
+model UnauthorizedResponse {
+  @TypeSpec.Http.statusCode statusCode: 401;
+  @TypeSpec.Http.body body: ApiError;
+}
+
+model ForbiddenResponse {
+  @TypeSpec.Http.statusCode statusCode: 403;
+  @TypeSpec.Http.body body: ApiError;
+}
+
 model NotFoundResponse {
   @TypeSpec.Http.statusCode statusCode: 404;
+  @TypeSpec.Http.body body: ApiError;
+}
+
+model ConflictResponse {
+  @TypeSpec.Http.statusCode statusCode: 409;
+  @TypeSpec.Http.body body: ApiError;
+}
+
+model PreconditionFailedResponse {
+  @TypeSpec.Http.statusCode statusCode: 412;
+  @TypeSpec.Http.body body: ApiError;
+}
+
+model TooManyRequestsResponse {
+  @TypeSpec.Http.statusCode statusCode: 429;
   @TypeSpec.Http.body body: ApiError;
 }
 

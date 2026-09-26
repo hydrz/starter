@@ -32,31 +32,31 @@ type Invoker interface {
 	//
 	// Create an announcement.
 	//
-	// POST /api/announcements
-	CreateAnnouncement(ctx context.Context, request *AnnouncementInput) (CreateAnnouncementRes, error)
+	// POST /api/organizations/{organizationId}/announcements
+	CreateAnnouncement(ctx context.Context, request *AnnouncementInput, params CreateAnnouncementParams) (CreateAnnouncementRes, error)
 	// DeleteAnnouncement invokes deleteAnnouncement operation.
 	//
 	// Delete an announcement.
 	//
-	// DELETE /api/announcements/{id}
+	// DELETE /api/organizations/{organizationId}/announcements/{id}
 	DeleteAnnouncement(ctx context.Context, params DeleteAnnouncementParams) (DeleteAnnouncementRes, error)
 	// GetAnnouncement invokes getAnnouncement operation.
 	//
 	// Get an announcement.
 	//
-	// GET /api/announcements/{id}
+	// GET /api/organizations/{organizationId}/announcements/{id}
 	GetAnnouncement(ctx context.Context, params GetAnnouncementParams) (GetAnnouncementRes, error)
 	// ListAnnouncements invokes listAnnouncements operation.
 	//
 	// List announcements.
 	//
-	// GET /api/announcements
+	// GET /api/organizations/{organizationId}/announcements
 	ListAnnouncements(ctx context.Context, params ListAnnouncementsParams) (ListAnnouncementsRes, error)
 	// UpdateAnnouncement invokes updateAnnouncement operation.
 	//
 	// Update an announcement.
 	//
-	// PUT /api/announcements/{id}
+	// PUT /api/organizations/{organizationId}/announcements/{id}
 	UpdateAnnouncement(ctx context.Context, request *AnnouncementInput, params UpdateAnnouncementParams) (UpdateAnnouncementRes, error)
 }
 
@@ -103,17 +103,17 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 //
 // Create an announcement.
 //
-// POST /api/announcements
-func (c *Client) CreateAnnouncement(ctx context.Context, request *AnnouncementInput) (CreateAnnouncementRes, error) {
-	res, err := c.sendCreateAnnouncement(ctx, request)
+// POST /api/organizations/{organizationId}/announcements
+func (c *Client) CreateAnnouncement(ctx context.Context, request *AnnouncementInput, params CreateAnnouncementParams) (CreateAnnouncementRes, error) {
+	res, err := c.sendCreateAnnouncement(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendCreateAnnouncement(ctx context.Context, request *AnnouncementInput) (res CreateAnnouncementRes, err error) {
+func (c *Client) sendCreateAnnouncement(ctx context.Context, request *AnnouncementInput, params CreateAnnouncementParams) (res CreateAnnouncementRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("createAnnouncement"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/announcements"),
+		semconv.URLTemplateKey.String("/api/organizations/{organizationId}/announcements"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -146,8 +146,27 @@ func (c *Client) sendCreateAnnouncement(ctx context.Context, request *Announceme
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/announcements"
+	var pathParts [3]string
+	pathParts[0] = "/api/organizations/"
+	{
+		// Encode "organizationId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "organizationId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.OrganizationId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/announcements"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -186,7 +205,7 @@ func (c *Client) sendCreateAnnouncement(ctx context.Context, request *Announceme
 //
 // Delete an announcement.
 //
-// DELETE /api/announcements/{id}
+// DELETE /api/organizations/{organizationId}/announcements/{id}
 func (c *Client) DeleteAnnouncement(ctx context.Context, params DeleteAnnouncementParams) (DeleteAnnouncementRes, error) {
 	res, err := c.sendDeleteAnnouncement(ctx, params)
 	return res, err
@@ -196,7 +215,7 @@ func (c *Client) sendDeleteAnnouncement(ctx context.Context, params DeleteAnnoun
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("deleteAnnouncement"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/announcements/{id}"),
+		semconv.URLTemplateKey.String("/api/organizations/{organizationId}/announcements/{id}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -229,8 +248,27 @@ func (c *Client) sendDeleteAnnouncement(ctx context.Context, params DeleteAnnoun
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/announcements/"
+	var pathParts [4]string
+	pathParts[0] = "/api/organizations/"
+	{
+		// Encode "organizationId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "organizationId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.OrganizationId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/announcements/"
 	{
 		// Encode "id" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -247,7 +285,7 @@ func (c *Client) sendDeleteAnnouncement(ctx context.Context, params DeleteAnnoun
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -284,7 +322,7 @@ func (c *Client) sendDeleteAnnouncement(ctx context.Context, params DeleteAnnoun
 //
 // Get an announcement.
 //
-// GET /api/announcements/{id}
+// GET /api/organizations/{organizationId}/announcements/{id}
 func (c *Client) GetAnnouncement(ctx context.Context, params GetAnnouncementParams) (GetAnnouncementRes, error) {
 	res, err := c.sendGetAnnouncement(ctx, params)
 	return res, err
@@ -294,7 +332,7 @@ func (c *Client) sendGetAnnouncement(ctx context.Context, params GetAnnouncement
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("getAnnouncement"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/announcements/{id}"),
+		semconv.URLTemplateKey.String("/api/organizations/{organizationId}/announcements/{id}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -327,8 +365,27 @@ func (c *Client) sendGetAnnouncement(ctx context.Context, params GetAnnouncement
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/announcements/"
+	var pathParts [4]string
+	pathParts[0] = "/api/organizations/"
+	{
+		// Encode "organizationId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "organizationId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.OrganizationId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/announcements/"
 	{
 		// Encode "id" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -345,7 +402,7 @@ func (c *Client) sendGetAnnouncement(ctx context.Context, params GetAnnouncement
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -382,7 +439,7 @@ func (c *Client) sendGetAnnouncement(ctx context.Context, params GetAnnouncement
 //
 // List announcements.
 //
-// GET /api/announcements
+// GET /api/organizations/{organizationId}/announcements
 func (c *Client) ListAnnouncements(ctx context.Context, params ListAnnouncementsParams) (ListAnnouncementsRes, error) {
 	res, err := c.sendListAnnouncements(ctx, params)
 	return res, err
@@ -392,7 +449,7 @@ func (c *Client) sendListAnnouncements(ctx context.Context, params ListAnnouncem
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("listAnnouncements"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/announcements"),
+		semconv.URLTemplateKey.String("/api/organizations/{organizationId}/announcements"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -425,8 +482,27 @@ func (c *Client) sendListAnnouncements(ctx context.Context, params ListAnnouncem
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/announcements"
+	var pathParts [3]string
+	pathParts[0] = "/api/organizations/"
+	{
+		// Encode "organizationId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "organizationId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.OrganizationId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/announcements"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -517,7 +593,7 @@ func (c *Client) sendListAnnouncements(ctx context.Context, params ListAnnouncem
 //
 // Update an announcement.
 //
-// PUT /api/announcements/{id}
+// PUT /api/organizations/{organizationId}/announcements/{id}
 func (c *Client) UpdateAnnouncement(ctx context.Context, request *AnnouncementInput, params UpdateAnnouncementParams) (UpdateAnnouncementRes, error) {
 	res, err := c.sendUpdateAnnouncement(ctx, request, params)
 	return res, err
@@ -527,7 +603,7 @@ func (c *Client) sendUpdateAnnouncement(ctx context.Context, request *Announceme
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("updateAnnouncement"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.URLTemplateKey.String("/api/announcements/{id}"),
+		semconv.URLTemplateKey.String("/api/organizations/{organizationId}/announcements/{id}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -560,8 +636,27 @@ func (c *Client) sendUpdateAnnouncement(ctx context.Context, request *Announceme
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/announcements/"
+	var pathParts [4]string
+	pathParts[0] = "/api/organizations/"
+	{
+		// Encode "organizationId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "organizationId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.OrganizationId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/announcements/"
 	{
 		// Encode "id" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -578,7 +673,7 @@ func (c *Client) sendUpdateAnnouncement(ctx context.Context, request *Announceme
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 

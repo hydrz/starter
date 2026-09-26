@@ -7,6 +7,7 @@ package store
 import (
 	"database/sql/driver"
 	"fmt"
+	"net/netip"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -54,10 +55,152 @@ func (ns NullAnnouncementStatus) Value() (driver.Value, error) {
 }
 
 type Announcement struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	Title          string             `db:"title" json:"title"`
+	Content        string             `db:"content" json:"content"`
+	Status         AnnouncementStatus `db:"status" json:"status"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	OrganizationID pgtype.UUID        `db:"organization_id" json:"organization_id"`
+}
+
+type ApiKey struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	UserID         pgtype.UUID        `db:"user_id" json:"user_id"`
+	OrganizationID pgtype.UUID        `db:"organization_id" json:"organization_id"`
+	Name           string             `db:"name" json:"name"`
+	KeyPrefix      string             `db:"key_prefix" json:"key_prefix"`
+	SecretDigest   []byte             `db:"secret_digest" json:"secret_digest"`
+	ExpiresAt      pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	RevokedAt      pgtype.Timestamptz `db:"revoked_at" json:"revoked_at"`
+	LastUsedAt     pgtype.Timestamptz `db:"last_used_at" json:"last_used_at"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type CasbinRule struct {
+	ID    int64  `db:"id" json:"id"`
+	Ptype string `db:"ptype" json:"ptype"`
+	V0    string `db:"v0" json:"v0"`
+	V1    string `db:"v1" json:"v1"`
+	V2    string `db:"v2" json:"v2"`
+	V3    string `db:"v3" json:"v3"`
+	V4    string `db:"v4" json:"v4"`
+	V5    string `db:"v5" json:"v5"`
+}
+
+type DeliveryAttempt struct {
+	ID                pgtype.UUID        `db:"id" json:"id"`
+	DeliveryMessageID pgtype.UUID        `db:"delivery_message_id" json:"delivery_message_id"`
+	AttemptNumber     int32              `db:"attempt_number" json:"attempt_number"`
+	Status            string             `db:"status" json:"status"`
+	ProviderResponse  *string            `db:"provider_response" json:"provider_response"`
+	ErrorMessage      *string            `db:"error_message" json:"error_message"`
+	StartedAt         pgtype.Timestamptz `db:"started_at" json:"started_at"`
+	CompletedAt       pgtype.Timestamptz `db:"completed_at" json:"completed_at"`
+}
+
+type DeliveryMessage struct {
+	ID                   pgtype.UUID        `db:"id" json:"id"`
+	NotificationIntentID pgtype.UUID        `db:"notification_intent_id" json:"notification_intent_id"`
+	OutboxEventID        pgtype.UUID        `db:"outbox_event_id" json:"outbox_event_id"`
+	Channel              string             `db:"channel" json:"channel"`
+	Recipient            string             `db:"recipient" json:"recipient"`
+	Subject              string             `db:"subject" json:"subject"`
+	TextBody             string             `db:"text_body" json:"text_body"`
+	HtmlBody             string             `db:"html_body" json:"html_body"`
+	IdempotencyKey       string             `db:"idempotency_key" json:"idempotency_key"`
+	CreatedAt            pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type NotificationIntent struct {
+	ID              pgtype.UUID        `db:"id" json:"id"`
+	RecipientUserID pgtype.UUID        `db:"recipient_user_id" json:"recipient_user_id"`
+	Kind            string             `db:"kind" json:"kind"`
+	Payload         []byte             `db:"payload" json:"payload"`
+	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type OneTimeToken struct {
+	ID          pgtype.UUID        `db:"id" json:"id"`
+	UserID      pgtype.UUID        `db:"user_id" json:"user_id"`
+	Purpose     string             `db:"purpose" json:"purpose"`
+	TokenDigest []byte             `db:"token_digest" json:"token_digest"`
+	ExpiresAt   pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	ConsumedAt  pgtype.Timestamptz `db:"consumed_at" json:"consumed_at"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type Organization struct {
 	ID        pgtype.UUID        `db:"id" json:"id"`
-	Title     string             `db:"title" json:"title"`
-	Content   string             `db:"content" json:"content"`
-	Status    AnnouncementStatus `db:"status" json:"status"`
+	Slug      string             `db:"slug" json:"slug"`
+	Name      string             `db:"name" json:"name"`
 	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type OrganizationInvitation struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	OrganizationID pgtype.UUID        `db:"organization_id" json:"organization_id"`
+	Email          string             `db:"email" json:"email"`
+	Role           string             `db:"role" json:"role"`
+	TokenDigest    []byte             `db:"token_digest" json:"token_digest"`
+	ExpiresAt      pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	AcceptedAt     pgtype.Timestamptz `db:"accepted_at" json:"accepted_at"`
+	RevokedAt      pgtype.Timestamptz `db:"revoked_at" json:"revoked_at"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type OrganizationMembership struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	OrganizationID pgtype.UUID        `db:"organization_id" json:"organization_id"`
+	UserID         pgtype.UUID        `db:"user_id" json:"user_id"`
+	Role           string             `db:"role" json:"role"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type OutboxEvent struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	Topic          string             `db:"topic" json:"topic"`
+	AggregateType  string             `db:"aggregate_type" json:"aggregate_type"`
+	AggregateID    pgtype.UUID        `db:"aggregate_id" json:"aggregate_id"`
+	Payload        []byte             `db:"payload" json:"payload"`
+	IdempotencyKey string             `db:"idempotency_key" json:"idempotency_key"`
+	AvailableAt    pgtype.Timestamptz `db:"available_at" json:"available_at"`
+	ClaimedAt      pgtype.Timestamptz `db:"claimed_at" json:"claimed_at"`
+	ClaimToken     pgtype.UUID        `db:"claim_token" json:"claim_token"`
+	Attempts       int32              `db:"attempts" json:"attempts"`
+	ProcessedAt    pgtype.Timestamptz `db:"processed_at" json:"processed_at"`
+	LastError      *string            `db:"last_error" json:"last_error"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type RefreshSession struct {
+	ID          pgtype.UUID        `db:"id" json:"id"`
+	FamilyID    pgtype.UUID        `db:"family_id" json:"family_id"`
+	TokenDigest []byte             `db:"token_digest" json:"token_digest"`
+	ExpiresAt   pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	ReplacedAt  pgtype.Timestamptz `db:"replaced_at" json:"replaced_at"`
+	RevokedAt   pgtype.Timestamptz `db:"revoked_at" json:"revoked_at"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	LastUsedAt  pgtype.Timestamptz `db:"last_used_at" json:"last_used_at"`
+	UserAgent   *string            `db:"user_agent" json:"user_agent"`
+	IpAddress   *netip.Addr        `db:"ip_address" json:"ip_address"`
+}
+
+type RefreshTokenFamily struct {
+	ID           pgtype.UUID        `db:"id" json:"id"`
+	UserID       pgtype.UUID        `db:"user_id" json:"user_id"`
+	RevokedAt    pgtype.Timestamptz `db:"revoked_at" json:"revoked_at"`
+	RevokeReason *string            `db:"revoke_reason" json:"revoke_reason"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type User struct {
+	ID              pgtype.UUID        `db:"id" json:"id"`
+	Email           string             `db:"email" json:"email"`
+	PasswordHash    string             `db:"password_hash" json:"password_hash"`
+	EmailVerifiedAt pgtype.Timestamptz `db:"email_verified_at" json:"email_verified_at"`
+	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }

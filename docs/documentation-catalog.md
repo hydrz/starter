@@ -10,6 +10,10 @@
 | 文档 | 状态 | 负责人 | 最后复审 | 复审周期 |
 | --- | --- | --- | --- | --- |
 | [工程蓝图](engineering-blueprint.md) | Active | Architecture | 2026-09-24 | 180 天 |
+| [身份平台架构](architecture/identity-platform.md) | Active | Architecture | 2026-09-26 | 180 天 |
+| [身份平台实施台账](implementation/identity-platform-ledger.md) | Active | Platform Engineering | 2026-09-26 | 90 天 |
+| [身份平台契约映射](implementation/identity-platform-contract-map.md) | Active | API Guild | 2026-09-26 | 180 天 |
+| [身份平台实施交接](implementation/identity-platform-handoff.md) | Active | Platform Engineering | 2026-09-26 | 每次交接 |
 | [实施路线](delivery-roadmap.md) | Active | Platform Engineering | 2026-09-25 | 每阶段 |
 | [本地开发](development/getting-started.md) | Active | Developer Experience | 2026-09-25 | 90 天 |
 | [契约开发](development/contracts.md) | Active | API Guild | 2026-09-24 | 180 天 |
