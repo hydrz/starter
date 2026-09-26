@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { GithubIcon } from "../../components/GithubIcon";
+import { LanguageSwitcher } from "../../components/LanguageSwitcher";
 import { ThemeToggle } from "../../components/ThemeToggle";
+import * as m from "../../paraglide/messages";
 
 export function LandingNavbar() {
   return (
@@ -11,13 +13,13 @@ export function LandingNavbar() {
           <Link
             to="/"
             className="flex items-center gap-2.5 font-semibold text-foreground transition-opacity hover:opacity-90"
-            aria-label="Starter 首页"
+            aria-label={m.landing_nav_home_aria()}
           >
             <span className="flex h-7 w-7 items-center justify-center rounded-full border border-border/80 bg-primary/10 text-xs font-bold text-accent-foreground dark:text-accent">
               E
             </span>
             <span className="text-base tracking-tight font-semibold">
-              Starter
+              {m.app_brand()}
             </span>
           </Link>
 
@@ -26,25 +28,25 @@ export function LandingNavbar() {
               href="#features"
               className="transition-colors hover:text-foreground"
             >
-              核心能力
+              {m.landing_nav_features()}
             </a>
             <a
               href="#architecture"
               className="transition-colors hover:text-foreground"
             >
-              契约架构
+              {m.landing_nav_architecture()}
             </a>
             <a
               href="#tech-stack"
               className="transition-colors hover:text-foreground"
             >
-              技术选型
+              {m.landing_nav_tech_stack()}
             </a>
             <a
               href="#quick-start"
               className="transition-colors hover:text-foreground"
             >
-              快速开始
+              {m.landing_nav_quick_start()}
             </a>
             <a
               href="/api/docs"
@@ -52,7 +54,7 @@ export function LandingNavbar() {
               rel="noreferrer"
               className="flex items-center gap-1 transition-colors hover:text-foreground"
             >
-              <span>API 文档</span>
+              <span>{m.landing_nav_api_docs()}</span>
               <BookOpen size={12} />
             </a>
           </nav>
@@ -64,18 +66,19 @@ export function LandingNavbar() {
             target="_blank"
             rel="noreferrer"
             className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            aria-label="GitHub 仓库"
+            aria-label={m.landing_nav_github_aria()}
           >
             <GithubIcon size={15} />
           </a>
 
+          <LanguageSwitcher className="hidden sm:inline-flex" />
           <ThemeToggle />
 
           <Link
             to="/app"
             className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-xs font-medium text-primary-foreground shadow-xs transition-colors hover:opacity-95"
           >
-            <span>Starter 控制台</span>
+            <span>{m.landing_nav_console_cta()}</span>
             <ArrowRight size={13} />
           </Link>
         </div>

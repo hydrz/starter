@@ -1,19 +1,24 @@
 import { Laptop, Moon, Sun } from "lucide-react";
+import * as m from "../paraglide/messages";
 import { type Theme, useUIStore } from "../stores/ui-store";
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
   const { theme, setTheme } = useUIStore();
 
-  const options: Array<{ value: Theme; label: string; icon: typeof Sun }> = [
-    { value: "light", label: "浅色模式", icon: Sun },
-    { value: "system", label: "跟随系统", icon: Laptop },
-    { value: "dark", label: "深色模式", icon: Moon },
+  const options: Array<{
+    value: Theme;
+    label: string;
+    icon: typeof Sun;
+  }> = [
+    { value: "light", label: m.theme_light(), icon: Sun },
+    { value: "system", label: m.theme_system(), icon: Laptop },
+    { value: "dark", label: m.theme_dark(), icon: Moon },
   ];
 
   return (
     <div
       role="radiogroup"
-      aria-label="选择主题外观"
+      aria-label={m.theme_switch_aria()}
       className={`inline-flex items-center gap-0.5 rounded-lg border border-border/60 bg-muted/60 p-0.5 text-muted-foreground backdrop-blur-xs ${className}`}
     >
       {options.map(({ value, label, icon: Icon }) => {

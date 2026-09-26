@@ -17,63 +17,79 @@
   --color-accent-foreground: hsl(var(--accent-foreground));
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
+/* Cloudflare 式配色：浅色模式 (DESIGN.md §2.1) */
 :root {
   font-family: Inter, "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
-  color: #17201c;
-  background: #f1f3ef;
+  color: #0b1418;
+  background: #ffffff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 
-  --background: 120 7% 95%;
-  --foreground: 153 17% 11%;
+  --background: 0 0% 100%;
+  --foreground: 191 39% 7%;
   --card: 0 0% 100%;
-  --card-foreground: 153 17% 11%;
+  --card-foreground: 191 39% 7%;
   --popover: 0 0% 100%;
-  --popover-foreground: 153 17% 11%;
-  --primary: 153 25% 18%;
+  --popover-foreground: 191 39% 7%;
+  --primary: 30 91% 54%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 120 7% 90%;
-  --secondary-foreground: 153 17% 11%;
-  --muted: 120 7% 92%;
-  --muted-foreground: 150 5% 45%;
-  --accent: 81 65% 68%;
-  --accent-foreground: 153 25% 12%;
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 135 7% 85%;
-  --input: 135 7% 85%;
-  --ring: 81 65% 68%;
+  --secondary: 213 100% 38%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 180 9% 96%;
+  --muted-foreground: 199 12% 37%;
+  --accent: 180 9% 96%;
+  --accent-foreground: 191 39% 7%;
+  --destructive: 4 79% 47%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 154 79% 40%;
+  --success-foreground: 0 0% 100%;
+  --warning: 36 96% 49%;
+  --warning-foreground: 191 39% 7%;
+  --border: 187 15% 90%;
+  --input: 187 15% 90%;
+  --ring: 30 91% 54%;
   --radius: 0.5rem;
 }
 
+/* Cloudflare 式配色：深色模式 (DESIGN.md §2.1) */
 .dark {
-  color: #eef3ef;
-  background: #0e1511;
+  color: #e9edef;
+  background: #0a0e11;
 
-  --background: 153 25% 6%;
-  --foreground: 120 7% 95%;
-  --card: 153 22% 9%;
-  --card-foreground: 120 7% 95%;
-  --popover: 153 22% 9%;
-  --popover-foreground: 120 7% 95%;
-  --primary: 81 65% 68%;
-  --primary-foreground: 153 25% 10%;
-  --secondary: 153 18% 14%;
-  --secondary-foreground: 120 7% 95%;
-  --muted: 153 18% 14%;
-  --muted-foreground: 150 5% 65%;
-  --accent: 81 65% 68%;
-  --accent-foreground: 153 25% 10%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 153 18% 16%;
-  --input: 153 18% 16%;
-  --ring: 81 65% 68%;
+  --background: 195 24% 6%;
+  --foreground: 180 15% 91%;
+  --card: 202 24% 9%;
+  --card-foreground: 180 15% 91%;
+  --popover: 202 24% 9%;
+  --popover-foreground: 180 15% 91%;
+  --primary: 30 96% 62%;
+  --primary-foreground: 195 24% 6%;
+  --secondary: 217 91% 60%;
+  --secondary-foreground: 195 24% 6%;
+  --muted: 202 20% 12%;
+  --muted-foreground: 199 12% 61%;
+  --accent: 202 20% 12%;
+  --accent-foreground: 180 15% 91%;
+  --destructive: 4 90% 70%;
+  --destructive-foreground: 195 24% 6%;
+  --success: 152 60% 57%;
+  --success-foreground: 195 24% 6%;
+  --warning: 37 98% 61%;
+  --warning-foreground: 195 24% 6%;
+  --border: 202 22% 15%;
+  --input: 202 22% 15%;
+  --ring: 30 96% 62%;
 }
 
 * {
@@ -100,15 +116,22 @@ a {
 /* App Console Shell */
 .shell {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  /* 移动端单列（侧边栏经 `hidden` 隐藏，改用 Sheet 抽屉），
+     >=768px 起按 --sidebar-width 展开两列（AppShell 内联样式设置） */
+  grid-template-columns: 1fr;
   min-height: 100vh;
   transition: grid-template-columns 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@media (min-width: 768px) {
+  .shell {
+    grid-template-columns: var(--sidebar-width, 240px) 1fr;
+  }
 }
 .sidebar {
   position: fixed;
   inset: 0 auto 0 0;
   width: 240px;
-  display: flex;
+  /* display 由 Tailwind 的 `hidden md:flex`（AppShell）控制，避免覆盖移动端隐藏 */
   flex-direction: column;
   padding: 28px 22px;
   color: #eef3ef;
@@ -201,8 +224,13 @@ nav {
 }
 
 main {
-  grid-column: 2;
+  grid-column: 1;
   padding: 0 54px 64px;
+}
+@media (min-width: 768px) {
+  main {
+    grid-column: 2;
+  }
 }
 .topbar {
   display: flex;
@@ -625,28 +653,8 @@ h3 {
 }
 
 @media (max-width: 840px) {
-  .shell {
-    display: block;
-  }
-  .sidebar {
-    position: static;
-    width: auto;
-    height: auto;
-    padding: 18px 22px;
-    flex-direction: row;
-    align-items: center;
-  }
-  .brand {
-    padding: 0;
-  }
-  .sidebar nav {
-    display: none;
-  }
-  .sidebar-footer {
-    margin: 0 0 0 auto;
-    padding: 0;
-    border: 0;
-  }
+  /* .shell/.sidebar 的移动端切换改由 AppShell 的 `hidden md:flex` +
+     `ui/sheet` 抽屉导航负责（DESIGN.md §8 移动端基线），此处不再覆盖。 */
   main {
     padding: 0 24px 40px;
   }
