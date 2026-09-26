@@ -73,6 +73,58 @@ func (q *Queries) CreateCheckoutSession(ctx context.Context, arg CreateCheckoutS
 	return i, err
 }
 
+const createOutboxEventIfAbsent = `-- name: CreateOutboxEventIfAbsent :one
+INSERT INTO outbox_events (topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (idempotency_key) DO NOTHING
+RETURNING id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, last_error, created_at
+`
+
+type CreateOutboxEventIfAbsentParams struct {
+	Topic          string             `db:"topic" json:"topic"`
+	AggregateType  string             `db:"aggregate_type" json:"aggregate_type"`
+	AggregateID    pgtype.UUID        `db:"aggregate_id" json:"aggregate_id"`
+	Payload        []byte             `db:"payload" json:"payload"`
+	IdempotencyKey string             `db:"idempotency_key" json:"idempotency_key"`
+	AvailableAt    pgtype.Timestamptz `db:"available_at" json:"available_at"`
+}
+
+// Declarative idempotency: ON CONFLICT DO NOTHING lets Postgres resolve a
+// duplicate idempotency_key without raising an error. A plain INSERT that
+// raises a unique-violation and gets caught at the Go layer would still
+// leave the enclosing transaction aborted (Postgres marks a transaction
+// failed as soon as any statement inside it errors, regardless of whether
+// the caller checks that error), so every later statement in the same
+// transaction — including the final COMMIT — would fail too. A rejected
+// insert returns zero rows here instead: callers treat that as a no-op.
+func (q *Queries) CreateOutboxEventIfAbsent(ctx context.Context, arg CreateOutboxEventIfAbsentParams) (OutboxEvent, error) {
+	row := q.db.QueryRow(ctx, createOutboxEventIfAbsent,
+		arg.Topic,
+		arg.AggregateType,
+		arg.AggregateID,
+		arg.Payload,
+		arg.IdempotencyKey,
+		arg.AvailableAt,
+	)
+	var i OutboxEvent
+	err := row.Scan(
+		&i.ID,
+		&i.Topic,
+		&i.AggregateType,
+		&i.AggregateID,
+		&i.Payload,
+		&i.IdempotencyKey,
+		&i.AvailableAt,
+		&i.ClaimedAt,
+		&i.ClaimToken,
+		&i.Attempts,
+		&i.ProcessedAt,
+		&i.LastError,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getBillingAccountByOrganization = `-- name: GetBillingAccountByOrganization :one
 SELECT id, organization_id, stripe_customer_id, created_at, updated_at
 FROM billing_accounts

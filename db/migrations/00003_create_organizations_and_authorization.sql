@@ -93,6 +93,7 @@ ON CONFLICT DO NOTHING;
 ALTER TABLE announcements ADD COLUMN organization_id uuid REFERENCES organizations (id) ON DELETE CASCADE;
 
 -- Backfill default organization for any pre-existing announcements
+-- +goose StatementBegin
 DO $$
 DECLARE
     default_org_id uuid;
@@ -105,6 +106,7 @@ BEGIN
         UPDATE announcements SET organization_id = default_org_id WHERE organization_id IS NULL;
     END IF;
 END $$;
+-- +goose StatementEnd
 
 ALTER TABLE announcements ALTER COLUMN organization_id SET NOT NULL;
 CREATE INDEX announcements_organization_id_idx ON announcements (organization_id, created_at DESC, id DESC);

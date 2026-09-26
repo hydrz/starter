@@ -66,6 +66,12 @@ func NewHandler(
 	router.Use(middleware.RealIP)
 	router.Use(AccessLog(slog.Default()))
 	router.Use(middleware.Recoverer)
+	// auth.WithHTTPContext exposes the raw request/response via context so
+	// auth.BearerTokenFromContext (used by every AuthenticationMiddleware
+	// call, not just the auth API's own routes) and the refresh-cookie
+	// helpers can read/write them. It must be global: without it, bearer
+	// tokens are silently invisible to every route outside /api/auth/*.
+	router.Use(auth.WithHTTPContext)
 
 	router.Get("/api/openapi.yaml", openAPISpecYAML)
 	router.Get("/api/openapi.json", openAPISpecJSON)
@@ -86,14 +92,14 @@ func NewHandler(
 		if err != nil {
 			return nil, fmt.Errorf("initialize auth api server: %w", err)
 		}
-		// auth.WithHTTPContext exposes the raw request/response so the auth
-		// handler can read/write the refresh cookie; identity.AuthenticationMiddleware
-		// resolves an optional bearer principal without protecting any
-		// other route (route-level authorization remains out of scope for
-		// this workstream). Operation paths are declared in TypeSpec with
-		// the full /api/auth prefix, so the generated server is handled
-		// directly rather than mounted with path-stripping.
-		authHandler := auth.WithHTTPContext(identity.AuthenticationMiddleware(authServer))
+		// identity.AuthenticationMiddleware resolves an optional bearer
+		// principal into context; it never itself rejects a request, so
+		// authorization for other routes remains each router group's own
+		// concern (Casbin RequirePermission, or the operation's own 401).
+		// Operation paths are declared in TypeSpec with the full /api/auth
+		// prefix, so the generated server is handled directly rather than
+		// mounted with path-stripping.
+		authHandler := identity.AuthenticationMiddleware(authServer)
 		router.Handle("/api/auth/*", authHandler)
 	}
 
