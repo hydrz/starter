@@ -15,7 +15,9 @@ import (
 
 	"github.com/hydrz/starter/internal/announcement"
 	"github.com/hydrz/starter/internal/api/announcementsapi"
+	"github.com/hydrz/starter/internal/api/authapi"
 	"github.com/hydrz/starter/internal/api/systemapi"
+	"github.com/hydrz/starter/internal/auth"
 	"github.com/hydrz/starter/internal/platform/webui"
 )
 
@@ -46,7 +48,7 @@ func (h *SystemHandler) GetReadiness(ctx context.Context) (systemapi.GetReadines
 	return &systemapi.HealthResponse{Status: systemapi.HealthResponseStatusOk}, nil
 }
 
-func NewHandler(announcements *announcement.Service, readiness HealthChecker) (http.Handler, error) {
+func NewHandler(announcements *announcement.Service, readiness HealthChecker, identity *auth.Service) (http.Handler, error) {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
@@ -72,6 +74,22 @@ func NewHandler(announcements *announcement.Service, readiness HealthChecker) (h
 		}
 		router.Handle("/api/announcements", announcementServer)
 		router.Handle("/api/announcements/*", announcementServer)
+	}
+
+	if identity != nil {
+		authServer, err := authapi.NewServer(auth.NewHTTPHandler(identity))
+		if err != nil {
+			return nil, fmt.Errorf("initialize auth api server: %w", err)
+		}
+		// auth.WithHTTPContext exposes the raw request/response so the auth
+		// handler can read/write the refresh cookie; identity.AuthenticationMiddleware
+		// resolves an optional bearer principal without protecting any
+		// other route (route-level authorization remains out of scope for
+		// this workstream). Operation paths are declared in TypeSpec with
+		// the full /api/auth prefix, so the generated server is handled
+		// directly rather than mounted with path-stripping.
+		authHandler := auth.WithHTTPContext(identity.AuthenticationMiddleware(authServer))
+		router.Handle("/api/auth/*", authHandler)
 	}
 
 	webHandler, err := webui.NewHandler()

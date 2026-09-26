@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
@@ -54,7 +55,7 @@ func TestLoadRejectsPartialAuthConfiguration(t *testing.T) {
 	if err == nil {
 		t.Fatal("Load() error = nil, want validation error")
 	}
-	for _, name := range []string{authSigningPrivateKeyEnv, authVerificationKeysetEnv, authIssuerEnv, authAccessTokenTTLEnv, authRefreshTokenTTLEnv} {
+	for _, name := range []string{authSigningPrivateKeyEnv, authVerificationKeysetEnv, authIssuerEnv, authAccessTokenTTLEnv, authRefreshTokenTTLEnv, authSecretPepperEnv} {
 		if !strings.Contains(err.Error(), name) {
 			t.Errorf("validation error %q does not name %s", err, name)
 		}
@@ -100,6 +101,7 @@ func TestLoadEnablesAndValidatesOptionalGroups(t *testing.T) {
 		authIssuerEnv:                "example.test",
 		authAccessTokenTTLEnv:        "20m",
 		authRefreshTokenTTLEnv:       "720h",
+		authSecretPepperEnv:          "at-least-sixteen-bytes-of-entropy",
 		"OAUTH_GOOGLE_CLIENT_ID":     "google-client",
 		"OAUTH_GOOGLE_CLIENT_SECRET": "google-secret",
 		"OAUTH_GOOGLE_REDIRECT_URL":  "https://app.example.test/api/auth/google/callback",
@@ -180,6 +182,35 @@ func TestLoadRejectsActiveSigningKeyThatDoesNotMatchKeyset(t *testing.T) {
 	}
 }
 
+func TestLoadRejectsShortSecretPepper(t *testing.T) {
+	t.Parallel()
+
+	privateKey, publicKey := testEd25519KeyPair(t)
+	values := validAuthEnvironment(t, privateKey, publicKey)
+	values[authSecretPepperEnv] = "too-short"
+	_, err := Load(mapLookup(values))
+	if err == nil || !strings.Contains(err.Error(), authSecretPepperEnv) {
+		t.Errorf("Load() error = %v, want validation error naming %s", err, authSecretPepperEnv)
+	}
+}
+
+func TestLoadDerivesIndependentSecretDigestPepper(t *testing.T) {
+	t.Parallel()
+
+	privateKey, publicKey := testEd25519KeyPair(t)
+	values := validAuthEnvironment(t, privateKey, publicKey)
+	cfg, err := Load(mapLookup(values))
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if string(cfg.Auth.SecretDigestPepper) != values[authSecretPepperEnv] {
+		t.Errorf("SecretDigestPepper = %q, want the configured pepper value", cfg.Auth.SecretDigestPepper)
+	}
+	if bytes.Equal(cfg.Auth.SecretDigestPepper, cfg.Auth.SigningPrivateKey) {
+		t.Error("SecretDigestPepper must not equal or be derived from SigningPrivateKey")
+	}
+}
+
 func TestLoadRejectsInvalidOptionalValues(t *testing.T) {
 	t.Parallel()
 
@@ -215,6 +246,7 @@ func validAuthEnvironment(t *testing.T, privateKey ed25519.PrivateKey, publicKey
 		authIssuerEnv:             "example.test",
 		authAccessTokenTTLEnv:     "15m",
 		authRefreshTokenTTLEnv:    "720h",
+		authSecretPepperEnv:       "at-least-sixteen-bytes-of-entropy",
 	}
 }
 

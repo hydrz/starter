@@ -4,8 +4,8 @@
  * Starter API
  * OpenAPI spec version: 0.1.0
  */
-import type { ApiError } from './apiError';
+import type { APIKey } from './aPIKey';
 
-export interface CommonConflictResponse {
-  body: ApiError;
-}
+export type CreatedAPIKey = APIKey & {
+  key: string;
+};

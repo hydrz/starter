@@ -42,7 +42,7 @@ Future auth routes must select relevant models from this common module, be impor
 
 | Feature | TypeSpec feature module | Go domain boundary | Goose/sqlc responsibility | Integration gate |
 | --- | --- | --- | --- | --- |
-| account and sessions | `features/auth/` | `internal/identity` | accounts, credentials, opaque refresh-token family/session rows | Ed25519/EdDSA `kid` rotation contract plus access/refresh semantics approved |
+| account and sessions | `features/auth/` | `internal/auth` (package named `auth`, not `identity`, per the overall implementation plan) | accounts, credentials, opaque refresh-token family/session rows, one-time verification/reset tokens, API keys — see `db/migrations/00002_create_identity_and_delivery.sql` and `db/queries/auth.sql` | Ed25519/EdDSA `kid` rotation contract plus access/refresh semantics approved — met: `internal/auth` implements sign-up, password sign-in/out, refresh rotation with reuse-triggered family revocation, current identity, email verification, password reset, session listing/revocation, and API key issuance/listing/revocation, all behind `internal/auth.Service` with narrow ports and covered by unit tests (see the implementation ledger's B verification evidence) |
 | OAuth/WebAuthn | `features/auth/` | `internal/identity` adapters | external identities, credential metadata/challenges | provider configuration complete and callback threat model reviewed |
 | organizations | `features/organizations/` | `internal/organization` | organizations, memberships, invitations | identity account identifiers stable |
 | authorization | route-local declaration or protected feature | `internal/authorization` | policy/version data only when persistence is required | subject/domain/object-action contract agreed |

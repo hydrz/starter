@@ -44,6 +44,13 @@ type Config struct {
 // sign with SigningPrivateKey using EdDSA and set the protected-header kid to
 // ActiveKID. Verifiers must select VerificationPublicKeys[protected kid], reject
 // an absent or unknown kid, and accept every configured key during rotation.
+//
+// SecretDigestPepper is independent, high-entropy secret material used only to
+// key an HMAC digester for opaque bearer secrets (refresh tokens, one-time
+// verification/reset tokens, API keys). It must never be derived from
+// SigningPrivateKey: JWT signing keys and the secret-digest pepper rotate on
+// different schedules for different reasons, and deriving one from the other
+// would silently invalidate every stored digest whenever the JWT key rotates.
 type AuthConfig struct {
 	Enabled                bool
 	JWTIssuer              string
@@ -52,6 +59,7 @@ type AuthConfig struct {
 	ActiveKID              string
 	SigningPrivateKey      ed25519.PrivateKey
 	VerificationPublicKeys map[string]ed25519.PublicKey
+	SecretDigestPepper     []byte
 }
 
 const (
@@ -61,6 +69,9 @@ const (
 	authIssuerEnv             = "AUTH_JWT_ISSUER"
 	authAccessTokenTTLEnv     = "AUTH_JWT_ACCESS_TTL"
 	authRefreshTokenTTLEnv    = "AUTH_REFRESH_TOKEN_TTL"
+	authSecretPepperEnv       = "AUTH_SECRET_PEPPER"
+
+	minSecretDigestPepperLength = 16
 )
 
 type OAuthConfig struct {
@@ -213,7 +224,7 @@ func validAddress(raw string) bool {
 }
 
 func loadAuth(lookup func(string) (string, bool), invalid *[]string, defaults AuthConfig) AuthConfig {
-	names := []string{authActiveKIDEnv, authSigningPrivateKeyEnv, authVerificationKeysetEnv, authIssuerEnv, authAccessTokenTTLEnv, authRefreshTokenTTLEnv}
+	names := []string{authActiveKIDEnv, authSigningPrivateKeyEnv, authVerificationKeysetEnv, authIssuerEnv, authAccessTokenTTLEnv, authRefreshTokenTTLEnv, authSecretPepperEnv}
 	var authInvalid []string
 	if !requireGroup(lookup, &authInvalid, names...) {
 		*invalid = append(*invalid, authInvalid...)
@@ -234,6 +245,10 @@ func loadAuth(lookup func(string) (string, bool), invalid *[]string, defaults Au
 	if len(privateKey) == ed25519.PrivateKeySize && len(publicKeys[activeKID]) == ed25519.PublicKeySize && !bytes.Equal(privateKey.Public().(ed25519.PublicKey), publicKeys[activeKID]) {
 		authInvalid = append(authInvalid, authVerificationKeysetEnv)
 	}
+	secretDigestPepper := valueOr(lookup, authSecretPepperEnv, "")
+	if len(secretDigestPepper) < minSecretDigestPepperLength {
+		authInvalid = append(authInvalid, authSecretPepperEnv)
+	}
 	if len(authInvalid) > 0 {
 		*invalid = append(*invalid, authInvalid...)
 		return defaults
@@ -247,6 +262,7 @@ func loadAuth(lookup func(string) (string, bool), invalid *[]string, defaults Au
 		ActiveKID:              activeKID,
 		SigningPrivateKey:      privateKey,
 		VerificationPublicKeys: publicKeys,
+		SecretDigestPepper:     []byte(secretDigestPepper),
 	}
 }
 

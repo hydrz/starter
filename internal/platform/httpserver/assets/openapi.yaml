@@ -5,6 +5,7 @@ info:
 tags:
   - name: System
   - name: Announcements
+  - name: Auth
 paths:
   /api/announcements:
     get:
@@ -155,6 +156,375 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Announcements
+  /api/auth/api-keys:
+    post:
+      operationId: createAPIKey
+      summary: Create an API key
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedAPIKey'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/APIKeyCreateInput'
+    get:
+      operationId: listAPIKeys
+      summary: List API keys
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/APIKey'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+  /api/auth/api-keys/{id}:
+    delete:
+      operationId: revokeAPIKey
+      summary: Revoke an API key
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+  /api/auth/me:
+    get:
+      operationId: getCurrentIdentity
+      summary: Get the current identity
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Identity'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+  /api/auth/password-reset/confirm:
+    post:
+      operationId: confirmPasswordReset
+      summary: Confirm a password reset token
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmInput'
+  /api/auth/password-reset/request:
+    post:
+      operationId: requestPasswordReset
+      summary: Request a password reset message
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationRequestInput'
+  /api/auth/refresh:
+    post:
+      operationId: refreshAccessToken
+      summary: Rotate the refresh session and issue an access token
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessTokenResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+  /api/auth/sessions:
+    get:
+      operationId: listSessions
+      summary: List active refresh sessions
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Session'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+  /api/auth/sessions/{id}:
+    delete:
+      operationId: revokeSession
+      summary: Revoke a refresh session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+  /api/auth/sign-in:
+    post:
+      operationId: passwordSignIn
+      summary: Sign in with email and password
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessTokenResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordSignInInput'
+  /api/auth/sign-out:
+    post:
+      operationId: signOut
+      summary: Sign out the current refresh session
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+  /api/auth/sign-up:
+    post:
+      operationId: signUp
+      summary: Create an account
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Identity'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpInput'
+  /api/auth/verification/confirm:
+    post:
+      operationId: confirmEmailVerification
+      summary: Confirm an email verification token
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationConfirmInput'
+  /api/auth/verification/request:
+    post:
+      operationId: requestEmailVerification
+      summary: Request an email verification message
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationRequestInput'
   /api/healthz:
     get:
       operationId: getHealth
@@ -213,6 +583,61 @@ components:
         default: 0
       explode: false
   schemas:
+    APIKey:
+      type: object
+      required:
+        - id
+        - name
+        - prefix
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        prefix:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        revokedAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    APIKeyCreateInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        expiresAt:
+          type: string
+          format: date-time
+    AccessTokenResponse:
+      type: object
+      required:
+        - accessToken
+        - tokenType
+        - expiresAt
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          enum:
+            - Bearer
+        expiresAt:
+          type: string
+          format: date-time
     Announcement:
       type: object
       required:
@@ -270,13 +695,6 @@ components:
           type: string
         message:
           type: string
-    Common.ConflictResponse:
-      type: object
-      required:
-        - body
-      properties:
-        body:
-          $ref: '#/components/schemas/ApiError'
     Common.ForbiddenResponse:
       type: object
       required:
@@ -291,20 +709,34 @@ components:
       properties:
         body:
           $ref: '#/components/schemas/ApiError'
-    Common.TooManyRequestsResponse:
+    CreatedAPIKey:
       type: object
       required:
-        - body
+        - key
       properties:
-        body:
-          $ref: '#/components/schemas/ApiError'
-    Common.UnauthorizedResponse:
+        key:
+          type: string
+      allOf:
+        - $ref: '#/components/schemas/APIKey'
+    Identity:
       type: object
       required:
-        - body
+        - id
+        - email
+        - emailVerified
+        - createdAt
       properties:
-        body:
-          $ref: '#/components/schemas/ApiError'
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        emailVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
     Page_Announcement:
       type: object
       required:
@@ -330,6 +762,66 @@ components:
           type: integer
           format: int32
           description: 分页偏移量
+    PasswordResetConfirmInput:
+      type: object
+      required:
+        - token
+        - password
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+    PasswordSignInInput:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+    Session:
+      type: object
+      required:
+        - id
+        - createdAt
+        - expiresAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        userAgent:
+          type: string
+        ipAddress:
+          type: string
+    SignUpInput:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
     System.HealthResponse:
       type: object
       required:
@@ -341,6 +833,21 @@ components:
             - ok
           description: Current service status.
       description: Service health information.
+    VerificationConfirmInput:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+    VerificationRequestInput:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
 servers:
   - url: http://localhost:8080
     description: Local development

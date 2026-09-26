@@ -12,10 +12,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
 	databaseMigrations "github.com/hydrz/starter/db"
 	"github.com/hydrz/starter/internal/announcement"
+	"github.com/hydrz/starter/internal/auth"
 	"github.com/hydrz/starter/internal/platform/config"
 	"github.com/hydrz/starter/internal/platform/database"
 	apphttp "github.com/hydrz/starter/internal/platform/httpserver"
@@ -80,7 +82,17 @@ func main() {
 	defer pool.Close()
 
 	announcementService := announcement.NewService(announcement.NewPostgresRepository(store.New(pool)))
-	handler, err := apphttp.NewHandler(announcementService, pool)
+
+	var identityService *auth.Service
+	if cfg.Auth.Enabled {
+		identityService, err = buildIdentityService(cfg.Auth, store.New(pool), pool)
+		if err != nil {
+			logger.Error("identity service initialization failed", "error", err)
+			os.Exit(1)
+		}
+	}
+
+	handler, err := apphttp.NewHandler(announcementService, pool, identityService)
 	if err != nil {
 		logger.Error("http handler initialization failed", "error", err)
 		os.Exit(1)
@@ -132,4 +144,38 @@ func healthcheck(addr string) error {
 		return fmt.Errorf("readiness endpoint returned %s", response.Status)
 	}
 	return nil
+}
+
+// buildIdentityService wires internal/auth.Service from the process
+// AuthConfig and a pgxpool-backed store. SecretDigestPepper is independent,
+// high-entropy configuration (AUTH_SECRET_PEPPER) rather than being derived
+// from the JWT signing key, so rotating one never invalidates the other.
+func buildIdentityService(authConfig config.AuthConfig, queries *store.Queries, pool *pgxpool.Pool) (*auth.Service, error) {
+	issuer, err := auth.NewIssuer(authConfig.ActiveKID, authConfig.SigningPrivateKey, authConfig.JWTIssuer, auth.SystemClock{})
+	if err != nil {
+		return nil, fmt.Errorf("create token issuer: %w", err)
+	}
+	verifier, err := auth.NewVerifier(authConfig.VerificationPublicKeys, authConfig.JWTIssuer, auth.SystemClock{})
+	if err != nil {
+		return nil, fmt.Errorf("create token verifier: %w", err)
+	}
+	digester, err := auth.NewSecretDigester(1, authConfig.SecretDigestPepper)
+	if err != nil {
+		return nil, fmt.Errorf("create secret digester: %w", err)
+	}
+
+	return auth.NewService(auth.Dependencies{
+		Users:           auth.NewPostgresUserRepository(queries),
+		RefreshTokens:   auth.NewPostgresRefreshTokenRepository(queries),
+		OneTimeTokens:   auth.NewPostgresOneTimeTokenRepository(queries),
+		APIKeys:         auth.NewPostgresAPIKeyRepository(queries),
+		Outbox:          auth.NewPostgresOutboxWriter(queries),
+		Transactor:      database.NewTransactor(pool),
+		Issuer:          issuer,
+		Verifier:        verifier,
+		Digester:        digester,
+		Clock:           auth.SystemClock{},
+		AccessTokenTTL:  authConfig.AccessTokenTTL,
+		RefreshTokenTTL: authConfig.RefreshTokenTTL,
+	})
 }

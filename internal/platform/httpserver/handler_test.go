@@ -187,7 +187,7 @@ func TestReadiness(t *testing.T) {
 
 func newHandler(t *testing.T, service *announcement.Service, checker httpserver.HealthChecker) http.Handler {
 	t.Helper()
-	handler, err := httpserver.NewHandler(service, checker)
+	handler, err := httpserver.NewHandler(service, checker, nil)
 	if err != nil {
 		t.Fatalf("NewHandler() error = %v", err)
 	}

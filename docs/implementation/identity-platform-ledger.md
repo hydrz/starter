@@ -18,7 +18,7 @@
 | 工作流 | 所有者 | 初始状态 | 当前状态 | 集成门 | 产物 |
 | --- | --- | --- | --- | --- | --- |
 | A — Foundation, governance, configuration, shared infrastructure | Platform Architecture | In progress | Integrated | 主 Agent 已复核并合入；后续工作流只通过公开 config/TypeSpec 边界接入 | 配置加载器、通用错误响应、ADR、架构/契约图谱 |
-| B — Identity and sessions | Identity | Planned | Planned | A 已就绪；认证契约和 schema 评审 | 账户、会话、JWT access/opaque refresh 实现 |
+| B — Identity and sessions | Identity | Planned | Ready for integration | A 已就绪；认证契约和 schema 评审 | 账户、会话、JWT access/opaque refresh 实现 |
 | C — Organizations and authorization | Authorization | Planned | Planned | B account identity 稳定；三段授权输入评审 | 组织、成员关系、Casbin model/policy/adapters |
 | D — Delivery and outbox | Messaging | Planned | Planned | A 已就绪；通知 intent 和事务边界评审 | outbox、worker、SMTP delivery adapter |
 | E — Stripe and entitlements | Billing | Planned | Planned | C 授权边界确认；webhook 安全评审 | Stripe projection、订阅、entitlement |
@@ -33,6 +33,19 @@
 - `WorkerConfig` defaults to a one-second poll interval and batch size 50; it only enables when `WORKER_ENABLED=true`.
 - Shared TypeSpec errors now cover 401, 403, 409, 412, and 429 in addition to existing 400, 404, and 503. No feature route consumes them yet.
 - `compose.yaml` is intentionally unchanged because current compose only needs PostgreSQL/current app startup; optional integrations have no runtime dependency until their owners implement them.
+
+## B 的接口决策
+
+- New domain package `internal/auth` (not `internal/identity`, matching the overall plan) exposes `Service` with narrow `UserRepository`, `RefreshTokenRepository`, `OneTimeTokenRepository`, `APIKeyRepository`, `OutboxWriter`, and `Transactor` ports; it never leaks `internal/store` or `internal/api/authapi` types outside `internal/auth/postgres.go` and `internal/auth/handler.go`.
+- `auth.Issuer`/`auth.Verifier` issue and verify only EdDSA JWTs using `config.AuthConfig.ActiveKID`/`SigningPrivateKey`/`VerificationPublicKeys`; claims are limited to `sub`, `sid`, `jti`, `iss`, `aud`, `iat`, `nbf`, `exp`, `typ=access`. No role/org/entitlement claim is added, per the frozen contract.
+- Passwords use Argon2id PHC hashes (`auth.HashPassword`/`VerifyPassword`) with constant-time comparison and a fixed dummy-hash comparison (`VerifyPasswordOrDummy`) for unknown emails, so sign-in timing does not reveal account existence.
+- Refresh, verification, and API-key secrets are never stored raw: `auth.SecretDigester` stores only a versioned HMAC-SHA256 digest, keyed by a dedicated `AuthConfig.SecretDigestPepper` (environment variable `AUTH_SECRET_PEPPER`, part of the existing all-or-none auth group) rather than being derived from the JWT signing key, so rotating the JWT signing key never silently invalidates stored refresh/reset/API-key digests. Digests are recorded in `db/migrations/00002_create_identity_and_delivery.sql` (`refresh_sessions.token_digest`, `one_time_tokens.token_digest`, `api_keys.secret_digest`). Refresh rotation and one-time-token consumption use single conditional `UPDATE ... WHERE ... RETURNING` statements (`db/queries/auth.sql`: `ConsumeRefreshSession`, `ConsumeOneTimeToken`) so there is no check-then-update race; a refresh token that cannot be consumed (already replaced/revoked/expired) but is still a known digest is treated as reuse and revokes its whole family via `RevokeRefreshFamily`.
+- Sign-up writes the new `users` row and its first `notification_intents`/`outbox_events` rows (topic `auth.verification_requested`) inside one `database.PgxTransactor` transaction; password reset confirmation revokes every refresh family for the account inside the same transaction as the password update. Auth never calls SMTP inline; it only writes outbox rows for a future delivery worker (workstream D) to claim.
+- API keys (`api_keys` table) carry a nullable `organization_id` column with no foreign key yet, so workstream C can add organization scoping later without a forward-only migration that blocks on a not-yet-existing organizations table; the raw key is only returned once, at `CreateAPIKey` time.
+- The refresh token itself is delivered only via an HttpOnly/Secure/SameSite=Lax cookie scoped to `Path=/api/auth` (`auth.RefreshCookieName`/`RefreshCookiePath`); no browser storage guidance is implied beyond keeping the access token in memory, which remains a caller (F) concern.
+- Public HTTP surface lives at `packages/contracts/features/auth/{models,routes,auth}.tsp`, imported from `main.tsp`, compiled only through `pnpm generate`; all operations are mounted at `/api/auth/*` (`internal/platform/httpserver/handler.go`), reusing A's common `ApiError`/`UnauthorizedResponse`/`ConflictResponse`/`TooManyRequestsResponse` models.
+- `httpserver.NewHandler` gained a third, optional `*auth.Service` parameter; when nil (auth disabled), no `/api/auth/*` route is registered and existing health/docs/announcements behavior is unchanged. `auth.AuthenticationMiddleware` only resolves an optional bearer principal into context for the auth handler's own operations (e.g. `GetCurrentIdentity`, session/API-key management); it does not protect any other route, per the integration gate reserving global authorization middleware for workstream C.
+- `apps/server/main.go` keeps A's config-driven `cfg.Address`/`cfg.DatabaseURL`/`cfg.AutoMigrate` startup logic unchanged and adds only identity-service wiring: when `cfg.Auth.Enabled`, it builds `auth.Service` via `buildIdentityService` and passes it into `apphttp.NewHandler`. `config.AuthConfig` gained one additional required field, `SecretDigestPepper` (env `AUTH_SECRET_PEPPER`), joining the existing all-or-none auth group; it is independent, high-entropy secret material unrelated to `SigningPrivateKey`, used only to key `auth.SecretDigester`.
 
 ## Verification evidence
 
@@ -58,6 +71,25 @@
 | 2026-09-26 | A integration | `go test ./apps/server ./internal/platform/config` | Passed in the main worktree after independent review. |
 | 2026-09-26 | A integration | `pnpm generate && pnpm check:go && pnpm check:sql && pnpm check:web && pnpm check:skills` | Passed in the main worktree; generated diffs are derived only from the common TypeSpec response additions. |
 | 2026-09-26 | A integration | `pnpm check:docs && pnpm check:format && pnpm check:actions && git diff --check` | Passed in the main worktree; corrected the contract-map Markdown table structure during review. |
+| 2026-09-26 | B | `pnpm install --frozen-lockfile` | Passed; needed once in this fresh worktree before any `pnpm` script could run. |
+| 2026-09-26 | B | `pnpm generate` | Passed; compiled `features/auth` TypeSpec, generated `internal/api/authapi`, Orval `apps/web/src/api/generated/auth`, and sqlc `internal/store/{auth,outbox}.sql.go` from the new migration/queries. |
+| 2026-09-26 | B | `go build ./...` | Passed. |
+| 2026-09-26 | B | `go vet ./...` | Passed. |
+| 2026-09-26 | B | `go test ./...` | Passed; `internal/auth` adds 32 unit tests covering Argon2id hashing/verification (including the anti-enumeration dummy-hash path), versioned HMAC secret digesting, EdDSA JWT issuance/verification (wrong audience, unknown `kid`, expired, tampered signature, malformed token), refresh-session rotation, refresh-token reuse triggering family revocation, sign-up/sign-in/API-key/session-listing service behavior, and HTTP-handler adaptation — all against in-memory fakes with an injected fake clock, so no PostgreSQL/SMTP/Stripe/OAuth/WebAuthn dependency is required to run them. |
+| 2026-09-26 | B | `go tool sqlc vet -f db/sqlc.yaml` | Passed. |
+| 2026-09-26 | B | `gofmt -l apps db internal` (via `node tools/check-gofmt.mjs apps db internal`) | Passed after `gofmt -w` on new/changed Go files. |
+| 2026-09-26 | B | `pnpm --filter @starter/contracts format:check` | Passed after `tsp format "**/*.tsp"` reformatted the two new `features/auth` files. |
+| 2026-09-26 | B | `pnpm --filter @starter/web format:check` | Passed. |
+| 2026-09-26 | B | `pnpm --filter @starter/web check` (eslint + tsc) | Passed. |
+| 2026-09-26 | B | `node tools/check-docs.mjs` | Passed for 32 Markdown files. |
+| 2026-09-26 | B | `node tools/check-skills.mjs` | Passed for 5 skills. |
+| 2026-09-26 | B | `go tool actionlint` | Passed (no findings). |
+| 2026-09-26 | B | `git diff --check` (unstaged and staged) | Passed. |
+| 2026-09-26 | B | `pnpm check:generated` | Failed as expected in this uncommitted worktree: the reported diff is exactly the new `features/auth` contract's generated OpenAPI/Go/TS/sqlc output. No unexpected or hand-edited generated content is present; this is not evidence that aggregate `pnpm check` passes, since `check:generated` is its first sub-gate. |
+| 2026-09-26 | B (review fix) | Rebased onto A's integrated `main` (`config.Load`-driven `apps/server/main.go`, `.env.example`, docs); removed a pre-A env-reading `main.go` this worktree had reintroduced because it branched before A merged. Replaced the JWT-signing-key-derived HMAC pepper (`derivePepper`) with a new required `AuthConfig.SecretDigestPepper`/`AUTH_SECRET_PEPPER` config field so secret-digest rotation is independent of JWT key rotation. | See re-run command rows below. |
+| 2026-09-26 | B (review fix) | `go build ./... && go vet ./... && go test ./...` | Passed after the rebase and pepper-config fix. |
+| 2026-09-26 | B (review fix) | `pnpm check:format` | Passed. |
+| 2026-09-26 | B (review fix) | `git diff --check` | Passed. |
 
 ## Integration checklist for later owners
 

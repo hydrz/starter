@@ -4,8 +4,9 @@
  * Starter API
  * OpenAPI spec version: 0.1.0
  */
-import type { ApiError } from './apiError';
 
-export interface CommonUnauthorizedResponse {
-  body: ApiError;
+export interface PasswordSignInInput {
+  email: string;
+  /** @minLength 1 */
+  password: string;
 }
