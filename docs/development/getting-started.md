@@ -2,8 +2,8 @@
 
 ## 环境要求
 
-- Go 1.24 或更高版本；
-- Node.js 20.19 或更高版本；
+- Go 1.27 或更高版本；
+- Node.js 24.21 或更高版本；
 - pnpm 10；
 - Docker Engine 与 Docker Compose v2（数据库相关命令需要）；
 
