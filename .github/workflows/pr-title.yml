@@ -1,0 +1,47 @@
+name: PR Title
+
+# 校验 PR 标题是否符合 Conventional Commits 规范。
+# 在 squash merge 工作流中，PR 标题会成为合并到 main 的提交标题，
+# 因此标题格式直接影响 CHANGELOG 与自动发布的质量。
+#
+# 注意：dependabot.yml 中的 commit-message prefix 必须与此处 types 列表保持一致，
+# 否则 Dependabot PR 会因标题不合规而导致此检查失败。
+on:
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+
+permissions:
+  pull-requests: read
+
+jobs:
+  # Required status check 按 job name 匹配，与产生它的 workflow 无关。
+  validate:
+    name: "PR Title"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # pull_request_target 使用 base 分支的 workflow 定义运行，
+      # 这是让该检查能在 fork PR 上正常工作的标准方式。
+      # 安全：此 job 不 checkout 任何代码，token 为只读，两者必须保持。
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # 显式列出允许的类型，防止依赖库版本升级静默改变贡献规则。
+          # 与 dependabot.yml 中 commit-message prefix 保持一致。
+          types: |
+            build
+            chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
+            revert
+            style
+            test
