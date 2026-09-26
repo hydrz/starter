@@ -92,7 +92,7 @@ export function Announcements() {
       <div className="section-heading">
         <div>
           <span className="eyebrow">VERTICAL SLICE</span>
-          <h3 id="announcements-title">运营公告</h3>
+          <h3 id="announcements-title">公告通知</h3>
         </div>
         <span className="section-meta">
           {page ? `${page.total} TOTAL` : "SYNCING"}
@@ -115,7 +115,7 @@ export function Announcements() {
             <span>公告内容</span>
             <Textarea
               rows={4}
-              placeholder="填写需要向运营团队传达的内容"
+              placeholder="填写需要发布的内容"
               {...form.register("content")}
             />
             {form.formState.errors.content && (

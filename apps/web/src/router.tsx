@@ -107,8 +107,8 @@ function AppLayout() {
       <main style={{ gridColumn: 2 }}>
         <header className="topbar">
           <div>
-            <span className="eyebrow">OPERATIONS PLATFORM</span>
-            <h1>工程控制台</h1>
+            <span className="eyebrow">FULL-STACK STARTER KIT</span>
+            <h1>Starter 控制台</h1>
           </div>
           <span className="phase">Phase 05</span>
         </header>

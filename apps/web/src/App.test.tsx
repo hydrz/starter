@@ -27,7 +27,7 @@ describe("App", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("工程控制台")).toBeInTheDocument();
+      expect(screen.getByText("Starter 控制台")).toBeInTheDocument();
       expect(screen.getByText("Starter")).toBeInTheDocument();
       expect(screen.getByText("能力模块")).toBeInTheDocument();
       expect(screen.getByText("契约中心")).toBeInTheDocument();
