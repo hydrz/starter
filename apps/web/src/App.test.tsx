@@ -3,10 +3,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
+import { __resetAuthSessionForTests } from "./lib/auth-session";
 
 describe("App", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    __resetAuthSessionForTests();
     window.history.pushState(null, "", "/");
   });
 
@@ -36,7 +38,10 @@ describe("App", () => {
     });
   });
 
-  it("navigates to the app console when clicking launch button", async () => {
+  it("redirects to sign-in when clicking the launch button while signed out", async () => {
+    // `/app` 的路由守卫（`routes/app.tsx` `beforeLoad`）会先尝试静默
+    // refresh 再确认身份；这里既没有真实的 refresh cookie 也没有内存中的
+    // access token，所以无论 mock 返回什么内容，最终都应该落到 /sign-in。
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ status: "ok" }), {
         status: 200,
@@ -61,9 +66,7 @@ describe("App", () => {
     await user.click(launchButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getByText("概览看板")).toBeInTheDocument();
-      expect(screen.getByText("公告管理")).toBeInTheDocument();
-      expect(screen.getByText("系统观测")).toBeInTheDocument();
+      expect(screen.getByText("登录 Starter 账户以继续。")).toBeInTheDocument();
     });
   });
 });

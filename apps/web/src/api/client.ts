@@ -34,7 +34,13 @@ const SIGN_IN_PATH = "/sign-in";
 // 其余请求共享同一个 in-flight promise（标准的 refresh-token dedupe 模式）。
 let refreshInFlight: Promise<boolean> | null = null;
 
-async function performSilentRefresh(): Promise<boolean> {
+/**
+ * 公开导出：供路由守卫（`routes/app.tsx` 的 `beforeLoad`）在页面刚加载、
+ * 内存中还没有 access token 时主动尝试一次静默 refresh，判断 HttpOnly
+ * refresh cookie 是否仍然有效，而不必先发一个注定 401 的业务请求。
+ * 行为与内部 401 重试路径完全一致（含并发去重）。
+ */
+export async function performSilentRefresh(): Promise<boolean> {
   if (!refreshInFlight) {
     refreshInFlight = (async () => {
       try {

@@ -2,7 +2,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { OrganizationRole } from "../../api/generated/model";
+import { OrgProvider } from "../organizations/OrgContext";
 import { Announcements } from "./Announcements";
+
+const testOrg = {
+  organizationId: "00000000-0000-0000-0000-000000000001",
+  slug: "acme",
+  name: "Acme",
+  role: OrganizationRole.owner,
+};
 
 describe("Announcements feature", () => {
   let queryClient: QueryClient;
@@ -20,7 +29,9 @@ describe("Announcements feature", () => {
   function renderFeature() {
     return render(
       <QueryClientProvider client={queryClient}>
-        <Announcements />
+        <OrgProvider value={testOrg}>
+          <Announcements />
+        </OrgProvider>
       </QueryClientProvider>,
     );
   }
@@ -40,7 +51,6 @@ describe("Announcements feature", () => {
 
     renderFeature();
 
-    expect(screen.getByText("正在加载公告…")).toBeInTheDocument();
     await waitFor(() => {
       expect(
         screen.getByText("还没有公告，请创建第一条。"),

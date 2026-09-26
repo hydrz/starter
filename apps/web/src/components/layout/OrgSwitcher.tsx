@@ -23,9 +23,11 @@ export interface OrgSwitcherProps {
   collapsed?: boolean;
 }
 
-// TODO(stage-3): 接入真实组织 API（当前使用占位数据，UI 已完整可用）。
-
-/** 侧边栏顶部的组织切换下拉（DESIGN.md §1/§3/§6.2）。 */
+/**
+ * 侧边栏顶部的组织切换下拉（DESIGN.md §1/§3/§6.2）。纯展示组件：真实数据
+ * 与导航行为由调用方（`routes/app/$orgSlug.tsx` 经 `AppShell` 转发）注入，
+ * 组件本身不发请求、不感知路由。
+ */
 export function OrgSwitcher({
   organizations,
   activeOrganizationId,
