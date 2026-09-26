@@ -15,25 +15,25 @@ interface Announcements {
   @TypeSpec.Http.get
   @operationId("listAnnouncements")
   @summary("List announcements")
-  list(
-    ...PaginationQuery,
-    @TypeSpec.Http.query status?: AnnouncementStatus,
-  ): Page<Announcement> | BadRequestResponse;
+  list(...PaginationQuery, @TypeSpec.Http.query status?: AnnouncementStatus):
+    | Page<Announcement>
+    | BadRequestResponse;
 
   @TypeSpec.Http.post
   @operationId("createAnnouncement")
   @summary("Create an announcement")
-  create(
-    @TypeSpec.Http.body input: AnnouncementInput,
-  ): CreatedResponse<Announcement> | BadRequestResponse;
+  create(@TypeSpec.Http.body input: AnnouncementInput):
+    | CreatedResponse<Announcement>
+    | BadRequestResponse;
 
   @TypeSpec.Http.route("/{id}")
   @TypeSpec.Http.get
   @operationId("getAnnouncement")
   @summary("Get an announcement")
-  get(
-    @TypeSpec.Http.path @format("uuid") id: string,
-  ): Announcement | BadRequestResponse | NotFoundResponse;
+  get(@TypeSpec.Http.path @format("uuid") id: string):
+    | Announcement
+    | BadRequestResponse
+    | NotFoundResponse;
 
   @TypeSpec.Http.route("/{id}")
   @TypeSpec.Http.put
@@ -48,7 +48,8 @@ interface Announcements {
   @TypeSpec.Http.delete
   @operationId("deleteAnnouncement")
   @summary("Delete an announcement")
-  delete(
-    @TypeSpec.Http.path @format("uuid") id: string,
-  ): NoContentResponse | BadRequestResponse | NotFoundResponse;
+  delete(@TypeSpec.Http.path @format("uuid") id: string):
+    | NoContentResponse
+    | BadRequestResponse
+    | NotFoundResponse;
 }

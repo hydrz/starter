@@ -12,7 +12,7 @@ Read `docs/standards/code-review.md` plus standards for the touched areas. Revie
 1. Establish the review base and scope. Inspect `git status --short`, `git diff --stat`, and the relevant diff without discarding local changes.
 2. Trace changed behavior across contracts, generated artifacts, application logic, persistence, UI, deployment, and documentation as applicable.
 3. Prioritize functional defects, security or data-loss risks, compatibility breaks, races, resource leaks, and missing tests. Verify generated files against their SSOT rather than reviewing generated style.
-4. Run the narrowest useful tests first. Run `pnpm check`, `pnpm test`, and `pnpm build` when scope and environment allow; add `pnpm test:database` or `pnpm test:embed` when relevant.
+4. Run the narrowest useful tests first. Run `pnpm check`, `pnpm test`, and `pnpm build` when scope and environment allow; add `pnpm test:embed` or local migration verification when relevant.
 5. Report findings first, ordered by severity. For every finding, cite a precise file and line range, explain the failure scenario and impact, and propose a concrete direction.
 6. Then list assumptions or questions and a brief change summary. State “no findings” when appropriate, while noting untested risks and environment limitations.
 

@@ -17,7 +17,7 @@ pnpm test
 pnpm build
 ```
 
-数据库相关变更还必须执行 `pnpm test:database`。合并前使用[代码评审清单](docs/standards/code-review.md)完成作者自检。
+数据库相关变更还必须在本地通过 `pnpm db:migrate` 验证迁移。合并前使用[代码评审清单](docs/standards/code-review.md)完成作者自检。
 
 ## 变更约束
 

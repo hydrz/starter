@@ -26,8 +26,6 @@
 | Go 静态分析 | `pnpm check:go` |
 | SQL 与 schema/query 一致性 | `pnpm check:sql` |
 | ESLint 与 TypeScript 严格模式 | `pnpm check:web` |
-| Shell 语法 | `pnpm check:shell` |
 | Go 竞态 | `pnpm test:race` |
-| Migration 往返 | `pnpm test:database` |
 
-`pnpm check` 聚合不依赖外部服务的检查；需要 Docker 的数据库集成检查保持独立，供本地和 CI 数据库任务调用。
+`pnpm check` 聚合全部静态代码与生成漂移检查；单元测试与竞态检测由 `pnpm test` 与 `pnpm test:race` 执行。

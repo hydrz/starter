@@ -16,6 +16,8 @@ func Open(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("parse database configuration: %w", err)
 	}
 
+	applyPoolSettings(config)
+
 	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("create database pool: %w", err)
@@ -29,4 +31,19 @@ func Open(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 	}
 
 	return pool, nil
+}
+
+func applyPoolSettings(config *pgxpool.Config) {
+	if config.MaxConns == 0 {
+		config.MaxConns = 25
+	}
+	if config.MinConns == 0 {
+		config.MinConns = 2
+	}
+	if config.MaxConnLifetime == 0 {
+		config.MaxConnLifetime = time.Hour
+	}
+	if config.MaxConnIdleTime == 0 {
+		config.MaxConnIdleTime = 30 * time.Minute
+	}
 }

@@ -28,22 +28,20 @@ docker compose ps
 Compose 按以下顺序运行：
 
 1. PostgreSQL 通过 `pg_isready`；
-2. 同一应用镜像以 `migrate` 子命令执行嵌入的 Goose migrations；
-3. migration 成功退出后启动应用；
-4. 应用通过自身的 `healthcheck` 子命令探测 readiness。
+2. 应用启动时自动执行嵌入的 Goose migrations（可通过 `AUTO_MIGRATE=false` 禁用）；
+3. 应用通过自身的 `healthcheck` 子命令探测 readiness。
 
-任何 migration 失败都会阻止应用启动。不要通过跳过 migration job 强行启动依赖新 schema 的版本。
+任何 migration 失败都会阻止应用启动。
 
 ## 配置
 
 | 变量 | 默认值 | 用途 |
 | --- | --- | --- |
-| `DATABASE_URL` | 本地开发连接串 | 应用与 migration 数据库连接；生产环境必须注入 |
-| `HTTP_ADDRESS` | `:8080` | 进程监听地址 |
-| `HEALTHCHECK_URL` | `http://127.0.0.1:8080/api/readyz` | 二进制 healthcheck 子命令目标 |
-| `APP_PORT` | `8080` | Compose 主机绑定端口 |
-| `APP_VERSION` | `dev` | Compose 镜像标签和构建版本 |
-| `POSTGRES_*` | `starter` 本地值 | Compose PostgreSQL 初始化参数 |
+| `DATABASE_URL` | 本地开发连接串 | 数据库连接串（支持在 query 中微调连接池）；云数据库或生产环境直接注入 |
+| `PORT` | `8080` | 服务内部监听端口（各云平台与容器标准变量） |
+| `APP_PORT` | `8080` | Compose 宿主机发布端口（仅当宿主机 8080 冲突时指定） |
+| `AUTO_MIGRATE` | `true` | 进程启动时是否自动执行待处理 migration（多副本集群可设为 `false`） |
+| `HTTP_ADDRESS` | 无 | 可选：完整监听地址（默认 `:PORT`） |
 
 默认凭据只适用于本地。共享环境使用 secret manager 或受控环境注入，不将 `.env`、连接串或凭据提交到 Git。
 

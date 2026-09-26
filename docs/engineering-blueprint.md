@@ -25,7 +25,7 @@
 ```text
 TypeSpec
    └── OpenAPI
-       ├── oapi-codegen ──> Go transport types/interfaces
+       ├── ogen ──────────> Go typed transport handlers/validators
        ├── Orval ─────────> React Query client/hooks
        └── Scalar ────────> API reference
 
@@ -98,7 +98,7 @@ React/Vite ──> dist ──> go:embed ──> one executable
 
 1. 修改 TypeSpec；
 2. 生成并校验 OpenAPI；
-3. 由 oapi-codegen 生成后端接口边界；
+3. 由 ogen 生成后端强类型接口与校验逻辑；
 4. 由 Orval 生成前端请求函数与 TanStack Query hooks；
 5. 运行编译、契约漂移检查和相关测试；
 6. 提交源文件、配置以及约定纳入版本控制的生成物。

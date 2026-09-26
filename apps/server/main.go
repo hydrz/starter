@@ -35,7 +35,6 @@ var (
 
 func main() {
 	_ = godotenv.Load()
-	_ = godotenv.Load("../../.env")
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -54,7 +53,21 @@ func main() {
 			}
 			logger.Info("database migrations completed")
 			return
+		case "status":
+			if err := databaseMigrations.Status(ctx, databaseURL()); err != nil {
+				logger.Error("database migration status failed", "error", err)
+				os.Exit(1)
+			}
+			return
 		}
+	}
+
+	if os.Getenv("AUTO_MIGRATE") != "false" {
+		if err := databaseMigrations.Migrate(ctx, databaseURL()); err != nil {
+			logger.Error("automatic database migration failed", "error", err)
+			os.Exit(1)
+		}
+		logger.Info("database migrations applied automatically")
 	}
 
 	pool, err := database.Open(ctx, databaseURL())
@@ -103,14 +116,11 @@ func main() {
 }
 
 func healthcheck() error {
-	url := os.Getenv("HEALTHCHECK_URL")
-	if url == "" {
-		addr := address()
-		if strings.HasPrefix(addr, ":") {
-			addr = "127.0.0.1" + addr
-		}
-		url = "http://" + addr + "/api/readyz"
+	addr := address()
+	if strings.HasPrefix(addr, ":") {
+		addr = "127.0.0.1" + addr
 	}
+	url := "http://" + addr + "/api/readyz"
 	client := &http.Client{Timeout: 3 * time.Second}
 	response, err := client.Get(url)
 	if err != nil {
@@ -134,7 +144,7 @@ func address() string {
 	if value := os.Getenv("HTTP_ADDRESS"); value != "" {
 		return value
 	}
-	if port := os.Getenv("APP_PORT"); port != "" {
+	if port := os.Getenv("PORT"); port != "" {
 		if strings.HasPrefix(port, ":") {
 			return port
 		}

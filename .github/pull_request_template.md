@@ -13,7 +13,7 @@
 - [ ] `pnpm check`
 - [ ] `pnpm test`
 - [ ] `pnpm build`
-- [ ] 涉及 migration 时已运行 `pnpm test:database`
+- [ ] 涉及 migration 时已在本地运行 `pnpm db:migrate` 验证
 - [ ] 重大视觉变更已附截图
 
 ## 文档与发布

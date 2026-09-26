@@ -29,7 +29,7 @@ pnpm test
 2. 同时编写 `Up` 与供本地验证使用的 `Down`；
 3. 修改 `db/queries/*.sql`；
 4. 执行 `pnpm generate:db`，不得直接编辑 `internal/store`；
-5. 执行 `pnpm test:database` 验证 `up → down → up`；
+5. 执行 `pnpm db:migrate` 并在本地验证迁移效果；
 6. 执行 `pnpm check`、`pnpm test` 并审查生成代码；
 7. migration 发布后永不修改，修复通过新的 migration 完成。
 
@@ -46,4 +46,4 @@ pnpm test
 
 ## 数据库验证
 
-`pnpm test:database` 会用独立的 Compose 项目和本地 `55432` 端口创建临时数据库、执行全部 migration、回退一步、再次升级并输出状态，最后删除测试 volume，不会复用日常开发数据库。可通过 `POSTGRES_PORT` 覆盖测试端口。
+本地开发通过 `pnpm db:migrate` 执行待处理 migration，通过 `pnpm db:status` 查看当前的迁移状态与版本历史。对于全新重置测试，可通过 `pnpm db:reset` 销毁并重建本地开发数据库。

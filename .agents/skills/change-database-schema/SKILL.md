@@ -15,7 +15,7 @@ Read `docs/development/database.md`, `docs/standards/contracts-and-data.md`, and
 4. Write Goose `Up` SQL. Add a useful local `Down` section, but do not present production rollback as safe when data loss or incompatibility is possible.
 5. Update explicit SQL in `db/queries/`; use bound parameters and deterministic ordering for paginated queries.
 6. Run `pnpm generate:db`. Do not hand-edit `internal/store/`. Adapt repository mapping and application tests to generated types.
-7. Run `pnpm check:sql`, targeted Go tests, and `pnpm check:generated`. If Docker is available, run `pnpm test:database`; otherwise report the limitation without claiming migration verification.
+7. Run `pnpm check:sql`, targeted Go tests, and `pnpm check:generated`. Validate the migration locally with `pnpm db:migrate` if local database is available.
 8. Run `pnpm check` and document rollout, backfill, observability, recovery, and contract-phase requirements.
 
 ## Confirmation boundaries

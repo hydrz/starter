@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsp compile .",
-    "format": "tsp format main.tsp",
-    "format:check": "tsp format --check main.tsp"
+    "build": "node build.mjs",
+    "format": "tsp format \"**/*.tsp\"",
+    "format:check": "tsp format --check \"**/*.tsp\""
   },
   "dependencies": {
     "@typespec/compiler": "1.16.0",

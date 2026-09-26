@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | 单元测试 | 业务分支、校验、纯转换 | `pnpm test` |
 | Transport 测试 | 路由、状态码、序列化、公开错误 | `go test ./internal/platform/httpserver/...` |
-| 数据库集成测试 | migration 与 PostgreSQL 行为 | `pnpm test:database` |
+| 数据库集成测试 | PostgreSQL 数据访问与事务行为 | `go test ./internal/platform/database/...` |
 | 生成漂移测试 | SSOT 与生成物一致 | `pnpm check:generated` |
 | 构建测试 | 生产制品可编译 | `pnpm build` |
 

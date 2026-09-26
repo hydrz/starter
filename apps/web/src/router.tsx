@@ -17,7 +17,7 @@ import {
   LayoutDashboard,
   Megaphone,
 } from "lucide-react";
-import { useGetHealth } from "./api/generated/client";
+import { useGetHealth } from "./api/generated/system/system";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { UserAvatarMenu } from "./components/UserAvatarMenu";
 import { Button } from "./components/ui/button";

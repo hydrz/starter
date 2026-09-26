@@ -25,7 +25,7 @@
 | --- | --- | --- | --- |
 | 1. 工程蓝图 | 架构原则、SSOT、目标目录、关键数据流、阶段计划 | 边界清晰，技术选择之间无职责冲突 | 已完成 |
 | 2. 基础脚手架 | pnpm workspace、Go module、Vite/React、Chi、统一 scripts | 一条命令启动最小前后端 | 已完成 |
-| 3. 契约流水线 | TypeSpec、OpenAPI、Scalar、oapi-codegen、Orval | 修改契约可稳定生成前后端代码 | 已完成 |
+| 3. 契约流水线 | TypeSpec、OpenAPI、Scalar、ogen、Orval | 修改契约可稳定生成前后端代码 | 已完成 |
 | 4. 数据流水线 | PostgreSQL Compose、Goose、sqlc、pgx | migration 与查询生成可重复 | 已完成 |
 | 5. 纵向业务切片 | 一个完整 CRUD/查询示例 | 契约、后端、数据库、前端贯通 | 已完成 |
 | 6. 工程规范 | Go/TS/React/SQL/测试/错误处理规范 | 规范可由工具自动检查 | 已完成 |

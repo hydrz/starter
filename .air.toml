@@ -1,43 +1,22 @@
+# Config file for Air (Go hot-reload)
 root = "."
 tmp_dir = "tmp"
 
 [build]
-  bin = "./tmp/server"
-  cmd = "go build -o ./tmp/server ./apps/server"
-  delay = 300
-  exclude_dir = [
-    "assets",
-    "tmp",
-    "vendor",
-    "node_modules",
-    "apps/web",
-    "dist",
-    "packages",
-    "spec/generated",
-    "db/migrations",
-    ".agents",
-    ".github",
-    "docs",
-    "tools"
-  ]
-  exclude_regex = ["_test\\.go$"]
-  include_ext = ["go"]
-  kill_delay = "500ms"
-  send_interrupt = true
-  stop_on_error = true
+cmd = "go build -o ./tmp/server ./apps/server"
+bin = "./tmp/server"
+include_ext = ["go", "sql"]
+exclude_dir = ["apps/web", "dist", "tmp", "docs", "spec", ".agents", "internal/platform/webui/dist"]
+include_dir = ["apps/server", "internal", "db"]
+exclude_regex = ["_test\\.go$"]
+delay = 500
+stop_on_error = true
 
 [color]
-  app = ""
-  build = "yellow"
-  main = "magenta"
-  runner = "green"
-  watcher = "cyan"
-
-[log]
-  time = true
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"
 
 [misc]
-  clean_on_exit = true
-
-[screen]
-  clear_on_rebuild = false
+clean_on_exit = true

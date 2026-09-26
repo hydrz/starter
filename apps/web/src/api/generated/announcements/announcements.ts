@@ -23,88 +23,16 @@ import type {
   UseQueryResult
 } from '@tanstack/react-query';
 
-import { customClient } from '../client';
-export type AnnouncementStatus = typeof AnnouncementStatus[keyof typeof AnnouncementStatus];
+import type {
+  Announcement,
+  AnnouncementInput,
+  ApiError,
+  ListAnnouncementsParams,
+  PageAnnouncement
+} from '../model';
 
+import { customClient } from '../../client';
 
-export const AnnouncementStatus = {
-  draft: 'draft',
-  published: 'published',
-} as const;
-
-export interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  status: AnnouncementStatus;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface AnnouncementInput {
-  /**
-     * @minLength 1
-     * @maxLength 120
-     */
-  title: string;
-  /**
-     * @minLength 1
-     * @maxLength 10000
-     */
-  content: string;
-  status: AnnouncementStatus;
-}
-
-export interface ApiError {
-  code: string;
-  message: string;
-}
-
-/**
- * Current service status.
- */
-export type HealthResponseStatus = typeof HealthResponseStatus[keyof typeof HealthResponseStatus];
-
-
-export const HealthResponseStatus = {
-  ok: 'ok',
-} as const;
-
-/**
- * Service health information.
- */
-export interface HealthResponse {
-  /** Current service status. */
-  status: HealthResponseStatus;
-}
-
-export interface PageAnnouncement {
-  /** 当前分页的项目列表 */
-  items: Announcement[];
-  /** 符合过滤条件的总记录数 */
-  total: number;
-  /** 分页大小限制 */
-  limit: number;
-  /** 分页偏移量 */
-  offset: number;
-}
-
-export type CommonPaginationQueryLimitParameter = number;
-
-export type CommonPaginationQueryOffsetParameter = number;
-
-export type ListAnnouncementsParams = {
-/**
- * @minimum 1
- * @maximum 100
- */
-limit?: CommonPaginationQueryLimitParameter;
-/**
- * @minimum 0
- */
-offset?: CommonPaginationQueryOffsetParameter;
-status?: AnnouncementStatus;
-};
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
@@ -251,7 +179,6 @@ export function useListAnnouncements<TData = Awaited<ReturnType<typeof listAnnou
 
 
 
-
 export type createAnnouncementResponse201 = {
   data: Announcement
   status: 201
@@ -358,8 +285,7 @@ export const useCreateAnnouncement = <TError = ApiError,
       > => {
       return useMutation(getCreateAnnouncementMutationOptions(options), queryClient);
     }
-
-export type getAnnouncementResponse200 = {
+    export type getAnnouncementResponse200 = {
   data: Announcement
   status: 200
 }
@@ -483,7 +409,6 @@ export function useGetAnnouncement<TData = Awaited<ReturnType<typeof getAnnounce
 
 
 
-
 export type updateAnnouncementResponse200 = {
   data: Announcement
   status: 200
@@ -596,8 +521,7 @@ export const useUpdateAnnouncement = <TError = ApiError,
       > => {
       return useMutation(getUpdateAnnouncementMutationOptions(options), queryClient);
     }
-
-export type deleteAnnouncementResponse204 = {
+    export type deleteAnnouncementResponse204 = {
   data: void
   status: 204
 }
@@ -694,230 +618,3 @@ export const useDeleteAnnouncement = <TError = ApiError,
       > => {
       return useMutation(getDeleteAnnouncementMutationOptions(options), queryClient);
     }
-
-export type getHealthResponse200 = {
-  data: HealthResponse
-  status: 200
-}
-
-export type getHealthResponseSuccess = (getHealthResponse200) & {
-  headers: Headers;
-};
-;
-
-export type getHealthResponse = (getHealthResponseSuccess)
-
-export const getGetHealthUrl = () => {
-
-
-
-
-  return `/api/healthz`
-}
-
-/**
- * @summary Check service health
- */
-export const getHealth = async ( options?: Parameters<typeof customClient>[1]): Promise<getHealthResponse> => {
-
-  return customClient<getHealthResponse>(getGetHealthUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetHealthQueryKey = () => {
-    return [
-    `/api/healthz`
-    ] as const;
-    }
-
-
-export const getGetHealthQueryOptions = <TData = Awaited<ReturnType<typeof getHealth>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetHealthQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHealth>>> = ({ signal }) => getHealth({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type GetHealthQueryResult = NonNullable<Awaited<ReturnType<typeof getHealth>>>
-export type GetHealthQueryError = unknown
-
-
-export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TError = unknown>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getHealth>>,
-          TError,
-          Awaited<ReturnType<typeof getHealth>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customClient>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getHealth>>,
-          TError,
-          Awaited<ReturnType<typeof getHealth>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary Check service health
- */
-
-export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getGetHealthQueryOptions(options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
-export type getReadinessResponse200 = {
-  data: HealthResponse
-  status: 200
-}
-
-export type getReadinessResponse503 = {
-  data: ApiError
-  status: 503
-}
-
-export type getReadinessResponseSuccess = (getReadinessResponse200) & {
-  headers: Headers;
-};
-export type getReadinessResponseError = (getReadinessResponse503) & {
-  headers: Headers;
-};
-
-export type getReadinessResponse = (getReadinessResponseSuccess | getReadinessResponseError)
-
-export const getGetReadinessUrl = () => {
-
-
-
-
-  return `/api/readyz`
-}
-
-/**
- * @summary Check service readiness
- */
-export const getReadiness = async ( options?: Parameters<typeof customClient>[1]): Promise<getReadinessResponse> => {
-
-  return customClient<getReadinessResponse>(getGetReadinessUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetReadinessQueryKey = () => {
-    return [
-    `/api/readyz`
-    ] as const;
-    }
-
-
-export const getGetReadinessQueryOptions = <TData = Awaited<ReturnType<typeof getReadiness>>, TError = ApiError>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReadiness>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetReadinessQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReadiness>>> = ({ signal }) => getReadiness({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getReadiness>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type GetReadinessQueryResult = NonNullable<Awaited<ReturnType<typeof getReadiness>>>
-export type GetReadinessQueryError = ApiError
-
-
-export function useGetReadiness<TData = Awaited<ReturnType<typeof getReadiness>>, TError = ApiError>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReadiness>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getReadiness>>,
-          TError,
-          Awaited<ReturnType<typeof getReadiness>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customClient>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetReadiness<TData = Awaited<ReturnType<typeof getReadiness>>, TError = ApiError>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReadiness>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getReadiness>>,
-          TError,
-          Awaited<ReturnType<typeof getReadiness>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetReadiness<TData = Awaited<ReturnType<typeof getReadiness>>, TError = ApiError>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReadiness>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary Check service readiness
- */
-
-export function useGetReadiness<TData = Awaited<ReturnType<typeof getReadiness>>, TError = ApiError>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getReadiness>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getGetReadinessQueryOptions(options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}

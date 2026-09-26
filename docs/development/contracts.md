@@ -2,36 +2,46 @@
 
 ## 单一事实来源
 
-HTTP API 只在 `packages/contracts/main.tsp` 中定义。OpenAPI、Go 类型与路由接口、TypeScript 请求函数和 TanStack Query hooks 都是生成物，不得手工编辑。
+HTTP API 在 `packages/contracts/` 中按模块组织（`features/` 与 `common/`），并通过 `main.tsp` 汇聚。OpenAPI、Go 强类型服务端接口与解析器（ogen）、TypeScript 客户端 hooks 都是生成物，不得手工编辑。
 
 ```text
-packages/contracts/main.tsp
-  └─ TypeSpec ─> spec/generated/openapi.yaml
-                   ├─ oapi-codegen ─> internal/api/openapi.gen.go
-                   └─ Orval ────────> apps/web/src/api/generated/
+packages/contracts/
+  ├── common/                 # 通用模型与错误响应
+  ├── features/
+  │   ├── system/             # 系统存活/就绪探针
+  │   └── announcements/      # 业务切片
+  └── main.tsp                # 聚合入口
+        │
+        ├─ TypeSpec ─> spec/generated/
+        │                ├── openapi.yaml & openapi.json (统一契约与 Scalar 文档)
+        │                └── *.openapi.yaml (模块化 OpenAPI 规格)
+        │
+        ├─ ogen ────> internal/api/*api/ (模块化强类型 Handler 与自动校验)
+        │
+        └─ Orval ───> apps/web/src/api/generated/ (按标签拆分的 React Query Hooks)
 ```
 
 生成物按照 [ADR-0001](../adr/0001-commit-generated-contract-artifacts.md) 纳入版本控制，以便在 Pull Request 中审查契约影响。
 
 ## 修改流程
 
-1. 修改 `packages/contracts/main.tsp`；
+1. 在 `packages/contracts/features/<module>/` 编写契约并由 `main.tsp` 引用；
 2. 执行 `pnpm generate`；
-3. 在 `internal/platform/httpserver` 实现生成的 `api.ServerInterface`；
-4. 在 Web 中只使用 Orval 生成的函数或 hooks；
+3. 在对应的内部模块（如 `internal/<module>`）实现生成的强类型 `Handler` 接口；
+4. 在 Web 中只使用 Orval 生成的模块化函数或 hooks；
 5. 执行 `pnpm check` 和 `pnpm test`；
 6. 审查 TypeSpec、OpenAPI 与两端生成代码的差异后一起提交。
 
-不要在同一个变更中手工修复生成文件。如果生成结果不符合预期，应调整 TypeSpec 或 `tools/oapi-codegen.yaml`、`apps/web/orval.config.ts`。
+不要在同一个变更中手工修复生成文件。如果生成结果不符合预期，应调整 TypeSpec 或生成配置。
 
 ## 命令
 
 | 命令 | 作用 |
 | --- | --- |
 | `pnpm generate` | 按依赖顺序生成全部契约产物 |
-| `pnpm generate:contract` | TypeSpec → OpenAPI |
-| `pnpm generate:server` | OpenAPI → Go/Chi 服务端代码 |
-| `pnpm generate:web` | OpenAPI → Fetch/TanStack Query 客户端 |
+| `pnpm generate:contract` | TypeSpec → 统一及模块化 OpenAPI Spec |
+| `pnpm generate:server` | 模块化 OpenAPI → ogen 强类型服务端代码 |
+| `pnpm generate:web` | OpenAPI → 按标签拆分的 Fetch/TanStack Query 客户端 |
 | `pnpm check:generated` | 重新生成并检查已提交产物是否发生漂移 |
 
 ## API 文档
@@ -39,7 +49,8 @@ packages/contracts/main.tsp
 服务启动后可访问：
 
 - Scalar API Reference：`http://127.0.0.1:8080/api/docs`；
-- OpenAPI JSON：`http://127.0.0.1:8080/api/openapi.json`；
+- OpenAPI YAML：`http://127.0.0.1:8080/api/openapi.yaml`；
+- OpenAPI JSON（兼容端点）：`http://127.0.0.1:8080/api/openapi.json`；
 - OpenAPI 源生成物：`spec/generated/openapi.yaml`。
 
 Scalar 交互文档已 100% 离线内嵌在服务二进制中（通过 `/api/docs/scalar.js` 提供资源），完全不依赖任何外部 CDN，支持在企业隔离内网与离线专网中完整浏览。

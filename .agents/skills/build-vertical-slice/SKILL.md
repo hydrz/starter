@@ -15,7 +15,7 @@ Read `docs/development/vertical-slice.md` and the relevant standards. Use `$chan
 4. If HTTP shape changes, follow `$change-api-contract`; implement the generated server interface and map domain failures to stable public errors.
 5. Build the React feature from generated Orval functions/hooks. Use TanStack Query for server state, React Hook Form plus Zod for forms, and Zustand only for genuine client-global state.
 6. Cover domain rules with unit tests, HTTP mapping with handler tests, and user-visible behavior with web tests. Include loading, empty, error, success, and authorization states when relevant.
-7. Run targeted checks throughout, then `pnpm check`, `pnpm test`, and `pnpm build`. Run `pnpm test:database` for persistence behavior when Docker is available.
+7. Run targeted checks throughout, then `pnpm check`, `pnpm test`, and `pnpm build`. Run `pnpm db:migrate` when database changes are present.
 8. Update durable developer or operator documentation only where behavior or procedures changed. Summarize layer-by-layer impact and residual risks.
 
 ## Stop conditions

@@ -1,0 +1,68 @@
+openapi: 3.0.0
+info:
+  title: System API
+  version: 0.1.0
+tags:
+  - name: System
+paths:
+  /api/healthz:
+    get:
+      operationId: getHealth
+      summary: Check service health
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+      tags:
+        - System
+  /api/readyz:
+    get:
+      operationId: getReadiness
+      summary: Check service readiness
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - System
+components:
+  schemas:
+    ApiError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+          description: Current service status.
+      description: Service health information.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+    variables: {}

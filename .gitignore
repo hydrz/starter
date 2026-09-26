@@ -3,6 +3,7 @@ node_modules/
 
 # Build outputs
 dist/
+tmp/
 apps/web/dist/
 internal/platform/webui/dist/
 
