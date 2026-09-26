@@ -6,36 +6,37 @@ import {
   Globe,
   Server,
 } from "lucide-react";
+import * as m from "../../paraglide/messages";
 
 export function ArchitectureSection() {
   const steps = [
     {
       step: "01",
       icon: FileCode2,
-      name: "契约中心 (TypeSpec)",
-      desc: "在 packages/contracts/ 中使用声明式语法定义 RESTful 接口与请求响应数据模型",
-      tag: "Single Source of Truth",
+      name: m.landing_architecture_step1_name(),
+      desc: m.landing_architecture_step1_desc(),
+      tag: m.landing_architecture_step1_tag(),
     },
     {
       step: "02",
       icon: Globe,
-      name: "OpenAPI 3.0 编译",
-      desc: "自动编译输出标准 OpenAPI 3.0 规范，并注入 Scalar 离线交互式 API 参考文档",
-      tag: "Autonomous Compilation",
+      name: m.landing_architecture_step2_name(),
+      desc: m.landing_architecture_step2_desc(),
+      tag: m.landing_architecture_step2_tag(),
     },
     {
       step: "03",
       icon: Server,
-      name: "双端代码同步生成",
-      desc: "Go 后端通过 ogen 派生强类型 Server 与自动校验；前端通过 Orval 派生 React Query Hooks",
-      tag: "Zero-Drift Code Gen",
+      name: m.landing_architecture_step3_name(),
+      desc: m.landing_architecture_step3_desc(),
+      tag: m.landing_architecture_step3_tag(),
     },
     {
       step: "04",
       icon: Database,
-      name: "SQL-First 数据持久化",
-      desc: "sqlc 解析原生 SQL 生成 Go 数据模型；Goose 管理受控增量数据库表结构迁移",
-      tag: "Type-Checked SQL",
+      name: m.landing_architecture_step4_name(),
+      desc: m.landing_architecture_step4_desc(),
+      tag: m.landing_architecture_step4_tag(),
     },
   ];
 
@@ -47,18 +48,17 @@ export function ArchitectureSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <span className="text-xs font-semibold uppercase tracking-wider text-accent-foreground dark:text-accent">
-            ARCHITECTURE PIPELINE
+            {m.landing_architecture_eyebrow()}
           </span>
           <h2 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            契约优先的设计与编译管线
+            {m.landing_architecture_title()}
           </h2>
           <p className="mt-3 text-base text-muted-foreground">
-            拒绝手工维护 API 与重复编写联调代码，以
+            {m.landing_architecture_subtitle_prefix()}{" "}
             <strong className="text-foreground font-semibold">
-              {" "}
-              契约中心{" "}
-            </strong>
-            为核心驱动全栈自动化流转。
+              {m.landing_architecture_subtitle_strong()}
+            </strong>{" "}
+            {m.landing_architecture_subtitle_suffix()}
           </p>
         </div>
 
@@ -89,7 +89,7 @@ export function ArchitectureSection() {
                 </div>
 
                 <div className="mt-5 border-t border-border/60 pt-3">
-                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success">
                     <CheckCircle2 size={11} />
                     <span>{item.tag}</span>
                   </span>
@@ -113,42 +113,41 @@ export function ArchitectureSection() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-border/60 pb-5">
             <div>
               <h4 className="text-sm font-semibold text-foreground">
-                单一制品交付流水线 (Single Binary Deployment)
+                {m.landing_architecture_pipeline_title()}
               </h4>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                前端静态产物自动构建至 internal/platform/webui/dist，并通过 Go
-                embed 打包进单二进制
+                {m.landing_architecture_pipeline_desc()}
               </p>
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>零 Node.js 运行时</span>
+              <span className="inline-flex h-2 w-2 rounded-full bg-success animate-pulse" />
+              <span>{m.landing_architecture_pipeline_badge()}</span>
             </div>
           </div>
 
           <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div className="rounded-lg border border-border/60 bg-muted/40 p-4">
               <span className="font-semibold text-foreground">
-                1. 前端编译打包
+                {m.landing_architecture_pipeline_step1_title()}
               </span>
               <p className="mt-1 text-muted-foreground">
-                pnpm build:web 生成高压缩 Vite 生产静态资产
+                {m.landing_architecture_pipeline_step1_desc()}
               </p>
             </div>
             <div className="rounded-lg border border-border/60 bg-muted/40 p-4">
               <span className="font-semibold text-foreground">
-                2. Go 静态内嵌
+                {m.landing_architecture_pipeline_step2_title()}
               </span>
               <p className="mt-1 text-muted-foreground">
-                go:embed 将 webui 资源直接嵌入编译结果二进制中
+                {m.landing_architecture_pipeline_step2_desc()}
               </p>
             </div>
             <div className="rounded-lg border border-border/60 bg-muted/40 p-4">
               <span className="font-semibold text-foreground">
-                3. 极速容器运行
+                {m.landing_architecture_pipeline_step3_title()}
               </span>
               <p className="mt-1 text-muted-foreground">
-                scratch / alpine 基础镜像轻量封装，Docker Compose 一键启动
+                {m.landing_architecture_pipeline_step3_desc()}
               </p>
             </div>
           </div>

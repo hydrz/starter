@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { BookOpen } from "lucide-react";
 import { useGetHealth } from "../../api/generated/system/system";
 import { GithubIcon } from "../../components/GithubIcon";
+import * as m from "../../paraglide/messages";
 
 export function LandingFooter() {
   const health = useGetHealth({
@@ -23,13 +24,13 @@ export function LandingFooter() {
           <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border/80 bg-primary/10 text-[11px] font-bold text-accent-foreground dark:text-accent">
             E
           </span>
-          <span className="font-semibold text-foreground">Starter</span>
-          <span>· Modern Full-Stack Web Application Template</span>
+          <span className="font-semibold text-foreground">{m.app_brand()}</span>
+          <span>{m.landing_footer_tagline()}</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-6">
           <Link to="/app" className="transition-colors hover:text-foreground">
-            控制台工作台
+            {m.landing_footer_console()}
           </Link>
           <a
             href="/api/docs"
@@ -37,7 +38,7 @@ export function LandingFooter() {
             rel="noreferrer"
             className="flex items-center gap-1 transition-colors hover:text-foreground"
           >
-            <span>Scalar 契约文档</span>
+            <span>{m.landing_footer_api_docs()}</span>
             <BookOpen size={11} />
           </a>
           <a
@@ -54,11 +55,13 @@ export function LandingFooter() {
         <div className="flex items-center gap-2">
           <span
             className={`h-2 w-2 rounded-full ${
-              serviceAvailable ? "bg-emerald-500" : "bg-amber-500"
+              serviceAvailable ? "bg-success" : "bg-warning"
             }`}
           />
           <span>
-            {serviceAvailable ? "API 在线服务正常" : "API 探针检测中"}
+            {serviceAvailable
+              ? m.landing_footer_status_online()
+              : m.landing_footer_status_checking()}
           </span>
         </div>
       </div>
