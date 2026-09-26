@@ -1,5 +1,7 @@
 # [事件或恢复任务名称]
 
+> **说明**：从本模板创建新 Runbook 时，保存至 `docs/runbooks/<kebab-case-name>.md`（如 `docs/runbooks/redis-failover.md`），并在 [`docs/runbooks/README.md`](../runbooks/README.md) 与 [`docs/documentation-catalog.md`](../documentation-catalog.md) 中登记。生效后删除本说明引用块。
+
 - **状态**：Draft（可选值：Draft | Active | Superseded | Deprecated，详见 [文档规范与生命周期](../documentation-policy.md)）
 - **负责人**：[值班团队或角色]
 - **最后复审**：YYYY-MM-DD

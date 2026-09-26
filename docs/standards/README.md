@@ -29,3 +29,12 @@
 | Go 竞态 | `pnpm test:race` |
 
 `pnpm check` 聚合全部静态代码与生成漂移检查；单元测试与竞态检测由 `pnpm test` 与 `pnpm test:race` 执行。
+
+## 新增与维护规范
+
+新增或修订工程规范时遵守以下约定：
+
+1. **保存位置**：统一保存在 `docs/standards/<topic>.md`（使用小写 `kebab-case` 命名，如 `docs/standards/security.md`）；
+2. **必需元数据**：遵循[文档规范与生命周期](../documentation-policy.md)，标题下方必须包含状态（`Draft`、`Active` 等）、负责人、最后复审日期与复审周期；
+3. **登记索引**：在本文件顶部的列表加入链接，并在[文档目录与负责人](../documentation-catalog.md)中确认责任团队归属；
+4. **自动化优先**：凡是能通过编译器、Linter 或脚本检查的规则，优先落地为 `pnpm check` 的自动化门禁，不在文档中做重复的手工核对约定。

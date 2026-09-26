@@ -1,5 +1,7 @@
 # [版本号] 发布说明
 
+> **说明**：本模板在发布准备阶段（如使用 `.agents/skills/prepare-release/` 或按 [交付与运维指南](../deployment.md) 准备版本）使用。填写后作为 GitHub Release 描述发布，或根据需要归档保存于 `docs/releases/v<MAJOR>.<MINOR>.<PATCH>.md`。生效后删除本说明引用块。
+
 - **发布日期**：YYYY-MM-DD
 - **负责人**：[发布团队或角色]
 - **制品**：[Git tag、镜像或二进制校验标识]
