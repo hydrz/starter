@@ -51,6 +51,24 @@ type Service struct {
 
 	accessTokenTTL  time.Duration
 	refreshTokenTTL time.Duration
+
+	// Workstream F additions below. Every field is optional (nil-safe): a
+	// feature is only active when its dependencies are wired, so existing
+	// callers/tests that build a Service without them are unaffected.
+	emailOTP      EmailOTPRepository
+	totpFactors   TOTPFactorRepository
+	recoveryCodes TOTPRecoveryCodeRepository
+	mfaChallenges MFAChallengeRepository
+	totpCipher    *TOTPCipher
+	totpIssuer    string
+
+	oauthAccounts OAuthAccountRepository
+	oauthStates   OAuthStateRepository
+	oauthClients  map[string]OAuthClient
+
+	webauthnCredentials WebAuthnCredentialRepository
+	webauthnChallenges  WebAuthnChallengeRepository
+	webauthn            *WebAuthnCeremonies
 }
 
 // Dependencies bundles the ports Service needs. All fields are required.
@@ -71,6 +89,23 @@ type Dependencies struct {
 
 	AccessTokenTTL  time.Duration
 	RefreshTokenTTL time.Duration
+
+	// Workstream F additions below; all optional. See Service's field
+	// comments for the nil-safe activation rule each one follows.
+	EmailOTP      EmailOTPRepository
+	TOTPFactors   TOTPFactorRepository
+	RecoveryCodes TOTPRecoveryCodeRepository
+	MFAChallenges MFAChallengeRepository
+	TOTPCipher    *TOTPCipher
+	TOTPIssuer    string
+
+	OAuthAccounts OAuthAccountRepository
+	OAuthStates   OAuthStateRepository
+	OAuthClients  map[string]OAuthClient
+
+	WebAuthnCredentials WebAuthnCredentialRepository
+	WebAuthnChallenges  WebAuthnChallengeRepository
+	WebAuthn            *WebAuthnCeremonies
 }
 
 // NewService validates deps and returns a ready Service.
@@ -88,6 +123,11 @@ func NewService(deps Dependencies) (*Service, error) {
 	if clock == nil {
 		clock = SystemClock{}
 	}
+	totpIssuer := deps.TOTPIssuer
+	if totpIssuer == "" {
+		totpIssuer = "Starter"
+	}
+
 	return &Service{
 		users:              deps.Users,
 		refreshTokens:      deps.RefreshTokens,
@@ -102,6 +142,21 @@ func NewService(deps Dependencies) (*Service, error) {
 		personalOrgCreator: deps.PersonalOrgCreator,
 		accessTokenTTL:     deps.AccessTokenTTL,
 		refreshTokenTTL:    deps.RefreshTokenTTL,
+
+		emailOTP:      deps.EmailOTP,
+		totpFactors:   deps.TOTPFactors,
+		recoveryCodes: deps.RecoveryCodes,
+		mfaChallenges: deps.MFAChallenges,
+		totpCipher:    deps.TOTPCipher,
+		totpIssuer:    totpIssuer,
+
+		oauthAccounts: deps.OAuthAccounts,
+		oauthStates:   deps.OAuthStates,
+		oauthClients:  deps.OAuthClients,
+
+		webauthnCredentials: deps.WebAuthnCredentials,
+		webauthnChallenges:  deps.WebAuthnChallenges,
+		webauthn:            deps.WebAuthn,
 	}, nil
 }
 
@@ -171,6 +226,17 @@ func (service *Service) PasswordSignIn(ctx context.Context, input PasswordSignIn
 	}
 	if !VerifyPasswordOrDummy(hash, input.Password) {
 		return IssuedTokens{}, ErrInvalidCredentials
+	}
+
+	// TOTP enforcement is forward-only: a user who has enrolled a verified
+	// TOTP factor must complete it on every subsequent primary sign-in;
+	// enrolling never retroactively invalidates an already-issued access
+	// token or refresh session (see docs/adr/0008 and the ledger's F
+	// section for the explicit decision).
+	if challengeID, err := service.checkMFARequired(ctx, user.ID); err != nil {
+		return IssuedTokens{}, fmt.Errorf("sign in: %w", err)
+	} else if challengeID != "" {
+		return IssuedTokens{MFAChallengeID: challengeID}, ErrMFARequired
 	}
 
 	familyID, err := service.refreshTokens.CreateFamily(ctx, user.ID)

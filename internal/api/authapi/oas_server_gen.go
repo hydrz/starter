@@ -8,6 +8,48 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
+	// BeginOAuthLink implements beginOAuthLink operation.
+	//
+	// Begin linking an OAuth provider to the current, recently-authenticated account.
+	//
+	// POST /api/auth/oauth/{provider}/link/begin
+	BeginOAuthLink(ctx context.Context, params BeginOAuthLinkParams) (BeginOAuthLinkRes, error)
+	// BeginOAuthSignIn implements beginOAuthSignIn operation.
+	//
+	// Begin an OAuth sign-in with Google or GitHub.
+	//
+	// POST /api/auth/oauth/{provider}/begin
+	BeginOAuthSignIn(ctx context.Context, params BeginOAuthSignInParams) (BeginOAuthSignInRes, error)
+	// BeginTOTPEnrollment implements beginTOTPEnrollment operation.
+	//
+	// Begin enrolling a TOTP authenticator app.
+	//
+	// POST /api/auth/mfa/totp/enroll/begin
+	BeginTOTPEnrollment(ctx context.Context) (BeginTOTPEnrollmentRes, error)
+	// BeginWebAuthnAuthentication implements beginWebAuthnAuthentication operation.
+	//
+	// Begin a discoverable (usernameless) passkey sign-in.
+	//
+	// POST /api/auth/webauthn/authentication/begin
+	BeginWebAuthnAuthentication(ctx context.Context) (*WebAuthnAuthenticationBeginResponse, error)
+	// BeginWebAuthnRegistration implements beginWebAuthnRegistration operation.
+	//
+	// Begin registering a passkey for the current account.
+	//
+	// POST /api/auth/webauthn/registration/begin
+	BeginWebAuthnRegistration(ctx context.Context) (BeginWebAuthnRegistrationRes, error)
+	// CompleteOAuthLink implements completeOAuthLink operation.
+	//
+	// Complete linking an OAuth provider callback.
+	//
+	// POST /api/auth/oauth/{provider}/link/callback
+	CompleteOAuthLink(ctx context.Context, req *OAuthCallbackInput, params CompleteOAuthLinkParams) (CompleteOAuthLinkRes, error)
+	// CompleteOAuthSignIn implements completeOAuthSignIn operation.
+	//
+	// Complete an OAuth sign-in callback.
+	//
+	// POST /api/auth/oauth/{provider}/callback
+	CompleteOAuthSignIn(ctx context.Context, req *OAuthCallbackInput, params CompleteOAuthSignInParams) (CompleteOAuthSignInRes, error)
 	// ConfirmEmailVerification implements confirmEmailVerification operation.
 	//
 	// Confirm an email verification token.
@@ -20,12 +62,30 @@ type Handler interface {
 	//
 	// POST /api/auth/password-reset/confirm
 	ConfirmPasswordReset(ctx context.Context, req *PasswordResetConfirmInput) (ConfirmPasswordResetRes, error)
+	// ConfirmTOTPEnrollment implements confirmTOTPEnrollment operation.
+	//
+	// Confirm a TOTP enrollment and receive recovery codes once.
+	//
+	// POST /api/auth/mfa/totp/enroll/confirm
+	ConfirmTOTPEnrollment(ctx context.Context, req *TOTPEnrollmentConfirmInput) (ConfirmTOTPEnrollmentRes, error)
 	// CreateAPIKey implements createAPIKey operation.
 	//
 	// Create an API key.
 	//
 	// POST /api/auth/api-keys
 	CreateAPIKey(ctx context.Context, req *APIKeyCreateInput) (CreateAPIKeyRes, error)
+	// FinishWebAuthnAuthentication implements finishWebAuthnAuthentication operation.
+	//
+	// Finish a passkey sign-in and complete sign-in.
+	//
+	// POST /api/auth/webauthn/authentication/finish
+	FinishWebAuthnAuthentication(ctx context.Context, req *WebAuthnAuthenticationFinishInput) (FinishWebAuthnAuthenticationRes, error)
+	// FinishWebAuthnRegistration implements finishWebAuthnRegistration operation.
+	//
+	// Finish registering a passkey for the current account.
+	//
+	// POST /api/auth/webauthn/registration/finish
+	FinishWebAuthnRegistration(ctx context.Context, req *WebAuthnRegistrationFinishInput) (FinishWebAuthnRegistrationRes, error)
 	// GetCurrentIdentity implements getCurrentIdentity operation.
 	//
 	// Get the current identity.
@@ -38,6 +98,12 @@ type Handler interface {
 	//
 	// GET /api/auth/api-keys
 	ListAPIKeys(ctx context.Context) (ListAPIKeysRes, error)
+	// ListOAuthAccounts implements listOAuthAccounts operation.
+	//
+	// List OAuth providers linked to the current account.
+	//
+	// GET /api/auth/oauth/accounts
+	ListOAuthAccounts(ctx context.Context) (ListOAuthAccountsRes, error)
 	// ListSessions implements listSessions operation.
 	//
 	// List active refresh sessions.
@@ -56,6 +122,12 @@ type Handler interface {
 	//
 	// POST /api/auth/refresh
 	RefreshAccessToken(ctx context.Context) (RefreshAccessTokenRes, error)
+	// RequestEmailOTP implements requestEmailOTP operation.
+	//
+	// Request an email one-time sign-in code.
+	//
+	// POST /api/auth/otp/request
+	RequestEmailOTP(ctx context.Context, req *EmailOTPRequestInput) (RequestEmailOTPRes, error)
 	// RequestEmailVerification implements requestEmailVerification operation.
 	//
 	// Request an email verification message.
@@ -92,6 +164,18 @@ type Handler interface {
 	//
 	// POST /api/auth/sign-up
 	SignUp(ctx context.Context, req *SignUpInput) (SignUpRes, error)
+	// VerifyEmailOTP implements verifyEmailOTP operation.
+	//
+	// Verify an email one-time sign-in code and complete sign-in.
+	//
+	// POST /api/auth/otp/verify
+	VerifyEmailOTP(ctx context.Context, req *EmailOTPVerifyInput) (VerifyEmailOTPRes, error)
+	// VerifyMFAChallenge implements verifyMFAChallenge operation.
+	//
+	// Complete sign-in with a TOTP or recovery code.
+	//
+	// POST /api/auth/mfa/challenge/verify
+	VerifyMFAChallenge(ctx context.Context, req *MFAChallengeVerifyInput) (VerifyMFAChallengeRes, error)
 }
 
 // Server implements http server based on OpenAPI v3 specification and

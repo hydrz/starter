@@ -28,6 +28,48 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
+	// BeginOAuthLink invokes beginOAuthLink operation.
+	//
+	// Begin linking an OAuth provider to the current, recently-authenticated account.
+	//
+	// POST /api/auth/oauth/{provider}/link/begin
+	BeginOAuthLink(ctx context.Context, params BeginOAuthLinkParams) (BeginOAuthLinkRes, error)
+	// BeginOAuthSignIn invokes beginOAuthSignIn operation.
+	//
+	// Begin an OAuth sign-in with Google or GitHub.
+	//
+	// POST /api/auth/oauth/{provider}/begin
+	BeginOAuthSignIn(ctx context.Context, params BeginOAuthSignInParams) (BeginOAuthSignInRes, error)
+	// BeginTOTPEnrollment invokes beginTOTPEnrollment operation.
+	//
+	// Begin enrolling a TOTP authenticator app.
+	//
+	// POST /api/auth/mfa/totp/enroll/begin
+	BeginTOTPEnrollment(ctx context.Context) (BeginTOTPEnrollmentRes, error)
+	// BeginWebAuthnAuthentication invokes beginWebAuthnAuthentication operation.
+	//
+	// Begin a discoverable (usernameless) passkey sign-in.
+	//
+	// POST /api/auth/webauthn/authentication/begin
+	BeginWebAuthnAuthentication(ctx context.Context) (*WebAuthnAuthenticationBeginResponse, error)
+	// BeginWebAuthnRegistration invokes beginWebAuthnRegistration operation.
+	//
+	// Begin registering a passkey for the current account.
+	//
+	// POST /api/auth/webauthn/registration/begin
+	BeginWebAuthnRegistration(ctx context.Context) (BeginWebAuthnRegistrationRes, error)
+	// CompleteOAuthLink invokes completeOAuthLink operation.
+	//
+	// Complete linking an OAuth provider callback.
+	//
+	// POST /api/auth/oauth/{provider}/link/callback
+	CompleteOAuthLink(ctx context.Context, request *OAuthCallbackInput, params CompleteOAuthLinkParams) (CompleteOAuthLinkRes, error)
+	// CompleteOAuthSignIn invokes completeOAuthSignIn operation.
+	//
+	// Complete an OAuth sign-in callback.
+	//
+	// POST /api/auth/oauth/{provider}/callback
+	CompleteOAuthSignIn(ctx context.Context, request *OAuthCallbackInput, params CompleteOAuthSignInParams) (CompleteOAuthSignInRes, error)
 	// ConfirmEmailVerification invokes confirmEmailVerification operation.
 	//
 	// Confirm an email verification token.
@@ -40,12 +82,30 @@ type Invoker interface {
 	//
 	// POST /api/auth/password-reset/confirm
 	ConfirmPasswordReset(ctx context.Context, request *PasswordResetConfirmInput) (ConfirmPasswordResetRes, error)
+	// ConfirmTOTPEnrollment invokes confirmTOTPEnrollment operation.
+	//
+	// Confirm a TOTP enrollment and receive recovery codes once.
+	//
+	// POST /api/auth/mfa/totp/enroll/confirm
+	ConfirmTOTPEnrollment(ctx context.Context, request *TOTPEnrollmentConfirmInput) (ConfirmTOTPEnrollmentRes, error)
 	// CreateAPIKey invokes createAPIKey operation.
 	//
 	// Create an API key.
 	//
 	// POST /api/auth/api-keys
 	CreateAPIKey(ctx context.Context, request *APIKeyCreateInput) (CreateAPIKeyRes, error)
+	// FinishWebAuthnAuthentication invokes finishWebAuthnAuthentication operation.
+	//
+	// Finish a passkey sign-in and complete sign-in.
+	//
+	// POST /api/auth/webauthn/authentication/finish
+	FinishWebAuthnAuthentication(ctx context.Context, request *WebAuthnAuthenticationFinishInput) (FinishWebAuthnAuthenticationRes, error)
+	// FinishWebAuthnRegistration invokes finishWebAuthnRegistration operation.
+	//
+	// Finish registering a passkey for the current account.
+	//
+	// POST /api/auth/webauthn/registration/finish
+	FinishWebAuthnRegistration(ctx context.Context, request *WebAuthnRegistrationFinishInput) (FinishWebAuthnRegistrationRes, error)
 	// GetCurrentIdentity invokes getCurrentIdentity operation.
 	//
 	// Get the current identity.
@@ -58,6 +118,12 @@ type Invoker interface {
 	//
 	// GET /api/auth/api-keys
 	ListAPIKeys(ctx context.Context) (ListAPIKeysRes, error)
+	// ListOAuthAccounts invokes listOAuthAccounts operation.
+	//
+	// List OAuth providers linked to the current account.
+	//
+	// GET /api/auth/oauth/accounts
+	ListOAuthAccounts(ctx context.Context) (ListOAuthAccountsRes, error)
 	// ListSessions invokes listSessions operation.
 	//
 	// List active refresh sessions.
@@ -76,6 +142,12 @@ type Invoker interface {
 	//
 	// POST /api/auth/refresh
 	RefreshAccessToken(ctx context.Context) (RefreshAccessTokenRes, error)
+	// RequestEmailOTP invokes requestEmailOTP operation.
+	//
+	// Request an email one-time sign-in code.
+	//
+	// POST /api/auth/otp/request
+	RequestEmailOTP(ctx context.Context, request *EmailOTPRequestInput) (RequestEmailOTPRes, error)
 	// RequestEmailVerification invokes requestEmailVerification operation.
 	//
 	// Request an email verification message.
@@ -112,6 +184,18 @@ type Invoker interface {
 	//
 	// POST /api/auth/sign-up
 	SignUp(ctx context.Context, request *SignUpInput) (SignUpRes, error)
+	// VerifyEmailOTP invokes verifyEmailOTP operation.
+	//
+	// Verify an email one-time sign-in code and complete sign-in.
+	//
+	// POST /api/auth/otp/verify
+	VerifyEmailOTP(ctx context.Context, request *EmailOTPVerifyInput) (VerifyEmailOTPRes, error)
+	// VerifyMFAChallenge invokes verifyMFAChallenge operation.
+	//
+	// Complete sign-in with a TOTP or recovery code.
+	//
+	// POST /api/auth/mfa/challenge/verify
+	VerifyMFAChallenge(ctx context.Context, request *MFAChallengeVerifyInput) (VerifyMFAChallengeRes, error)
 }
 
 // Client implements OAS client.
@@ -151,6 +235,648 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 		return c.serverURL
 	}
 	return u
+}
+
+// BeginOAuthLink invokes beginOAuthLink operation.
+//
+// Begin linking an OAuth provider to the current, recently-authenticated account.
+//
+// POST /api/auth/oauth/{provider}/link/begin
+func (c *Client) BeginOAuthLink(ctx context.Context, params BeginOAuthLinkParams) (BeginOAuthLinkRes, error) {
+	res, err := c.sendBeginOAuthLink(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendBeginOAuthLink(ctx context.Context, params BeginOAuthLinkParams) (res BeginOAuthLinkRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("beginOAuthLink"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/auth/oauth/{provider}/link/begin"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, BeginOAuthLinkOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/auth/oauth/"
+	{
+		// Encode "provider" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "provider",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(string(params.Provider)))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/link/begin"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeBeginOAuthLinkResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// BeginOAuthSignIn invokes beginOAuthSignIn operation.
+//
+// Begin an OAuth sign-in with Google or GitHub.
+//
+// POST /api/auth/oauth/{provider}/begin
+func (c *Client) BeginOAuthSignIn(ctx context.Context, params BeginOAuthSignInParams) (BeginOAuthSignInRes, error) {
+	res, err := c.sendBeginOAuthSignIn(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendBeginOAuthSignIn(ctx context.Context, params BeginOAuthSignInParams) (res BeginOAuthSignInRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("beginOAuthSignIn"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/auth/oauth/{provider}/begin"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, BeginOAuthSignInOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/auth/oauth/"
+	{
+		// Encode "provider" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "provider",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(string(params.Provider)))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/begin"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeBeginOAuthSignInResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// BeginTOTPEnrollment invokes beginTOTPEnrollment operation.
+//
+// Begin enrolling a TOTP authenticator app.
+//
+// POST /api/auth/mfa/totp/enroll/begin
+func (c *Client) BeginTOTPEnrollment(ctx context.Context) (BeginTOTPEnrollmentRes, error) {
+	res, err := c.sendBeginTOTPEnrollment(ctx)
+	return res, err
+}
+
+func (c *Client) sendBeginTOTPEnrollment(ctx context.Context) (res BeginTOTPEnrollmentRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("beginTOTPEnrollment"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/auth/mfa/totp/enroll/begin"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, BeginTOTPEnrollmentOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/auth/mfa/totp/enroll/begin"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeBeginTOTPEnrollmentResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// BeginWebAuthnAuthentication invokes beginWebAuthnAuthentication operation.
+//
+// Begin a discoverable (usernameless) passkey sign-in.
+//
+// POST /api/auth/webauthn/authentication/begin
+func (c *Client) BeginWebAuthnAuthentication(ctx context.Context) (*WebAuthnAuthenticationBeginResponse, error) {
+	res, err := c.sendBeginWebAuthnAuthentication(ctx)
+	return res, err
+}
+
+func (c *Client) sendBeginWebAuthnAuthentication(ctx context.Context) (res *WebAuthnAuthenticationBeginResponse, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("beginWebAuthnAuthentication"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/auth/webauthn/authentication/begin"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, BeginWebAuthnAuthenticationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/auth/webauthn/authentication/begin"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeBeginWebAuthnAuthenticationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// BeginWebAuthnRegistration invokes beginWebAuthnRegistration operation.
+//
+// Begin registering a passkey for the current account.
+//
+// POST /api/auth/webauthn/registration/begin
+func (c *Client) BeginWebAuthnRegistration(ctx context.Context) (BeginWebAuthnRegistrationRes, error) {
+	res, err := c.sendBeginWebAuthnRegistration(ctx)
+	return res, err
+}
+
+func (c *Client) sendBeginWebAuthnRegistration(ctx context.Context) (res BeginWebAuthnRegistrationRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("beginWebAuthnRegistration"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/auth/webauthn/registration/begin"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, BeginWebAuthnRegistrationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/auth/webauthn/registration/begin"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeBeginWebAuthnRegistrationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CompleteOAuthLink invokes completeOAuthLink operation.
+//
+// Complete linking an OAuth provider callback.
+//
+// POST /api/auth/oauth/{provider}/link/callback
+func (c *Client) CompleteOAuthLink(ctx context.Context, request *OAuthCallbackInput, params CompleteOAuthLinkParams) (CompleteOAuthLinkRes, error) {
+	res, err := c.sendCompleteOAuthLink(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCompleteOAuthLink(ctx context.Context, request *OAuthCallbackInput, params CompleteOAuthLinkParams) (res CompleteOAuthLinkRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("completeOAuthLink"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/auth/oauth/{provider}/link/callback"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CompleteOAuthLinkOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/auth/oauth/"
+	{
+		// Encode "provider" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "provider",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(string(params.Provider)))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/link/callback"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCompleteOAuthLinkRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCompleteOAuthLinkResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CompleteOAuthSignIn invokes completeOAuthSignIn operation.
+//
+// Complete an OAuth sign-in callback.
+//
+// POST /api/auth/oauth/{provider}/callback
+func (c *Client) CompleteOAuthSignIn(ctx context.Context, request *OAuthCallbackInput, params CompleteOAuthSignInParams) (CompleteOAuthSignInRes, error) {
+	res, err := c.sendCompleteOAuthSignIn(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCompleteOAuthSignIn(ctx context.Context, request *OAuthCallbackInput, params CompleteOAuthSignInParams) (res CompleteOAuthSignInRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("completeOAuthSignIn"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/auth/oauth/{provider}/callback"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CompleteOAuthSignInOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/auth/oauth/"
+	{
+		// Encode "provider" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "provider",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(string(params.Provider)))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/callback"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCompleteOAuthSignInRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCompleteOAuthSignInResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
 }
 
 // ConfirmEmailVerification invokes confirmEmailVerification operation.
@@ -319,6 +1045,89 @@ func (c *Client) sendConfirmPasswordReset(ctx context.Context, request *Password
 	return result, nil
 }
 
+// ConfirmTOTPEnrollment invokes confirmTOTPEnrollment operation.
+//
+// Confirm a TOTP enrollment and receive recovery codes once.
+//
+// POST /api/auth/mfa/totp/enroll/confirm
+func (c *Client) ConfirmTOTPEnrollment(ctx context.Context, request *TOTPEnrollmentConfirmInput) (ConfirmTOTPEnrollmentRes, error) {
+	res, err := c.sendConfirmTOTPEnrollment(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendConfirmTOTPEnrollment(ctx context.Context, request *TOTPEnrollmentConfirmInput) (res ConfirmTOTPEnrollmentRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("confirmTOTPEnrollment"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/auth/mfa/totp/enroll/confirm"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ConfirmTOTPEnrollmentOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/auth/mfa/totp/enroll/confirm"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeConfirmTOTPEnrollmentRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeConfirmTOTPEnrollmentResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // CreateAPIKey invokes createAPIKey operation.
 //
 // Create an API key.
@@ -395,6 +1204,172 @@ func (c *Client) sendCreateAPIKey(ctx context.Context, request *APIKeyCreateInpu
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateAPIKeyResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// FinishWebAuthnAuthentication invokes finishWebAuthnAuthentication operation.
+//
+// Finish a passkey sign-in and complete sign-in.
+//
+// POST /api/auth/webauthn/authentication/finish
+func (c *Client) FinishWebAuthnAuthentication(ctx context.Context, request *WebAuthnAuthenticationFinishInput) (FinishWebAuthnAuthenticationRes, error) {
+	res, err := c.sendFinishWebAuthnAuthentication(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendFinishWebAuthnAuthentication(ctx context.Context, request *WebAuthnAuthenticationFinishInput) (res FinishWebAuthnAuthenticationRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("finishWebAuthnAuthentication"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/auth/webauthn/authentication/finish"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, FinishWebAuthnAuthenticationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/auth/webauthn/authentication/finish"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeFinishWebAuthnAuthenticationRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeFinishWebAuthnAuthenticationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// FinishWebAuthnRegistration invokes finishWebAuthnRegistration operation.
+//
+// Finish registering a passkey for the current account.
+//
+// POST /api/auth/webauthn/registration/finish
+func (c *Client) FinishWebAuthnRegistration(ctx context.Context, request *WebAuthnRegistrationFinishInput) (FinishWebAuthnRegistrationRes, error) {
+	res, err := c.sendFinishWebAuthnRegistration(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendFinishWebAuthnRegistration(ctx context.Context, request *WebAuthnRegistrationFinishInput) (res FinishWebAuthnRegistrationRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("finishWebAuthnRegistration"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/auth/webauthn/registration/finish"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, FinishWebAuthnRegistrationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/auth/webauthn/registration/finish"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeFinishWebAuthnRegistrationRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeFinishWebAuthnRegistrationResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -555,6 +1530,86 @@ func (c *Client) sendListAPIKeys(ctx context.Context) (res ListAPIKeysRes, err e
 
 	stage = "DecodeResponse"
 	result, err := decodeListAPIKeysResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListOAuthAccounts invokes listOAuthAccounts operation.
+//
+// List OAuth providers linked to the current account.
+//
+// GET /api/auth/oauth/accounts
+func (c *Client) ListOAuthAccounts(ctx context.Context) (ListOAuthAccountsRes, error) {
+	res, err := c.sendListOAuthAccounts(ctx)
+	return res, err
+}
+
+func (c *Client) sendListOAuthAccounts(ctx context.Context) (res ListOAuthAccountsRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("listOAuthAccounts"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/auth/oauth/accounts"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListOAuthAccountsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/auth/oauth/accounts"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListOAuthAccountsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -798,6 +1853,89 @@ func (c *Client) sendRefreshAccessToken(ctx context.Context) (res RefreshAccessT
 
 	stage = "DecodeResponse"
 	result, err := decodeRefreshAccessTokenResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RequestEmailOTP invokes requestEmailOTP operation.
+//
+// Request an email one-time sign-in code.
+//
+// POST /api/auth/otp/request
+func (c *Client) RequestEmailOTP(ctx context.Context, request *EmailOTPRequestInput) (RequestEmailOTPRes, error) {
+	res, err := c.sendRequestEmailOTP(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendRequestEmailOTP(ctx context.Context, request *EmailOTPRequestInput) (res RequestEmailOTPRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("requestEmailOTP"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/auth/otp/request"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RequestEmailOTPOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/auth/otp/request"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRequestEmailOTPRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRequestEmailOTPResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1323,6 +2461,172 @@ func (c *Client) sendSignUp(ctx context.Context, request *SignUpInput) (res Sign
 
 	stage = "DecodeResponse"
 	result, err := decodeSignUpResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// VerifyEmailOTP invokes verifyEmailOTP operation.
+//
+// Verify an email one-time sign-in code and complete sign-in.
+//
+// POST /api/auth/otp/verify
+func (c *Client) VerifyEmailOTP(ctx context.Context, request *EmailOTPVerifyInput) (VerifyEmailOTPRes, error) {
+	res, err := c.sendVerifyEmailOTP(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendVerifyEmailOTP(ctx context.Context, request *EmailOTPVerifyInput) (res VerifyEmailOTPRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("verifyEmailOTP"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/auth/otp/verify"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, VerifyEmailOTPOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/auth/otp/verify"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeVerifyEmailOTPRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeVerifyEmailOTPResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// VerifyMFAChallenge invokes verifyMFAChallenge operation.
+//
+// Complete sign-in with a TOTP or recovery code.
+//
+// POST /api/auth/mfa/challenge/verify
+func (c *Client) VerifyMFAChallenge(ctx context.Context, request *MFAChallengeVerifyInput) (VerifyMFAChallengeRes, error) {
+	res, err := c.sendVerifyMFAChallenge(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendVerifyMFAChallenge(ctx context.Context, request *MFAChallengeVerifyInput) (res VerifyMFAChallengeRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("verifyMFAChallenge"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/auth/mfa/challenge/verify"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, VerifyMFAChallengeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/auth/mfa/challenge/verify"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeVerifyMFAChallengeRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeVerifyMFAChallengeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

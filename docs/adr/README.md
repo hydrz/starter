@@ -13,6 +13,7 @@ ADR 记录影响多个模块、难以撤销或需要保存取舍背景的决策�
 | [0005](0005-separate-notification-intent-from-delivery.md) | 分离通知意图与交付 | 已接受 | 2026-09-26 |
 | [0006](0006-stripe-payments-subscriptions-and-entitlements.md) | Stripe 支付、订阅与 entitlement 投影 | 已接受 | 2026-09-26 |
 | [0007](0007-postgres-outbox-and-in-process-worker.md) | PostgreSQL outbox 与进程内 worker | 已接受 | 2026-09-26 |
+| [0008](0008-mfa-enforcement-and-oauth-account-linking-policy.md) | MFA 强制策略与 OAuth 账户关联策略 | 已接受 | 2026-09-26 |
 
 ## 决策状态定义
 

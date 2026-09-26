@@ -1,0 +1,238 @@
+openapi: 3.0.0
+info:
+  title: Billing API
+  version: 0.1.0
+tags:
+  - name: Billing
+paths:
+  /api/organizations/{organizationId}/billing/checkout-sessions:
+    post:
+      operationId: createCheckoutSession
+      summary: Create a Stripe Checkout session for a server-controlled price
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Billing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCheckoutSessionInput'
+  /api/organizations/{organizationId}/billing/portal-sessions:
+    post:
+      operationId: createPortalSession
+      summary: Create a Stripe Customer Portal session
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortalSessionResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Billing
+  /api/organizations/{organizationId}/billing/summary:
+    get:
+      operationId: getBillingSummary
+      summary: Get the organization's current billing/entitlement summary
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingSummary'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Billing
+components:
+  schemas:
+    ApiError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    BillingSummary:
+      type: object
+      required:
+        - organizationId
+        - hasActiveSubscription
+        - entitlements
+      properties:
+        organizationId:
+          type: string
+          format: uuid
+        hasActiveSubscription:
+          type: boolean
+        subscription:
+          $ref: '#/components/schemas/SubscriptionSummary'
+        entitlements:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntitlementSummary'
+    CheckoutSessionResponse:
+      type: object
+      required:
+        - id
+        - url
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+    CreateCheckoutSessionInput:
+      type: object
+      required:
+        - priceKey
+      properties:
+        priceKey:
+          type: string
+          minLength: 1
+          maxLength: 100
+    EntitlementSummary:
+      type: object
+      required:
+        - featureKey
+        - enabled
+      properties:
+        featureKey:
+          type: string
+        enabled:
+          type: boolean
+        expiresAt:
+          type: string
+          format: date-time
+    PortalSessionResponse:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+    SubscriptionStatus:
+      type: string
+      enum:
+        - active
+        - trialing
+        - past_due
+        - canceled
+        - incomplete
+        - incomplete_expired
+        - unpaid
+        - paused
+    SubscriptionSummary:
+      type: object
+      required:
+        - id
+        - priceKey
+        - status
+        - cancelAtPeriodEnd
+      properties:
+        id:
+          type: string
+          format: uuid
+        priceKey:
+          type: string
+        status:
+          $ref: '#/components/schemas/SubscriptionStatus'
+        currentPeriodEnd:
+          type: string
+          format: date-time
+        cancelAtPeriodEnd:
+          type: boolean
+servers:
+  - url: http://localhost:8080
+    description: Local development
+    variables: {}

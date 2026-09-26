@@ -101,6 +101,12 @@ type IssuedTokens struct {
 	RefreshExpires  time.Time
 	SessionID       string
 	UserID          string
+
+	// MFAChallengeID is set, with every other field left zero, when a
+	// primary sign-in method returns ErrMFARequired: the caller must
+	// present it (with a TOTP or recovery code) to Service.VerifyMFAChallenge
+	// to receive real tokens.
+	MFAChallengeID string
 }
 
 // UserRepository persists accounts and password credentials.

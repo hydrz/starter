@@ -19,6 +19,7 @@ import (
 	"github.com/hydrz/starter/internal/announcement"
 	"github.com/hydrz/starter/internal/auth"
 	"github.com/hydrz/starter/internal/authorization"
+	"github.com/hydrz/starter/internal/billing"
 	"github.com/hydrz/starter/internal/delivery"
 	"github.com/hydrz/starter/internal/notification"
 	"github.com/hydrz/starter/internal/organization"
@@ -108,9 +109,18 @@ func main() {
 
 	var identityService *auth.Service
 	if cfg.Auth.Enabled {
-		identityService, err = buildIdentityService(cfg.Auth, queries, pool, orgService)
+		identityService, err = buildIdentityService(cfg, queries, pool, orgService)
 		if err != nil {
 			logger.Error("identity service initialization failed", "error", err)
+			os.Exit(1)
+		}
+	}
+
+	var billingService *billing.Service
+	if cfg.Stripe.Enabled {
+		billingService, err = buildBillingService(cfg.Stripe, queries, pool)
+		if err != nil {
+			logger.Error("billing service initialization failed", "error", err)
 			os.Exit(1)
 		}
 	}
@@ -128,7 +138,7 @@ func main() {
 		}
 	}
 
-	handler, err := apphttp.NewHandler(announcementService, pool, identityService, orgService, authzService)
+	handler, err := apphttp.NewHandler(announcementService, pool, identityService, orgService, authzService, billingService)
 	if err != nil {
 		logger.Error("http handler initialization failed", "error", err)
 		os.Exit(1)
@@ -194,7 +204,8 @@ func healthcheck(addr string) error {
 // AuthConfig and a pgxpool-backed store. SecretDigestPepper is independent,
 // high-entropy configuration (AUTH_SECRET_PEPPER) rather than being derived
 // from the JWT signing key, so rotating one never invalidates the other.
-func buildIdentityService(authConfig config.AuthConfig, queries *store.Queries, pool *pgxpool.Pool, orgCreator auth.PersonalOrgCreator) (*auth.Service, error) {
+func buildIdentityService(cfg config.Config, queries *store.Queries, pool *pgxpool.Pool, orgCreator auth.PersonalOrgCreator) (*auth.Service, error) {
+	authConfig := cfg.Auth
 	issuer, err := auth.NewIssuer(authConfig.ActiveKID, authConfig.SigningPrivateKey, authConfig.JWTIssuer, auth.SystemClock{})
 	if err != nil {
 		return nil, fmt.Errorf("create token issuer: %w", err)
@@ -207,8 +218,12 @@ func buildIdentityService(authConfig config.AuthConfig, queries *store.Queries, 
 	if err != nil {
 		return nil, fmt.Errorf("create secret digester: %w", err)
 	}
+	totpCipher, err := auth.NewTOTPCipher(authConfig.TOTPEncryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("create totp cipher: %w", err)
+	}
 
-	return auth.NewService(auth.Dependencies{
+	deps := auth.Dependencies{
 		Users:              auth.NewPostgresUserRepository(queries),
 		RefreshTokens:      auth.NewPostgresRefreshTokenRepository(queries),
 		OneTimeTokens:      auth.NewPostgresOneTimeTokenRepository(queries),
@@ -222,7 +237,91 @@ func buildIdentityService(authConfig config.AuthConfig, queries *store.Queries, 
 		PersonalOrgCreator: orgCreator,
 		AccessTokenTTL:     authConfig.AccessTokenTTL,
 		RefreshTokenTTL:    authConfig.RefreshTokenTTL,
+
+		EmailOTP:      auth.NewPostgresEmailOTPRepository(queries),
+		TOTPFactors:   auth.NewPostgresTOTPFactorRepository(queries),
+		RecoveryCodes: auth.NewPostgresTOTPRecoveryCodeRepository(queries),
+		MFAChallenges: auth.NewPostgresMFAChallengeRepository(queries),
+		TOTPCipher:    totpCipher,
+		TOTPIssuer:    envOrDefault("AUTH_TOTP_ISSUER", "Starter"),
+
+		OAuthAccounts: auth.NewPostgresOAuthAccountRepository(queries),
+		OAuthStates:   auth.NewPostgresOAuthStateRepository(queries),
+		OAuthClients:  buildOAuthClients(cfg.OAuth),
+
+		WebAuthnCredentials: auth.NewPostgresWebAuthnCredentialRepository(queries),
+		WebAuthnChallenges:  auth.NewPostgresWebAuthnChallengeRepository(queries),
+	}
+
+	if cfg.WebAuthn.Enabled {
+		ceremonies, err := auth.NewWebAuthnCeremonies(cfg.WebAuthn.RPID, cfg.WebAuthn.RPName, cfg.WebAuthn.RPOrigins)
+		if err != nil {
+			return nil, fmt.Errorf("create webauthn ceremonies: %w", err)
+		}
+		deps.WebAuthn = ceremonies
+	}
+
+	return auth.NewService(deps)
+}
+
+// buildOAuthClients wires internal/auth.OAuthClient implementations from
+// config.OAuthConfig, one per enabled provider. A provider absent from the
+// map cannot be used to begin a flow (Service.beginOAuth returns
+// ErrOAuthProviderUnknown), so OAuth sign-in stays entirely optional.
+func buildOAuthClients(oauthConfig config.OAuthConfig) map[string]auth.OAuthClient {
+	clients := map[string]auth.OAuthClient{}
+	if oauthConfig.Google.Enabled {
+		clients["google"] = auth.NewGoogleOAuthClient(oauthConfig.Google.ClientID, oauthConfig.Google.ClientSecret, oauthConfig.Google.RedirectURL)
+	}
+	if oauthConfig.GitHub.Enabled {
+		clients["github"] = auth.NewGitHubOAuthClient(oauthConfig.GitHub.ClientID, oauthConfig.GitHub.ClientSecret, oauthConfig.GitHub.RedirectURL)
+	}
+	return clients
+}
+
+// buildBillingService wires internal/billing.Service from the process
+// StripeConfig and a pgxpool-backed store. It never changes StripeConfig's
+// shape; it only consumes cfg.Stripe.{SecretKey,WebhookSecret}. The price
+// catalog and redirect URLs are billing-owned configuration (never
+// client-supplied): BILLING_PRICE_CATALOG is an optional JSON map from
+// server-controlled price key to Stripe price ID/feature key/mode (see
+// billing.ParseCatalogJSON); BILLING_SUCCESS_URL, BILLING_CANCEL_URL, and
+// BILLING_PORTAL_RETURN_URL fall back to same-origin defaults when unset.
+func buildBillingService(stripeConfig config.StripeConfig, queries *store.Queries, pool *pgxpool.Pool) (*billing.Service, error) {
+	gateway, err := billing.NewLiveGateway(stripeConfig.SecretKey)
+	if err != nil {
+		return nil, fmt.Errorf("create stripe gateway: %w", err)
+	}
+
+	catalog, err := billing.ParseCatalogJSON(os.Getenv("BILLING_PRICE_CATALOG"))
+	if err != nil {
+		return nil, err
+	}
+
+	return billing.NewService(billing.Dependencies{
+		BillingAccounts:  billing.NewPostgresBillingAccountRepository(queries),
+		CheckoutSessions: billing.NewPostgresCheckoutSessionRepository(queries),
+		Subscriptions:    billing.NewPostgresSubscriptionRepository(queries),
+		OneTimePurchases: billing.NewPostgresOneTimePurchaseRepository(queries),
+		WebhookEvents:    billing.NewPostgresWebhookEventRepository(queries),
+		Entitlements:     billing.NewPostgresEntitlementRepository(queries),
+		Transactor:       database.NewTransactor(pool),
+		Outbox:           billing.NewPostgresOutboxWriter(queries),
+		Gateway:          gateway,
+		Catalog:          catalog,
+		Clock:            billing.SystemClock{},
+		WebhookSecret:    stripeConfig.WebhookSecret,
+		SuccessURL:       envOrDefault("BILLING_SUCCESS_URL", "http://localhost:8080/billing/success"),
+		CancelURL:        envOrDefault("BILLING_CANCEL_URL", "http://localhost:8080/billing/cancel"),
+		PortalReturnURL:  envOrDefault("BILLING_PORTAL_RETURN_URL", "http://localhost:8080/billing"),
 	})
+}
+
+func envOrDefault(name, fallback string) string {
+	if value := os.Getenv(name); value != "" {
+		return value
+	}
+	return fallback
 }
 
 // buildOutboxWorker wires internal/delivery.Worker with an embedded template renderer,

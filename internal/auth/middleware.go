@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"net/http"
+	"time"
 )
 
 // principalContextKey holds the authenticated subject's user ID, set by
@@ -33,6 +34,21 @@ func contextWithPrincipal(ctx context.Context, userID string) context.Context {
 	return ContextWithPrincipal(ctx, userID)
 }
 
+// authenticatedAtContextKey holds the verified access token's issued-at
+// time, set by AuthenticateRequest alongside the principal. It powers a
+// "recently reauthenticated" check (e.g. before linking an OAuth provider
+// to an existing account) without requiring a database round trip: since
+// access tokens are short-lived, a fresh one is itself evidence of a recent
+// credential check.
+type authenticatedAtContextKey struct{}
+
+// AuthenticatedAtFromContext extracts the issued-at time of the access
+// token that authenticated the current request, if any.
+func AuthenticatedAtFromContext(ctx context.Context) (time.Time, bool) {
+	issuedAt, ok := ctx.Value(authenticatedAtContextKey{}).(time.Time)
+	return issuedAt, ok
+}
+
 // AuthenticateRequest verifies the bearer access token found via
 // BearerTokenFromContext(ctx) and, on success, returns a context carrying
 // the resolved principal for principalFromContext / GetCurrentIdentity and
@@ -48,7 +64,9 @@ func (service *Service) AuthenticateRequest(ctx context.Context) (context.Contex
 	if err != nil {
 		return ctx, false
 	}
-	return contextWithPrincipal(ctx, claims.Subject), true
+	ctx = contextWithPrincipal(ctx, claims.Subject)
+	ctx = context.WithValue(ctx, authenticatedAtContextKey{}, claims.IssuedAt)
+	return ctx, true
 }
 
 // AuthenticationMiddleware resolves the caller's principal, if any, from

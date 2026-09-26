@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-faster/errors"
+	"github.com/go-faster/jx"
 	"github.com/google/uuid"
 )
 
@@ -153,8 +154,12 @@ func (s *AccessTokenResponse) SetExpiresAt(val time.Time) {
 	s.ExpiresAt = val
 }
 
-func (*AccessTokenResponse) passwordSignInRes()     {}
-func (*AccessTokenResponse) refreshAccessTokenRes() {}
+func (*AccessTokenResponse) completeOAuthSignInRes()          {}
+func (*AccessTokenResponse) finishWebAuthnAuthenticationRes() {}
+func (*AccessTokenResponse) passwordSignInRes()               {}
+func (*AccessTokenResponse) refreshAccessTokenRes()           {}
+func (*AccessTokenResponse) verifyEmailOTPRes()               {}
+func (*AccessTokenResponse) verifyMFAChallengeRes()           {}
 
 type AccessTokenResponseTokenType string
 
@@ -216,12 +221,53 @@ func (s *ApiError) SetMessage(val string) {
 	s.Message = val
 }
 
-func (*ApiError) confirmEmailVerificationRes() {}
-func (*ApiError) confirmPasswordResetRes()     {}
-func (*ApiError) getCurrentIdentityRes()       {}
-func (*ApiError) listAPIKeysRes()              {}
-func (*ApiError) listSessionsRes()             {}
-func (*ApiError) signOutRes()                  {}
+func (*ApiError) beginOAuthSignInRes()          {}
+func (*ApiError) beginTOTPEnrollmentRes()       {}
+func (*ApiError) beginWebAuthnRegistrationRes() {}
+func (*ApiError) confirmEmailVerificationRes()  {}
+func (*ApiError) confirmPasswordResetRes()      {}
+func (*ApiError) getCurrentIdentityRes()        {}
+func (*ApiError) listAPIKeysRes()               {}
+func (*ApiError) listOAuthAccountsRes()         {}
+func (*ApiError) listSessionsRes()              {}
+func (*ApiError) signOutRes()                   {}
+
+type BeginOAuthLinkBadRequest ApiError
+
+func (*BeginOAuthLinkBadRequest) beginOAuthLinkRes() {}
+
+type BeginOAuthLinkForbidden ApiError
+
+func (*BeginOAuthLinkForbidden) beginOAuthLinkRes() {}
+
+type BeginOAuthLinkUnauthorized ApiError
+
+func (*BeginOAuthLinkUnauthorized) beginOAuthLinkRes() {}
+
+type CompleteOAuthLinkBadRequest ApiError
+
+func (*CompleteOAuthLinkBadRequest) completeOAuthLinkRes() {}
+
+type CompleteOAuthLinkConflict ApiError
+
+func (*CompleteOAuthLinkConflict) completeOAuthLinkRes() {}
+
+// CompleteOAuthLinkNoContent is response for CompleteOAuthLink operation.
+type CompleteOAuthLinkNoContent struct{}
+
+func (*CompleteOAuthLinkNoContent) completeOAuthLinkRes() {}
+
+type CompleteOAuthLinkUnauthorized ApiError
+
+func (*CompleteOAuthLinkUnauthorized) completeOAuthLinkRes() {}
+
+type CompleteOAuthSignInBadRequest ApiError
+
+func (*CompleteOAuthSignInBadRequest) completeOAuthSignInRes() {}
+
+type CompleteOAuthSignInUnauthorized ApiError
+
+func (*CompleteOAuthSignInUnauthorized) completeOAuthSignInRes() {}
 
 // ConfirmEmailVerificationNoContent is response for ConfirmEmailVerification operation.
 type ConfirmEmailVerificationNoContent struct{}
@@ -232,6 +278,14 @@ func (*ConfirmEmailVerificationNoContent) confirmEmailVerificationRes() {}
 type ConfirmPasswordResetNoContent struct{}
 
 func (*ConfirmPasswordResetNoContent) confirmPasswordResetRes() {}
+
+type ConfirmTOTPEnrollmentBadRequest ApiError
+
+func (*ConfirmTOTPEnrollmentBadRequest) confirmTOTPEnrollmentRes() {}
+
+type ConfirmTOTPEnrollmentUnauthorized ApiError
+
+func (*ConfirmTOTPEnrollmentUnauthorized) confirmTOTPEnrollmentRes() {}
 
 type CreateAPIKeyBadRequest ApiError
 
@@ -336,6 +390,68 @@ func (s *CreatedAPIKey) SetKey(val string) {
 
 func (*CreatedAPIKey) createAPIKeyRes() {}
 
+// Ref: #/components/schemas/EmailOTPRequestInput
+type EmailOTPRequestInput struct {
+	Email string `json:"email"`
+}
+
+// GetEmail returns the value of Email.
+func (s *EmailOTPRequestInput) GetEmail() string {
+	return s.Email
+}
+
+// SetEmail sets the value of Email.
+func (s *EmailOTPRequestInput) SetEmail(val string) {
+	s.Email = val
+}
+
+// Ref: #/components/schemas/EmailOTPVerifyInput
+type EmailOTPVerifyInput struct {
+	Email string `json:"email"`
+	Code  string `json:"code"`
+}
+
+// GetEmail returns the value of Email.
+func (s *EmailOTPVerifyInput) GetEmail() string {
+	return s.Email
+}
+
+// GetCode returns the value of Code.
+func (s *EmailOTPVerifyInput) GetCode() string {
+	return s.Code
+}
+
+// SetEmail sets the value of Email.
+func (s *EmailOTPVerifyInput) SetEmail(val string) {
+	s.Email = val
+}
+
+// SetCode sets the value of Code.
+func (s *EmailOTPVerifyInput) SetCode(val string) {
+	s.Code = val
+}
+
+type FinishWebAuthnAuthenticationBadRequest ApiError
+
+func (*FinishWebAuthnAuthenticationBadRequest) finishWebAuthnAuthenticationRes() {}
+
+type FinishWebAuthnAuthenticationUnauthorized ApiError
+
+func (*FinishWebAuthnAuthenticationUnauthorized) finishWebAuthnAuthenticationRes() {}
+
+type FinishWebAuthnRegistrationBadRequest ApiError
+
+func (*FinishWebAuthnRegistrationBadRequest) finishWebAuthnRegistrationRes() {}
+
+// FinishWebAuthnRegistrationNoContent is response for FinishWebAuthnRegistration operation.
+type FinishWebAuthnRegistrationNoContent struct{}
+
+func (*FinishWebAuthnRegistrationNoContent) finishWebAuthnRegistrationRes() {}
+
+type FinishWebAuthnRegistrationUnauthorized ApiError
+
+func (*FinishWebAuthnRegistrationUnauthorized) finishWebAuthnRegistrationRes() {}
+
 // Ref: #/components/schemas/Identity
 type Identity struct {
 	ID            uuid.UUID `json:"id"`
@@ -391,9 +507,217 @@ type ListAPIKeysOKApplicationJSON []APIKey
 
 func (*ListAPIKeysOKApplicationJSON) listAPIKeysRes() {}
 
+type ListOAuthAccountsOKApplicationJSON []OAuthAccount
+
+func (*ListOAuthAccountsOKApplicationJSON) listOAuthAccountsRes() {}
+
 type ListSessionsOKApplicationJSON []Session
 
 func (*ListSessionsOKApplicationJSON) listSessionsRes() {}
+
+// Ref: #/components/schemas/MFAChallengeBody
+type MFAChallengeBody struct {
+	MfaRequired MFAChallengeBodyMfaRequired `json:"mfaRequired"`
+	ChallengeId string                      `json:"challengeId"`
+}
+
+// GetMfaRequired returns the value of MfaRequired.
+func (s *MFAChallengeBody) GetMfaRequired() MFAChallengeBodyMfaRequired {
+	return s.MfaRequired
+}
+
+// GetChallengeId returns the value of ChallengeId.
+func (s *MFAChallengeBody) GetChallengeId() string {
+	return s.ChallengeId
+}
+
+// SetMfaRequired sets the value of MfaRequired.
+func (s *MFAChallengeBody) SetMfaRequired(val MFAChallengeBodyMfaRequired) {
+	s.MfaRequired = val
+}
+
+// SetChallengeId sets the value of ChallengeId.
+func (s *MFAChallengeBody) SetChallengeId(val string) {
+	s.ChallengeId = val
+}
+
+func (*MFAChallengeBody) completeOAuthSignInRes()          {}
+func (*MFAChallengeBody) finishWebAuthnAuthenticationRes() {}
+func (*MFAChallengeBody) passwordSignInRes()               {}
+func (*MFAChallengeBody) verifyEmailOTPRes()               {}
+
+type MFAChallengeBodyMfaRequired bool
+
+const (
+	MFAChallengeBodyMfaRequiredTrue MFAChallengeBodyMfaRequired = true
+)
+
+// AllValues returns all MFAChallengeBodyMfaRequired values.
+func (MFAChallengeBodyMfaRequired) AllValues() []MFAChallengeBodyMfaRequired {
+	return []MFAChallengeBodyMfaRequired{
+		MFAChallengeBodyMfaRequiredTrue,
+	}
+}
+
+// Ref: #/components/schemas/MFAChallengeVerifyInput
+type MFAChallengeVerifyInput struct {
+	ChallengeId string `json:"challengeId"`
+	Code        string `json:"code"`
+}
+
+// GetChallengeId returns the value of ChallengeId.
+func (s *MFAChallengeVerifyInput) GetChallengeId() string {
+	return s.ChallengeId
+}
+
+// GetCode returns the value of Code.
+func (s *MFAChallengeVerifyInput) GetCode() string {
+	return s.Code
+}
+
+// SetChallengeId sets the value of ChallengeId.
+func (s *MFAChallengeVerifyInput) SetChallengeId(val string) {
+	s.ChallengeId = val
+}
+
+// SetCode sets the value of Code.
+func (s *MFAChallengeVerifyInput) SetCode(val string) {
+	s.Code = val
+}
+
+// Ref: #/components/schemas/OAuthAccount
+type OAuthAccount struct {
+	Provider  OAuthProvider `json:"provider"`
+	Subject   string        `json:"subject"`
+	Email     OptString     `json:"email"`
+	CreatedAt time.Time     `json:"createdAt"`
+}
+
+// GetProvider returns the value of Provider.
+func (s *OAuthAccount) GetProvider() OAuthProvider {
+	return s.Provider
+}
+
+// GetSubject returns the value of Subject.
+func (s *OAuthAccount) GetSubject() string {
+	return s.Subject
+}
+
+// GetEmail returns the value of Email.
+func (s *OAuthAccount) GetEmail() OptString {
+	return s.Email
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *OAuthAccount) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetProvider sets the value of Provider.
+func (s *OAuthAccount) SetProvider(val OAuthProvider) {
+	s.Provider = val
+}
+
+// SetSubject sets the value of Subject.
+func (s *OAuthAccount) SetSubject(val string) {
+	s.Subject = val
+}
+
+// SetEmail sets the value of Email.
+func (s *OAuthAccount) SetEmail(val OptString) {
+	s.Email = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *OAuthAccount) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// Ref: #/components/schemas/OAuthAuthorizationResponse
+type OAuthAuthorizationResponse struct {
+	AuthorizationUrl string `json:"authorizationUrl"`
+}
+
+// GetAuthorizationUrl returns the value of AuthorizationUrl.
+func (s *OAuthAuthorizationResponse) GetAuthorizationUrl() string {
+	return s.AuthorizationUrl
+}
+
+// SetAuthorizationUrl sets the value of AuthorizationUrl.
+func (s *OAuthAuthorizationResponse) SetAuthorizationUrl(val string) {
+	s.AuthorizationUrl = val
+}
+
+func (*OAuthAuthorizationResponse) beginOAuthLinkRes()   {}
+func (*OAuthAuthorizationResponse) beginOAuthSignInRes() {}
+
+// Ref: #/components/schemas/OAuthCallbackInput
+type OAuthCallbackInput struct {
+	State string `json:"state"`
+	Code  string `json:"code"`
+}
+
+// GetState returns the value of State.
+func (s *OAuthCallbackInput) GetState() string {
+	return s.State
+}
+
+// GetCode returns the value of Code.
+func (s *OAuthCallbackInput) GetCode() string {
+	return s.Code
+}
+
+// SetState sets the value of State.
+func (s *OAuthCallbackInput) SetState(val string) {
+	s.State = val
+}
+
+// SetCode sets the value of Code.
+func (s *OAuthCallbackInput) SetCode(val string) {
+	s.Code = val
+}
+
+// Ref: #/components/schemas/OAuthProvider
+type OAuthProvider string
+
+const (
+	OAuthProviderGoogle OAuthProvider = "google"
+	OAuthProviderGithub OAuthProvider = "github"
+)
+
+// AllValues returns all OAuthProvider values.
+func (OAuthProvider) AllValues() []OAuthProvider {
+	return []OAuthProvider{
+		OAuthProviderGoogle,
+		OAuthProviderGithub,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s OAuthProvider) MarshalText() ([]byte, error) {
+	switch s {
+	case OAuthProviderGoogle:
+		return []byte(s), nil
+	case OAuthProviderGithub:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *OAuthProvider) UnmarshalText(data []byte) error {
+	switch OAuthProvider(data) {
+	case OAuthProviderGoogle:
+		*s = OAuthProviderGoogle
+		return nil
+	case OAuthProviderGithub:
+		*s = OAuthProviderGithub
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 // NewOptDateTime returns new OptDateTime with value set to v.
 func NewOptDateTime(v time.Time) OptDateTime {
@@ -558,6 +882,19 @@ func (*RefreshAccessTokenConflict) refreshAccessTokenRes() {}
 type RefreshAccessTokenUnauthorized ApiError
 
 func (*RefreshAccessTokenUnauthorized) refreshAccessTokenRes() {}
+
+type RequestEmailOTPBadRequest ApiError
+
+func (*RequestEmailOTPBadRequest) requestEmailOTPRes() {}
+
+// RequestEmailOTPNoContent is response for RequestEmailOTP operation.
+type RequestEmailOTPNoContent struct{}
+
+func (*RequestEmailOTPNoContent) requestEmailOTPRes() {}
+
+type RequestEmailOTPTooManyRequests ApiError
+
+func (*RequestEmailOTPTooManyRequests) requestEmailOTPRes() {}
 
 type RequestEmailVerificationBadRequest ApiError
 
@@ -724,6 +1061,88 @@ type SignUpTooManyRequests ApiError
 
 func (*SignUpTooManyRequests) signUpRes() {}
 
+// Ref: #/components/schemas/TOTPEnrollmentBeginResponse
+type TOTPEnrollmentBeginResponse struct {
+	FactorId   string `json:"factorId"`
+	Secret     string `json:"secret"`
+	OtpauthUrl string `json:"otpauthUrl"`
+}
+
+// GetFactorId returns the value of FactorId.
+func (s *TOTPEnrollmentBeginResponse) GetFactorId() string {
+	return s.FactorId
+}
+
+// GetSecret returns the value of Secret.
+func (s *TOTPEnrollmentBeginResponse) GetSecret() string {
+	return s.Secret
+}
+
+// GetOtpauthUrl returns the value of OtpauthUrl.
+func (s *TOTPEnrollmentBeginResponse) GetOtpauthUrl() string {
+	return s.OtpauthUrl
+}
+
+// SetFactorId sets the value of FactorId.
+func (s *TOTPEnrollmentBeginResponse) SetFactorId(val string) {
+	s.FactorId = val
+}
+
+// SetSecret sets the value of Secret.
+func (s *TOTPEnrollmentBeginResponse) SetSecret(val string) {
+	s.Secret = val
+}
+
+// SetOtpauthUrl sets the value of OtpauthUrl.
+func (s *TOTPEnrollmentBeginResponse) SetOtpauthUrl(val string) {
+	s.OtpauthUrl = val
+}
+
+func (*TOTPEnrollmentBeginResponse) beginTOTPEnrollmentRes() {}
+
+// Ref: #/components/schemas/TOTPEnrollmentConfirmInput
+type TOTPEnrollmentConfirmInput struct {
+	FactorId string `json:"factorId"`
+	Code     string `json:"code"`
+}
+
+// GetFactorId returns the value of FactorId.
+func (s *TOTPEnrollmentConfirmInput) GetFactorId() string {
+	return s.FactorId
+}
+
+// GetCode returns the value of Code.
+func (s *TOTPEnrollmentConfirmInput) GetCode() string {
+	return s.Code
+}
+
+// SetFactorId sets the value of FactorId.
+func (s *TOTPEnrollmentConfirmInput) SetFactorId(val string) {
+	s.FactorId = val
+}
+
+// SetCode sets the value of Code.
+func (s *TOTPEnrollmentConfirmInput) SetCode(val string) {
+	s.Code = val
+}
+
+// Ref: #/components/schemas/TOTPEnrollmentConfirmResponse
+type TOTPEnrollmentConfirmResponse struct {
+	RecoveryCodes []string `json:"recoveryCodes"`
+}
+
+// GetRecoveryCodes returns the value of RecoveryCodes.
+func (s *TOTPEnrollmentConfirmResponse) GetRecoveryCodes() []string {
+	return s.RecoveryCodes
+}
+
+// SetRecoveryCodes sets the value of RecoveryCodes.
+func (s *TOTPEnrollmentConfirmResponse) SetRecoveryCodes(val []string) {
+	s.RecoveryCodes = val
+}
+
+func (*TOTPEnrollmentConfirmResponse) confirmTOTPEnrollmentRes() {}
+
 // Ref: #/components/schemas/VerificationConfirmInput
 type VerificationConfirmInput struct {
 	Token string `json:"token"`
@@ -752,4 +1171,134 @@ func (s *VerificationRequestInput) GetEmail() string {
 // SetEmail sets the value of Email.
 func (s *VerificationRequestInput) SetEmail(val string) {
 	s.Email = val
+}
+
+type VerifyEmailOTPBadRequest ApiError
+
+func (*VerifyEmailOTPBadRequest) verifyEmailOTPRes() {}
+
+type VerifyEmailOTPUnauthorized ApiError
+
+func (*VerifyEmailOTPUnauthorized) verifyEmailOTPRes() {}
+
+type VerifyMFAChallengeBadRequest ApiError
+
+func (*VerifyMFAChallengeBadRequest) verifyMFAChallengeRes() {}
+
+type VerifyMFAChallengeUnauthorized ApiError
+
+func (*VerifyMFAChallengeUnauthorized) verifyMFAChallengeRes() {}
+
+// Ref: #/components/schemas/WebAuthnAuthenticationBeginResponse
+type WebAuthnAuthenticationBeginResponse struct {
+	// The raw PublicKeyCredentialRequestOptions JSON for navigator.credentials.get().
+	PublicKey WebAuthnAuthenticationBeginResponsePublicKey `json:"publicKey"`
+}
+
+// GetPublicKey returns the value of PublicKey.
+func (s *WebAuthnAuthenticationBeginResponse) GetPublicKey() WebAuthnAuthenticationBeginResponsePublicKey {
+	return s.PublicKey
+}
+
+// SetPublicKey sets the value of PublicKey.
+func (s *WebAuthnAuthenticationBeginResponse) SetPublicKey(val WebAuthnAuthenticationBeginResponsePublicKey) {
+	s.PublicKey = val
+}
+
+// The raw PublicKeyCredentialRequestOptions JSON for navigator.credentials.get().
+type WebAuthnAuthenticationBeginResponsePublicKey map[string]jx.Raw
+
+func (s *WebAuthnAuthenticationBeginResponsePublicKey) init() WebAuthnAuthenticationBeginResponsePublicKey {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/WebAuthnAuthenticationFinishInput
+type WebAuthnAuthenticationFinishInput struct {
+	// The raw PublicKeyCredential JSON from navigator.credentials.get().
+	Credential WebAuthnAuthenticationFinishInputCredential `json:"credential"`
+}
+
+// GetCredential returns the value of Credential.
+func (s *WebAuthnAuthenticationFinishInput) GetCredential() WebAuthnAuthenticationFinishInputCredential {
+	return s.Credential
+}
+
+// SetCredential sets the value of Credential.
+func (s *WebAuthnAuthenticationFinishInput) SetCredential(val WebAuthnAuthenticationFinishInputCredential) {
+	s.Credential = val
+}
+
+// The raw PublicKeyCredential JSON from navigator.credentials.get().
+type WebAuthnAuthenticationFinishInputCredential map[string]jx.Raw
+
+func (s *WebAuthnAuthenticationFinishInputCredential) init() WebAuthnAuthenticationFinishInputCredential {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/WebAuthnRegistrationBeginResponse
+type WebAuthnRegistrationBeginResponse struct {
+	// The raw PublicKeyCredentialCreationOptions JSON for navigator.credentials.create().
+	PublicKey WebAuthnRegistrationBeginResponsePublicKey `json:"publicKey"`
+}
+
+// GetPublicKey returns the value of PublicKey.
+func (s *WebAuthnRegistrationBeginResponse) GetPublicKey() WebAuthnRegistrationBeginResponsePublicKey {
+	return s.PublicKey
+}
+
+// SetPublicKey sets the value of PublicKey.
+func (s *WebAuthnRegistrationBeginResponse) SetPublicKey(val WebAuthnRegistrationBeginResponsePublicKey) {
+	s.PublicKey = val
+}
+
+func (*WebAuthnRegistrationBeginResponse) beginWebAuthnRegistrationRes() {}
+
+// The raw PublicKeyCredentialCreationOptions JSON for navigator.credentials.create().
+type WebAuthnRegistrationBeginResponsePublicKey map[string]jx.Raw
+
+func (s *WebAuthnRegistrationBeginResponsePublicKey) init() WebAuthnRegistrationBeginResponsePublicKey {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/WebAuthnRegistrationFinishInput
+type WebAuthnRegistrationFinishInput struct {
+	// The raw PublicKeyCredential JSON from navigator.credentials.create().
+	Credential WebAuthnRegistrationFinishInputCredential `json:"credential"`
+}
+
+// GetCredential returns the value of Credential.
+func (s *WebAuthnRegistrationFinishInput) GetCredential() WebAuthnRegistrationFinishInputCredential {
+	return s.Credential
+}
+
+// SetCredential sets the value of Credential.
+func (s *WebAuthnRegistrationFinishInput) SetCredential(val WebAuthnRegistrationFinishInputCredential) {
+	s.Credential = val
+}
+
+// The raw PublicKeyCredential JSON from navigator.credentials.create().
+type WebAuthnRegistrationFinishInputCredential map[string]jx.Raw
+
+func (s *WebAuthnRegistrationFinishInputCredential) init() WebAuthnRegistrationFinishInputCredential {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
 }

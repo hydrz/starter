@@ -7,6 +7,7 @@ tags:
   - name: Announcements
   - name: Auth
   - name: Organizations
+  - name: Billing
 paths:
   /api/auth/api-keys:
     post:
@@ -109,6 +110,322 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Auth
+  /api/auth/mfa/challenge/verify:
+    post:
+      operationId: verifyMFAChallenge
+      summary: Complete sign-in with a TOTP or recovery code
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessTokenResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MFAChallengeVerifyInput'
+  /api/auth/mfa/totp/enroll/begin:
+    post:
+      operationId: beginTOTPEnrollment
+      summary: Begin enrolling a TOTP authenticator app
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TOTPEnrollmentBeginResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+  /api/auth/mfa/totp/enroll/confirm:
+    post:
+      operationId: confirmTOTPEnrollment
+      summary: Confirm a TOTP enrollment and receive recovery codes once
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TOTPEnrollmentConfirmResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TOTPEnrollmentConfirmInput'
+  /api/auth/oauth/accounts:
+    get:
+      operationId: listOAuthAccounts
+      summary: List OAuth providers linked to the current account
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OAuthAccount'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+  /api/auth/oauth/{provider}/begin:
+    post:
+      operationId: beginOAuthSignIn
+      summary: Begin an OAuth sign-in with Google or GitHub
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/OAuthProvider'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthAuthorizationResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+  /api/auth/oauth/{provider}/callback:
+    post:
+      operationId: completeOAuthSignIn
+      summary: Complete an OAuth sign-in callback
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/OAuthProvider'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessTokenResponse'
+        '202':
+          description: The request has been accepted for processing, but processing has not yet completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MFAChallengeBody'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthCallbackInput'
+  /api/auth/oauth/{provider}/link/begin:
+    post:
+      operationId: beginOAuthLink
+      summary: Begin linking an OAuth provider to the current, recently-authenticated account
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/OAuthProvider'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthAuthorizationResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+  /api/auth/oauth/{provider}/link/callback:
+    post:
+      operationId: completeOAuthLink
+      summary: Complete linking an OAuth provider callback
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/OAuthProvider'
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthCallbackInput'
+  /api/auth/otp/request:
+    post:
+      operationId: requestEmailOTP
+      summary: Request an email one-time sign-in code
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailOTPRequestInput'
+  /api/auth/otp/verify:
+    post:
+      operationId: verifyEmailOTP
+      summary: Verify an email one-time sign-in code and complete sign-in
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessTokenResponse'
+        '202':
+          description: The request has been accepted for processing, but processing has not yet completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MFAChallengeBody'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailOTPVerifyInput'
   /api/auth/password-reset/confirm:
     post:
       operationId: confirmPasswordReset
@@ -247,6 +564,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AccessTokenResponse'
+        '202':
+          description: The request has been accepted for processing, but processing has not yet completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MFAChallengeBody'
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
@@ -377,6 +700,106 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/VerificationRequestInput'
+  /api/auth/webauthn/authentication/begin:
+    post:
+      operationId: beginWebAuthnAuthentication
+      summary: Begin a discoverable (usernameless) passkey sign-in
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebAuthnAuthenticationBeginResponse'
+      tags:
+        - Auth
+  /api/auth/webauthn/authentication/finish:
+    post:
+      operationId: finishWebAuthnAuthentication
+      summary: Finish a passkey sign-in and complete sign-in
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessTokenResponse'
+        '202':
+          description: The request has been accepted for processing, but processing has not yet completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MFAChallengeBody'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebAuthnAuthenticationFinishInput'
+  /api/auth/webauthn/registration/begin:
+    post:
+      operationId: beginWebAuthnRegistration
+      summary: Begin registering a passkey for the current account
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebAuthnRegistrationBeginResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+  /api/auth/webauthn/registration/finish:
+    post:
+      operationId: finishWebAuthnRegistration
+      summary: Finish registering a passkey for the current account
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebAuthnRegistrationFinishInput'
   /api/healthz:
     get:
       operationId: getHealth
@@ -853,6 +1276,132 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Announcements
+  /api/organizations/{organizationId}/billing/checkout-sessions:
+    post:
+      operationId: createCheckoutSession
+      summary: Create a Stripe Checkout session for a server-controlled price
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Billing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCheckoutSessionInput'
+  /api/organizations/{organizationId}/billing/portal-sessions:
+    post:
+      operationId: createPortalSession
+      summary: Create a Stripe Customer Portal session
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortalSessionResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Billing
+  /api/organizations/{organizationId}/billing/summary:
+    get:
+      operationId: getBillingSummary
+      summary: Get the organization's current billing/entitlement summary
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingSummary'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      tags:
+        - Billing
   /api/organizations/{organizationId}/invitations:
     get:
       operationId: listInvitations
@@ -1296,6 +1845,35 @@ components:
           type: string
         message:
           type: string
+    BillingSummary:
+      type: object
+      required:
+        - organizationId
+        - hasActiveSubscription
+        - entitlements
+      properties:
+        organizationId:
+          type: string
+          format: uuid
+        hasActiveSubscription:
+          type: boolean
+        subscription:
+          $ref: '#/components/schemas/SubscriptionSummary'
+        entitlements:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntitlementSummary'
+    CheckoutSessionResponse:
+      type: object
+      required:
+        - id
+        - url
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
     Common.PreconditionFailedResponse:
       type: object
       required:
@@ -1303,6 +1881,15 @@ components:
       properties:
         body:
           $ref: '#/components/schemas/ApiError'
+    CreateCheckoutSessionInput:
+      type: object
+      required:
+        - priceKey
+      properties:
+        priceKey:
+          type: string
+          minLength: 1
+          maxLength: 100
     CreateInvitationInput:
       type: object
       required:
@@ -1347,6 +1934,40 @@ components:
           $ref: '#/components/schemas/OrganizationInvitation'
         token:
           type: string
+    EmailOTPRequestInput:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+    EmailOTPVerifyInput:
+      type: object
+      required:
+        - email
+        - code
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+    EntitlementSummary:
+      type: object
+      required:
+        - featureKey
+        - enabled
+      properties:
+        featureKey:
+          type: string
+        enabled:
+          type: boolean
+        expiresAt:
+          type: string
+          format: date-time
     Identity:
       type: object
       required:
@@ -1366,6 +1987,67 @@ components:
         createdAt:
           type: string
           format: date-time
+    MFAChallengeBody:
+      type: object
+      required:
+        - mfaRequired
+        - challengeId
+      properties:
+        mfaRequired:
+          type: boolean
+          enum:
+            - true
+        challengeId:
+          type: string
+    MFAChallengeVerifyInput:
+      type: object
+      required:
+        - challengeId
+        - code
+      properties:
+        challengeId:
+          type: string
+        code:
+          type: string
+          minLength: 1
+    OAuthAccount:
+      type: object
+      required:
+        - provider
+        - subject
+        - createdAt
+      properties:
+        provider:
+          $ref: '#/components/schemas/OAuthProvider'
+        subject:
+          type: string
+        email:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    OAuthAuthorizationResponse:
+      type: object
+      required:
+        - authorizationUrl
+      properties:
+        authorizationUrl:
+          type: string
+    OAuthCallbackInput:
+      type: object
+      required:
+        - state
+        - code
+      properties:
+        state:
+          type: string
+        code:
+          type: string
+    OAuthProvider:
+      type: string
+      enum:
+        - google
+        - github
     Organization:
       type: object
       required:
@@ -1534,6 +2216,13 @@ components:
         password:
           type: string
           minLength: 1
+    PortalSessionResponse:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
     Session:
       type: object
       required:
@@ -1570,6 +2259,37 @@ components:
           type: string
           minLength: 8
           maxLength: 128
+    SubscriptionStatus:
+      type: string
+      enum:
+        - active
+        - trialing
+        - past_due
+        - canceled
+        - incomplete
+        - incomplete_expired
+        - unpaid
+        - paused
+    SubscriptionSummary:
+      type: object
+      required:
+        - id
+        - priceKey
+        - status
+        - cancelAtPeriodEnd
+      properties:
+        id:
+          type: string
+          format: uuid
+        priceKey:
+          type: string
+        status:
+          $ref: '#/components/schemas/SubscriptionStatus'
+        currentPeriodEnd:
+          type: string
+          format: date-time
+        cancelAtPeriodEnd:
+          type: boolean
     System.HealthResponse:
       type: object
       required:
@@ -1581,6 +2301,40 @@ components:
             - ok
           description: Current service status.
       description: Service health information.
+    TOTPEnrollmentBeginResponse:
+      type: object
+      required:
+        - factorId
+        - secret
+        - otpauthUrl
+      properties:
+        factorId:
+          type: string
+        secret:
+          type: string
+        otpauthUrl:
+          type: string
+    TOTPEnrollmentConfirmInput:
+      type: object
+      required:
+        - factorId
+        - code
+      properties:
+        factorId:
+          type: string
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+    TOTPEnrollmentConfirmResponse:
+      type: object
+      required:
+        - recoveryCodes
+      properties:
+        recoveryCodes:
+          type: array
+          items:
+            type: string
     UpdateMembershipRoleInput:
       type: object
       required:
@@ -1617,6 +2371,42 @@ components:
         email:
           type: string
           format: email
+    WebAuthnAuthenticationBeginResponse:
+      type: object
+      required:
+        - publicKey
+      properties:
+        publicKey:
+          type: object
+          additionalProperties: {}
+          description: The raw PublicKeyCredentialRequestOptions JSON for navigator.credentials.get().
+    WebAuthnAuthenticationFinishInput:
+      type: object
+      required:
+        - credential
+      properties:
+        credential:
+          type: object
+          additionalProperties: {}
+          description: The raw PublicKeyCredential JSON from navigator.credentials.get().
+    WebAuthnRegistrationBeginResponse:
+      type: object
+      required:
+        - publicKey
+      properties:
+        publicKey:
+          type: object
+          additionalProperties: {}
+          description: The raw PublicKeyCredentialCreationOptions JSON for navigator.credentials.create().
+    WebAuthnRegistrationFinishInput:
+      type: object
+      required:
+        - credential
+      properties:
+        credential:
+          type: object
+          additionalProperties: {}
+          description: The raw PublicKeyCredential JSON from navigator.credentials.create().
 servers:
   - url: http://localhost:8080
     description: Local development

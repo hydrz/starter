@@ -60,6 +60,12 @@ type AuthConfig struct {
 	SigningPrivateKey      ed25519.PrivateKey
 	VerificationPublicKeys map[string]ed25519.PublicKey
 	SecretDigestPepper     []byte
+
+	// TOTPEncryptionKey is a dedicated AES-256 key (raw 32 bytes) used only
+	// to encrypt TOTP secrets at rest (internal/auth.TOTPCipher). It must
+	// never be derived from SigningPrivateKey or SecretDigestPepper: all
+	// three rotate independently for different reasons.
+	TOTPEncryptionKey []byte
 }
 
 const (
@@ -70,8 +76,10 @@ const (
 	authAccessTokenTTLEnv     = "AUTH_JWT_ACCESS_TTL"
 	authRefreshTokenTTLEnv    = "AUTH_REFRESH_TOKEN_TTL"
 	authSecretPepperEnv       = "AUTH_SECRET_PEPPER"
+	authTOTPEncryptionKeyEnv  = "AUTH_TOTP_ENCRYPTION_KEY"
 
 	minSecretDigestPepperLength = 16
+	totpEncryptionKeyLength     = 32
 )
 
 type OAuthConfig struct {
@@ -224,7 +232,7 @@ func validAddress(raw string) bool {
 }
 
 func loadAuth(lookup func(string) (string, bool), invalid *[]string, defaults AuthConfig) AuthConfig {
-	names := []string{authActiveKIDEnv, authSigningPrivateKeyEnv, authVerificationKeysetEnv, authIssuerEnv, authAccessTokenTTLEnv, authRefreshTokenTTLEnv, authSecretPepperEnv}
+	names := []string{authActiveKIDEnv, authSigningPrivateKeyEnv, authVerificationKeysetEnv, authIssuerEnv, authAccessTokenTTLEnv, authRefreshTokenTTLEnv, authSecretPepperEnv, authTOTPEncryptionKeyEnv}
 	var authInvalid []string
 	if !requireGroup(lookup, &authInvalid, names...) {
 		*invalid = append(*invalid, authInvalid...)
@@ -249,6 +257,10 @@ func loadAuth(lookup func(string) (string, bool), invalid *[]string, defaults Au
 	if len(secretDigestPepper) < minSecretDigestPepperLength {
 		authInvalid = append(authInvalid, authSecretPepperEnv)
 	}
+	totpEncryptionKey, ok := decodeRawBase64(valueOr(lookup, authTOTPEncryptionKeyEnv, ""), totpEncryptionKeyLength)
+	if !ok {
+		authInvalid = append(authInvalid, authTOTPEncryptionKeyEnv)
+	}
 	if len(authInvalid) > 0 {
 		*invalid = append(*invalid, authInvalid...)
 		return defaults
@@ -263,7 +275,16 @@ func loadAuth(lookup func(string) (string, bool), invalid *[]string, defaults Au
 		SigningPrivateKey:      privateKey,
 		VerificationPublicKeys: publicKeys,
 		SecretDigestPepper:     []byte(secretDigestPepper),
+		TOTPEncryptionKey:      totpEncryptionKey,
 	}
+}
+
+func decodeRawBase64(value string, wantLength int) ([]byte, bool) {
+	decoded, err := base64.RawURLEncoding.DecodeString(value)
+	if err != nil || len(decoded) != wantLength {
+		return nil, false
+	}
+	return decoded, true
 }
 
 func decodeEd25519PrivateKey(value string) (ed25519.PrivateKey, bool) {
