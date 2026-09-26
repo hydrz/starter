@@ -124,12 +124,14 @@ export function DataTable<T>({
           </TableBody>
         </Table>
 
-        {!isLoading && data.length === 0 && (emptyState ?? (
-          <EmptyState
-            title={m.data_table_empty()}
-            className="rounded-none border-0 border-t border-border"
-          />
-        ))}
+        {!isLoading &&
+          data.length === 0 &&
+          (emptyState ?? (
+            <EmptyState
+              title={m.data_table_empty()}
+              className="rounded-none border-0 border-t border-border"
+            />
+          ))}
       </div>
 
       {pagination && pagination.pageCount > 1 && (

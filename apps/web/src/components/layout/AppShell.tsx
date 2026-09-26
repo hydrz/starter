@@ -152,7 +152,9 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
 
   const sidebarBody = (collapsed: boolean, onNavigate?: () => void) => (
     <>
@@ -164,9 +166,7 @@ export function AppShell({
         >
           <span className="brand-mark">E</span>
           {!collapsed && (
-            <span className="text-white font-semibold">
-              {m.app_brand()}
-            </span>
+            <span className="text-white font-semibold">{m.app_brand()}</span>
           )}
         </Link>
         {onNavigate === undefined && (
@@ -247,9 +247,7 @@ export function AppShell({
                 <SheetHeader className="sr-only">
                   <SheetTitle>{m.nav_console_aria()}</SheetTitle>
                 </SheetHeader>
-                <div className="p-5">
-                  {sidebarBody(false, () => undefined)}
-                </div>
+                <div className="p-5">{sidebarBody(false, () => undefined)}</div>
               </SheetContent>
             </Sheet>
 

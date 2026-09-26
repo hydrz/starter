@@ -1,5 +1,15 @@
-import { Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
-import { Activity, FileCode, Globe, LayoutDashboard, Megaphone } from "lucide-react";
+import {
+  Outlet,
+  createFileRoute,
+  useRouterState,
+} from "@tanstack/react-router";
+import {
+  Activity,
+  FileCode,
+  Globe,
+  LayoutDashboard,
+  Megaphone,
+} from "lucide-react";
 import { AppShell, type AppNavItem } from "../components/layout/AppShell";
 import { useGetHealth } from "../api/generated/system/system";
 import * as m from "../paraglide/messages";
@@ -21,12 +31,19 @@ function getNavItems(): Array<AppNavItem> {
       to: "/app/observability",
       icon: Activity,
     },
-    { label: m.nav_api_docs(), to: "/api/docs", icon: FileCode, external: true },
+    {
+      label: m.nav_api_docs(),
+      to: "/api/docs",
+      icon: FileCode,
+      external: true,
+    },
   ];
 }
 
 function getSecondaryNavItems(): Array<AppNavItem> {
-  return [{ label: m.nav_back_to_landing(), to: "/", icon: Globe, exact: true }];
+  return [
+    { label: m.nav_back_to_landing(), to: "/", icon: Globe, exact: true },
+  ];
 }
 
 function getPageTitle(path: string) {
@@ -48,8 +65,8 @@ function ServiceStatusBadge() {
   });
   const serviceAvailable = Boolean(
     health.data?.data &&
-      "status" in health.data.data &&
-      health.data.data.status === "ok",
+    "status" in health.data.data &&
+    health.data.data.status === "ok",
   );
 
   return (

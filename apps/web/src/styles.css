@@ -25,8 +25,7 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
   --font-mono:
-    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
-    monospace;
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 /* Cloudflare 式配色：浅色模式 (DESIGN.md §2.1) */

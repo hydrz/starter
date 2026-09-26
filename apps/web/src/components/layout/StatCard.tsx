@@ -12,7 +12,10 @@ export interface StatCardProps {
   className?: string;
 }
 
-const trendColor: Record<NonNullable<StatCardProps["trend"]>["direction"], string> = {
+const trendColor: Record<
+  NonNullable<StatCardProps["trend"]>["direction"],
+  string
+> = {
   up: "text-success",
   down: "text-destructive",
   flat: "text-muted-foreground",

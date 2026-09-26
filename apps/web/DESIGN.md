@@ -20,20 +20,20 @@
 
 ### 2.1 颜色
 
-| Token | 浅色模式 | 深色模式 | 用途 |
-| --- | --- | --- | --- |
-| `--color-background` | `#FFFFFF` | `#0A0E11` | 页面底色 |
-| `--color-foreground` | `#0B1418` | `#E9EDEF` | 正文文字 |
-| `--color-card` | `#FFFFFF` | `#111820` | 卡片/面板底色 |
-| `--color-primary` | `#F6821F`（Cloudflare 橙） | `#FB9B3C` | 主操作、品牌强调 |
-| `--color-primary-foreground` | `#FFFFFF` | `#0A0E11` | 主按钮文字 |
-| `--color-secondary` | `#0051C3`（深蓝，辅助强调） | `#3B82F6` | 次要强调、链接 |
-| `--color-muted` | `#F4F6F7` | `#161D24` | 次级背景（侧边栏、表头） |
-| `--color-muted-foreground` | `#5B6B73` | `#8B9BA3` | 次要文字 |
-| `--color-border` | `#E2E8EA` | `#1F2932` | 分割线、输入框边框 |
-| `--color-destructive` | `#D92D20` | `#F97066` | 危险操作 |
-| `--color-success` | `#12B76A` | `#32D583` | 成功态（entitlement 生效、支付成功） |
-| `--color-warning` | `#F79009` | `#FDB022` | 警告态（试用期、待处理邀请） |
+| Token                        | 浅色模式                    | 深色模式  | 用途                                 |
+| ---------------------------- | --------------------------- | --------- | ------------------------------------ |
+| `--color-background`         | `#FFFFFF`                   | `#0A0E11` | 页面底色                             |
+| `--color-foreground`         | `#0B1418`                   | `#E9EDEF` | 正文文字                             |
+| `--color-card`               | `#FFFFFF`                   | `#111820` | 卡片/面板底色                        |
+| `--color-primary`            | `#F6821F`（Cloudflare 橙）  | `#FB9B3C` | 主操作、品牌强调                     |
+| `--color-primary-foreground` | `#FFFFFF`                   | `#0A0E11` | 主按钮文字                           |
+| `--color-secondary`          | `#0051C3`（深蓝，辅助强调） | `#3B82F6` | 次要强调、链接                       |
+| `--color-muted`              | `#F4F6F7`                   | `#161D24` | 次级背景（侧边栏、表头）             |
+| `--color-muted-foreground`   | `#5B6B73`                   | `#8B9BA3` | 次要文字                             |
+| `--color-border`             | `#E2E8EA`                   | `#1F2932` | 分割线、输入框边框                   |
+| `--color-destructive`        | `#D92D20`                   | `#F97066` | 危险操作                             |
+| `--color-success`            | `#12B76A`                   | `#32D583` | 成功态（entitlement 生效、支付成功） |
+| `--color-warning`            | `#F79009`                   | `#FDB022` | 警告态（试用期、待处理邀请）         |
 
 深色模式通过 `:root[data-theme="dark"]` 与 `prefers-color-scheme` 双通道支持（沿用现有 `ThemeToggle`/`ui-store` 的实现方式，不重新发明主题切换机制）。
 
@@ -74,32 +74,32 @@
 
 ### 6.1 公开路由（未登录）
 
-| 路径 | 页面 | 说明 |
-| --- | --- | --- |
-| `/` | Landing | 重写为 Cloudflare 式营销页 |
-| `/sign-in` | 登录 | 密码登录 + "使用邮箱验证码登录"入口 + Google/GitHub OAuth 按钮 |
-| `/sign-up` | 注册 | 邮箱+密码 |
-| `/forgot-password` / `/reset-password` | 密码重置 | 两步：请求 → 凭 token 设置新密码 |
-| `/verify-email` | 邮箱验证 | 凭 token 完成验证 |
-| `/otp/verify` | 邮箱验证码登录 | 配合 `/sign-in` 的"验证码登录"分支 |
-| `/mfa` | 二次验证 | 主登录后要求 TOTP/恢复码，完成后签发会话 |
-| `/auth/callback/google`、`/auth/callback/github` | OAuth 回调 | 处理 code 交换与账号关联结果展示 |
-| `/invitations/accept` | 接受组织邀请 | 凭邀请 token |
+| 路径                                             | 页面           | 说明                                                           |
+| ------------------------------------------------ | -------------- | -------------------------------------------------------------- |
+| `/`                                              | Landing        | 重写为 Cloudflare 式营销页                                     |
+| `/sign-in`                                       | 登录           | 密码登录 + "使用邮箱验证码登录"入口 + Google/GitHub OAuth 按钮 |
+| `/sign-up`                                       | 注册           | 邮箱+密码                                                      |
+| `/forgot-password` / `/reset-password`           | 密码重置       | 两步：请求 → 凭 token 设置新密码                               |
+| `/verify-email`                                  | 邮箱验证       | 凭 token 完成验证                                              |
+| `/otp/verify`                                    | 邮箱验证码登录 | 配合 `/sign-in` 的"验证码登录"分支                             |
+| `/mfa`                                           | 二次验证       | 主登录后要求 TOTP/恢复码，完成后签发会话                       |
+| `/auth/callback/google`、`/auth/callback/github` | OAuth 回调     | 处理 code 交换与账号关联结果展示                               |
+| `/invitations/accept`                            | 接受组织邀请   | 凭邀请 token                                                   |
 
 ### 6.2 已登录 Dashboard（`/app` 前缀，`AppShell` 布局）
 
-| 路径 | 页面 | 说明 |
-| --- | --- | --- |
-| `/app` | 组织选择/自动跳转 | 无组织时引导创建，有唯一组织自动进入 |
-| `/app/$orgSlug` | 组织概览 | entitlement 状态卡、最近公告、快捷入口 |
-| `/app/$orgSlug/announcements` | 公告 | 迁移现有 `features/announcements`，套入新 Shell |
-| `/app/$orgSlug/members` | 成员管理 | 列表、角色调整、移除 |
-| `/app/$orgSlug/invitations` | 邀请管理 | 发起、撤销、待处理列表 |
-| `/app/$orgSlug/billing` | 计费 | entitlement/订阅状态、发起 Checkout、Customer Portal 入口 |
-| `/app/$orgSlug/settings` | 组织设置 | 名称/slug、危险区（删除组织） |
-| `/app/account` | 账户资料 | 邮箱、修改密码 |
-| `/app/account/sessions` | 会话与 API Key | 活跃会话列表+撤销、API Key 增删 |
-| `/app/account/security` | 安全设置 | TOTP 启用/关闭+恢复码、Passkey 管理、已关联 OAuth 账号 |
+| 路径                          | 页面              | 说明                                                      |
+| ----------------------------- | ----------------- | --------------------------------------------------------- |
+| `/app`                        | 组织选择/自动跳转 | 无组织时引导创建，有唯一组织自动进入                      |
+| `/app/$orgSlug`               | 组织概览          | entitlement 状态卡、最近公告、快捷入口                    |
+| `/app/$orgSlug/announcements` | 公告              | 迁移现有 `features/announcements`，套入新 Shell           |
+| `/app/$orgSlug/members`       | 成员管理          | 列表、角色调整、移除                                      |
+| `/app/$orgSlug/invitations`   | 邀请管理          | 发起、撤销、待处理列表                                    |
+| `/app/$orgSlug/billing`       | 计费              | entitlement/订阅状态、发起 Checkout、Customer Portal 入口 |
+| `/app/$orgSlug/settings`      | 组织设置          | 名称/slug、危险区（删除组织）                             |
+| `/app/account`                | 账户资料          | 邮箱、修改密码                                            |
+| `/app/account/sessions`       | 会话与 API Key    | 活跃会话列表+撤销、API Key 增删                           |
+| `/app/account/security`       | 安全设置          | TOTP 启用/关闭+恢复码、Passkey 管理、已关联 OAuth 账号    |
 
 ### 6.3 状态页
 

@@ -1,4 +1,8 @@
 apps/web/dist/
 apps/web/src/api/generated/
+apps/web/src/paraglide/
+apps/web/src/routeTree.gen.ts
+apps/web/project.inlang/cache/
+apps/web/project.inlang/README.md
 node_modules/
 pnpm-lock.yaml
