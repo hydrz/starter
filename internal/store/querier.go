@@ -42,6 +42,15 @@ type Querier interface {
 	CreateOneTimeToken(ctx context.Context, arg CreateOneTimeTokenParams) (OneTimeToken, error)
 	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error)
 	CreateOutboxEvent(ctx context.Context, arg CreateOutboxEventParams) (OutboxEvent, error)
+	// Declarative idempotency: ON CONFLICT DO NOTHING lets Postgres resolve a
+	// duplicate idempotency_key without raising an error. A plain INSERT that
+	// raises a unique-violation and gets caught at the Go layer would still
+	// leave the enclosing transaction aborted (Postgres marks a transaction
+	// failed as soon as any statement inside it errors, regardless of whether
+	// the caller checks that error), so every later statement in the same
+	// transaction — including the final COMMIT — would fail too. A rejected
+	// insert returns zero rows here instead: callers treat that as a no-op.
+	CreateOutboxEventIfAbsent(ctx context.Context, arg CreateOutboxEventIfAbsentParams) (OutboxEvent, error)
 	CreateRefreshSession(ctx context.Context, arg CreateRefreshSessionParams) (RefreshSession, error)
 	CreateRefreshTokenFamily(ctx context.Context, userID pgtype.UUID) (RefreshTokenFamily, error)
 	CreateTOTPFactor(ctx context.Context, arg CreateTOTPFactorParams) (TotpFactor, error)

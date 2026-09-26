@@ -117,3 +117,17 @@ SELECT id, organization_id, feature_key, source, enabled, expires_at, subscripti
 FROM entitlements
 WHERE organization_id = $1
 ORDER BY feature_key, source;
+
+-- name: CreateOutboxEventIfAbsent :one
+-- Declarative idempotency: ON CONFLICT DO NOTHING lets Postgres resolve a
+-- duplicate idempotency_key without raising an error. A plain INSERT that
+-- raises a unique-violation and gets caught at the Go layer would still
+-- leave the enclosing transaction aborted (Postgres marks a transaction
+-- failed as soon as any statement inside it errors, regardless of whether
+-- the caller checks that error), so every later statement in the same
+-- transaction — including the final COMMIT — would fail too. A rejected
+-- insert returns zero rows here instead: callers treat that as a no-op.
+INSERT INTO outbox_events (topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (idempotency_key) DO NOTHING
+RETURNING id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, last_error, created_at;

@@ -8,19 +8,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/hydrz/starter/internal/platform/database"
 	"github.com/hydrz/starter/internal/store"
 )
-
-const pgUniqueViolation = "23505"
-
-func isUniqueViolationError(err error) bool {
-	var pgErr *pgconn.PgError
-	return errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolation
-}
 
 func parseUUID(value string) (pgtype.UUID, error) {
 	parsed, err := uuid.Parse(value)
@@ -479,7 +471,7 @@ func (w *PostgresOutboxWriter) WriteEvent(ctx context.Context, topic, aggregateT
 	if err != nil {
 		return fmt.Errorf("invalid aggregate id: %w", err)
 	}
-	_, err = w.q(ctx).CreateOutboxEvent(ctx, store.CreateOutboxEventParams{
+	_, err = w.q(ctx).CreateOutboxEventIfAbsent(ctx, store.CreateOutboxEventIfAbsentParams{
 		Topic:          topic,
 		AggregateType:  aggregateType,
 		AggregateID:    parsedAggregate,
@@ -487,8 +479,12 @@ func (w *PostgresOutboxWriter) WriteEvent(ctx context.Context, topic, aggregateT
 		IdempotencyKey: idempotencyKey,
 		AvailableAt:    pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
 	})
-	if err != nil && isUniqueViolationError(err) {
-		// Idempotency key already recorded: treat as already-queued.
+	if errors.Is(err, pgx.ErrNoRows) {
+		// ON CONFLICT DO NOTHING rejected a duplicate idempotency key:
+		// already queued, not an error. Unlike catching a raised
+		// unique-violation error, this never leaves an enclosing
+		// transaction aborted (see the query's comment in
+		// db/queries/billing.sql).
 		return nil
 	}
 	return err
