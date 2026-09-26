@@ -137,7 +137,7 @@ describe("Announcements feature", () => {
       "测试公告",
     );
     await user.type(
-      screen.getByPlaceholderText("填写需要向运营团队传达的内容"),
+      screen.getByPlaceholderText("填写需要发布的内容"),
       "测试内容详情",
     );
 
