@@ -44,7 +44,11 @@ jobs:
       - name: Run quality gates
         run: pnpm check
       - name: Run unit tests with race detector
-        run: pnpm test && pnpm test:race
+        # `go test -race` already re-executes every Go test (just slower per
+        # test); running plain `go test ./...` first would only duplicate
+        # that work without adding coverage, so only the web suite needs a
+        # separate invocation.
+        run: go test -race ./... && pnpm --filter @starter/web test
 
   build:
     name: Build
