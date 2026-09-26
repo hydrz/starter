@@ -14,7 +14,7 @@
 | 路线图 | 了解分阶段交付状态 | [实施路线](delivery-roadmap.md) |
 | GitHub 治理 | 配置检查、评审和发布规则 | [仓库治理](../.github/GOVERNANCE.md) |
 | 交付与运维 | 构建、部署、配置和运行服务 | [部署指南](deployment.md)、[Runbook 目录](runbooks/README.md) |
-| Agent Skills | 规范仓库级 Agent 工作流的位置、边界与验证方式 | [Agent Skills 规范与实现](agent-skills.md) |
+| Agent 指令与 Skills | 仓库级 Agent 指令约束与任务工作流规范 | [Agent 指令 (AGENTS.md)](../AGENTS.md)、[Agent Skills 规范与实现](agent-skills.md) |
 | GitHub Template | 从模板创建仓库并自动初始化项目命名 | [模板仓库指南](template-repository.md) |
 
 ## 文档治理

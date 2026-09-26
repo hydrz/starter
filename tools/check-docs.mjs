@@ -7,6 +7,7 @@ const documentationRoot = join(repositoryRoot, "docs");
 const markdownFiles = [
   join(repositoryRoot, "README.md"),
   join(repositoryRoot, "CONTRIBUTING.md"),
+  join(repositoryRoot, "AGENTS.md"),
   ...walk(documentationRoot).filter((file) => extname(file) === ".md"),
 ];
 const failures = [];

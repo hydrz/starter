@@ -1,5 +1,7 @@
 # [功能或开发任务名称]
 
+> **说明**：从本模板创建新指南时，保存至 `docs/development/<kebab-case-name>.md`（如 `docs/development/audit-log.md`），并在 [`docs/documentation-catalog.md`](../documentation-catalog.md) 与 [`docs/README.md`](../README.md) 中登记。生效后删除本说明引用块。
+
 - **状态**：Draft（可选值：Draft | Active | Superseded | Deprecated，详见 [文档规范与生命周期](../documentation-policy.md)）
 - **负责人**：[团队或角色]
 - **最后复审**：YYYY-MM-DD

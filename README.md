@@ -26,6 +26,7 @@ Starter 是一个高生产力、现代化且生产就绪的**全栈 Web 应用�
 - [纵向切片开发指南](docs/development/vertical-slice.md)
 - [模板仓库指南](docs/template-repository.md)
 - [工程规范索引](docs/standards/README.md)
+- [Agent 指令与约束](AGENTS.md)
 - [贡献指南](CONTRIBUTING.md)
 
 ## 核心技术栈

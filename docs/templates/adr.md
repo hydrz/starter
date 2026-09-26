@@ -1,6 +1,8 @@
 # ADR-NNNN：[决策标题]
 
-- 状态：提议（可选值：提议 | 已接受 | 被替代 | 已拒绝 | 已废弃，详见 docs/adr/README.md）
+> **说明**：从本模板创建新 ADR 时，保存至 `docs/adr/NNNN-<kebab-case-title>.md`（如 `docs/adr/0003-example.md`），并在 [`docs/adr/README.md`](../adr/README.md) 索引中登记。生效后删除本说明引用块。
+
+- 状态：提议（可选值：提议 | 已接受 | 被替代 | 已拒绝 | 已废弃，详见 [ADR 状态规范](../adr/README.md)）
 - 日期：YYYY-MM-DD
 - 决策者：[团队或角色]
 - 被替代：[无，或替代它的 ADR-XXXX 链接]

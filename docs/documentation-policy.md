@@ -6,17 +6,17 @@
 
 ## 文档类型
 
-| 类型 | 回答的问题 | 位置 | 更新时机 |
-| --- | --- | --- | --- |
-| README | 我从哪里开始？ | 仓库或子系统根目录 | 入口、依赖或常用命令变化时 |
-| Development guide | 我如何完成一项开发任务？ | `docs/development/` | 工作流或工具变化时 |
-| Standard | 什么是必须遵守的？ | `docs/standards/` | 规则或自动检查变化时 |
-| ADR | 为什么做出这个重要决策？ | `docs/adr/` | 决策接受、替代或废弃时 |
-| Runbook | 事件发生时如何诊断和恢复？ | `docs/runbooks/` | 运行方式、指标或恢复步骤变化时 |
-| Reference | 精确接口是什么？ | TypeSpec、Scalar 或生成物 | 随 SSOT 自动生成 |
-| Release notes | 用户需要知道哪些变化？ | Release/变更日志 | 每次发布时 |
+| 类型 | 回答的问题 | 存放位置与命名规则 | 对应模板 | 登记索引 | 更新时机 |
+| --- | --- | --- | --- | --- | --- |
+| README | 我从哪里开始？ | 仓库或子系统根目录 `README.md` | - | [文档中心](README.md) | 入口、依赖或常用命令变化时 |
+| Development guide | 我如何完成一项开发任务？ | `docs/development/<name>.md` | [功能指南模板](templates/feature-guide.md) | [文档目录](documentation-catalog.md) | 工作流或工具变化时 |
+| Standard | 什么是必须遵守的？ | `docs/standards/<topic>.md` | - | [规范索引](standards/README.md) | 规则或自动检查变化时 |
+| ADR | 为什么做出这个重要决策？ | `docs/adr/NNNN-<title>.md` (4位序号) | [ADR 模板](templates/adr.md) | [ADR 索引](adr/README.md) | 决策接受、替代或废弃时 |
+| Runbook | 事件发生时如何诊断和恢复？ | `docs/runbooks/<name>.md` | [Runbook 模板](templates/runbook.md) | [Runbook 索引](runbooks/README.md) | 运行方式、指标或恢复步骤变化时 |
+| Reference | 精确接口是什么？ | TypeSpec、Scalar 或生成物 | - | 随 SSOT 自动生成 | 随代码/契约自动同步 |
+| Release notes | 用户需要知道哪些变化？ | GitHub Release 描述 / `docs/releases/` | [发布说明模板](templates/release-notes.md) | [交付指南](deployment.md) | 每次发布时 |
 
-同一事实只能有一个权威来源。其他文档使用链接，不复制会独立变化的命令、字段列表或配置全文。
+同一事实只能有一个权威来源。其他文档使用链接，不复制会独立变化的命令、字段列表或配置全文。使用模板创建文档的完整流程参见[文档模板指南](templates/README.md)。
 
 ## 必需元数据
 
