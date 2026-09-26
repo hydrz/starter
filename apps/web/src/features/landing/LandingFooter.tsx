@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { BookOpen } from "lucide-react";
-import { useGetHealth } from "../../api/generated/client";
+import { useGetHealth } from "../../api/generated/system/system";
 import { GithubIcon } from "../../components/GithubIcon";
 
 export function LandingFooter() {

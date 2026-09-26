@@ -14,7 +14,7 @@
 ```bash
 mkdir -p backups
 docker compose exec -T postgres \
-  pg_dump --username="${POSTGRES_USER:-starter}" --dbname="${POSTGRES_DB:-starter}" --format=custom \
+  pg_dump --username="starter" --dbname="starter" --format=custom \
   > "backups/starter-$(date -u +%Y%m%dT%H%M%SZ).dump"
 ```
 
@@ -45,7 +45,7 @@ sha256sum backups/<backup-file>.dump
 
 ```bash
 cat backups/<backup-file>.dump | docker compose exec -T postgres \
-  pg_restore --username="${POSTGRES_USER:-starter}" --dbname="${POSTGRES_DB:-starter}" \
+  pg_restore --username="starter" --dbname="starter" \
   --clean --if-exists --no-owner --no-privileges
 ```
 

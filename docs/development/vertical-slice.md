@@ -12,8 +12,9 @@
 | Generated store | `internal/store/announcements.sql.go` |
 | Application | `internal/announcement/service.go` |
 | Repository adapter | `internal/announcement/postgres.go` |
-| HTTP adapter | `internal/platform/httpserver/handler.go` |
-| Generated client | `apps/web/src/api/generated/client.ts` |
+| Generated server contract | `internal/api/announcementsapi/` |
+| HTTP adapter | `internal/announcement/handler.go` |
+| Generated client | `apps/web/src/api/generated/announcements/announcements.ts` |
 | React feature | `apps/web/src/features/announcements/Announcements.tsx` |
 
 ## 依赖方向

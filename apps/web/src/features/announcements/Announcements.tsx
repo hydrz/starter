@@ -9,7 +9,7 @@ import {
   useDeleteAnnouncement,
   useListAnnouncements,
   useUpdateAnnouncement,
-} from "../../api/generated/client";
+} from "../../api/generated/announcements/announcements";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";

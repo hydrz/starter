@@ -11,8 +11,8 @@ TypeSpec 会派生 OpenAPI 文档、Go 服务端接口与 TypeScript 客户端�
 
 将以下生成物提交到 Git：
 
-- `spec/generated/openapi.yaml`；
-- `internal/api/openapi.gen.go`；
+- `spec/generated/`（包含统一 OpenAPI 与模块化 Spec）；
+- `internal/api/`（按领域生成的 ogen 强类型服务端代码）；
 - `apps/web/src/api/generated/`。
 
 生成物顶部或所在目录必须明确禁止手工修改。所有修改从 TypeSpec 或生成配置开始，并由 `pnpm generate` 统一生成。`pnpm check:generated` 会重新生成并检查 Git diff，阻止源契约与生成物漂移。

@@ -63,19 +63,28 @@ func TestHealth(t *testing.T) {
 func TestOpenAPISpec(t *testing.T) {
 	t.Parallel()
 
-	request := httptest.NewRequest(http.MethodGet, "/api/openapi.json", nil)
-	recorder := httptest.NewRecorder()
-
-	newHandler(t, nil, nil).ServeHTTP(recorder, request)
-
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	// 1. Test YAML endpoint
+	yamlRequest := httptest.NewRequest(http.MethodGet, "/api/openapi.yaml", nil)
+	yamlRecorder := httptest.NewRecorder()
+	newHandler(t, nil, nil).ServeHTTP(yamlRecorder, yamlRequest)
+	if yamlRecorder.Code != http.StatusOK {
+		t.Fatalf("yaml status = %d, want %d", yamlRecorder.Code, http.StatusOK)
+	}
+	if !bytes.Contains(yamlRecorder.Body.Bytes(), []byte("openapi: 3.0.0")) {
+		t.Errorf("yaml body missing openapi: 3.0.0")
 	}
 
+	// 2. Test JSON endpoint
+	jsonRequest := httptest.NewRequest(http.MethodGet, "/api/openapi.json", nil)
+	jsonRecorder := httptest.NewRecorder()
+	newHandler(t, nil, nil).ServeHTTP(jsonRecorder, jsonRequest)
+	if jsonRecorder.Code != http.StatusOK {
+		t.Fatalf("json status = %d, want %d", jsonRecorder.Code, http.StatusOK)
+	}
 	var document struct {
 		OpenAPI string `json:"openapi"`
 	}
-	if err := json.NewDecoder(recorder.Body).Decode(&document); err != nil {
+	if err := json.NewDecoder(jsonRecorder.Body).Decode(&document); err != nil {
 		t.Fatalf("decode OpenAPI document: %v", err)
 	}
 	if document.OpenAPI != "3.0.0" {
@@ -98,7 +107,7 @@ func TestScalarReference(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read response: %v", err)
 	}
-	for _, expected := range [][]byte{[]byte(`data-url="/api/openapi.json"`), []byte(`/api/docs/scalar.js`)} {
+	for _, expected := range [][]byte{[]byte(`data-url="/api/openapi.yaml"`), []byte(`/api/docs/scalar.js`)} {
 		if !bytes.Contains(body, expected) {
 			t.Errorf("Scalar reference response does not contain %q", expected)
 		}

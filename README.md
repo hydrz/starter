@@ -4,7 +4,7 @@ Starter 是一个高生产力、现代化且生产就绪的**全栈 Web 应用�
 
 ## 核心特性
 
-- **端到端强类型契约**：以 TypeSpec 作为 API 单一真理源，一处修改自动生成 OpenAPI 3.0 规范、Go 后端接口模型与校验（`oapi-codegen`）、前端 React Query 客户端请求 Hooks（`Orval`）以及完全离线内嵌的交互式 Scalar 文档。
+- **端到端强类型契约**：以 TypeSpec 作为 API 单一真理源，一处修改自动生成 OpenAPI 3.0 规范、Go 后端强类型接口模型与自动校验（`ogen`）、前端 React Query 客户端请求 Hooks（`Orval`）以及完全离线内嵌的交互式 Scalar 文档。
 - **现代化前端 (React 19)**：基于 React 19、TypeScript、Vite、TanStack Router（类型安全代码级路由）、TanStack Query（异步数据流管理）、Tailwind CSS v4、shadcn/ui、React Hook Form 与 Zod。
 - **高可靠模块化 Go 后端**：基于 Go 1.27 与 Chi 路由，采用清晰的模块化单体架构与 Context-Driven Transactor 事务模式，业务逻辑、数据访问与传输层严格解耦。
 - **SQL 优先数据层**：PostgreSQL 配合 Goose 显式版本化数据库迁移，sqlc 在编译期对 SQL 进行类型验证并生成高性能 Go 数据访问代码，采用 pgx 原生连接池。
@@ -32,7 +32,7 @@ Starter 是一个高生产力、现代化且生产就绪的**全栈 Web 应用�
 
 | 分层 | 选型 |
 | --- | --- |
-| 协议与契约 | TypeSpec、OpenAPI 3.0、Scalar、oapi-codegen、Orval |
+| 协议与契约 | TypeSpec、OpenAPI 3.0、Scalar、ogen、Orval |
 | 前端栈 | React 19、TypeScript、Vite、TanStack Query、TanStack Router、Tailwind CSS v4、shadcn/ui、Zod |
 | 后端栈 | Go 1.27、Chi、Context-Driven Transactor |
 | 数据持久层 | PostgreSQL 17、sqlc、pgx/v5、Goose |

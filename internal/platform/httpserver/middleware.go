@@ -15,11 +15,15 @@ func AccessLog(logger *slog.Logger) func(http.Handler) http.Handler {
 			start := time.Now()
 
 			defer func() {
+				status := ww.Status()
+				if (r.URL.Path == "/api/healthz" || r.URL.Path == "/api/readyz") && status < http.StatusBadRequest {
+					return
+				}
+
 				l := logger
 				if l == nil {
 					l = slog.Default()
 				}
-				status := ww.Status()
 				duration := time.Since(start)
 				reqID := middleware.GetReqID(r.Context())
 

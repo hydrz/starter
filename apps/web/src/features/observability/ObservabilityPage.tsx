@@ -7,7 +7,10 @@ import {
   RefreshCw,
   Server,
 } from "lucide-react";
-import { useGetHealth, useGetReadiness } from "../../api/generated/client";
+import {
+  useGetHealth,
+  useGetReadiness,
+} from "../../api/generated/system/system";
 import { Button } from "../../components/ui/button";
 
 export function ObservabilityPage() {
@@ -292,7 +295,7 @@ export function ObservabilityPage() {
               2. Transport 层
             </span>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Chi 路由 & oapi-codegen
+              Chi 路由 & ogen 强类型引擎
             </p>
             <span className="mt-2 inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
               <CheckCircle2 size={11} /> 适配正常

@@ -6,7 +6,7 @@ export function TechStackSection() {
         { name: "TypeSpec", role: "声明式 API 契约语言" },
         { name: "OpenAPI 3.0", role: "业界标准接口规范" },
         { name: "Scalar", role: "100% 离线内嵌交互式文档" },
-        { name: "oapi-codegen", role: "Go 服务端契约脚手架" },
+        { name: "ogen", role: "Go 高性能强类型契约引擎与校验器" },
         { name: "Orval", role: "React Query Hooks 自动生成" },
       ],
     },

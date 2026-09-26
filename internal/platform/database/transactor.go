@@ -3,10 +3,13 @@ package database
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+const rollbackTimeout = 3 * time.Second
 
 // Transactor 定义在原子事务中执行业务逻辑的抽象接口。
 // 业务/应用服务层只依赖此接口，不依赖底层具体的数据库或事务对象。
@@ -41,10 +44,14 @@ func (t *PgxTransactor) WithinTransaction(ctx context.Context, fn func(ctx conte
 
 	defer func() {
 		if p := recover(); p != nil {
-			_ = tx.Rollback(ctx)
+			rollbackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rollbackTimeout)
+			defer cancel()
+			_ = tx.Rollback(rollbackCtx)
 			panic(p)
 		} else if err != nil {
-			_ = tx.Rollback(ctx)
+			rollbackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rollbackTimeout)
+			defer cancel()
+			_ = tx.Rollback(rollbackCtx)
 		}
 	}()
 

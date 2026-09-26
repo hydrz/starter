@@ -27,4 +27,4 @@
 
 ## 变更验证
 
-契约或 SQL 变更执行 `pnpm generate`、`pnpm check:generated`；migration 变更额外执行 `pnpm test:database`。
+契约或 SQL 变更执行 `pnpm generate`、`pnpm check:generated`；migration 变更在本地执行 `pnpm db:migrate` 验证。

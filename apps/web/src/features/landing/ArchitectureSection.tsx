@@ -27,7 +27,7 @@ export function ArchitectureSection() {
       step: "03",
       icon: Server,
       name: "双端代码同步生成",
-      desc: "Go 后端通过 oapi-codegen 派生 Server 接口；前端通过 Orval 派生 React Query Hooks",
+      desc: "Go 后端通过 ogen 派生强类型 Server 与自动校验；前端通过 Orval 派生 React Query Hooks",
       tag: "Zero-Drift Code Gen",
     },
     {

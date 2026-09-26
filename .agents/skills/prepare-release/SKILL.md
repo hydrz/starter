@@ -11,7 +11,7 @@ Read `docs/deployment.md`, `.github/workflows/release.yml`, and `docs/templates/
 
 1. Inspect `git status --short`, current branch, recent tags, and the requested version. Require a clean, reviewed release commit and a `vMAJOR.MINOR.PATCH` version unless repository policy explicitly changes.
 2. Determine changes since the previous release. Highlight breaking API/schema changes, migrations, configuration changes, security fixes, and operator actions.
-3. Run `pnpm check`, `pnpm test`, `pnpm test:race`, `pnpm test:embed`, and `pnpm build`. Run `pnpm test:database` and Docker image validation when the environment supports them; report skipped checks plainly.
+3. Run `pnpm check`, `pnpm test`, `pnpm test:race`, `pnpm test:embed`, and `pnpm build`. Run Docker image validation when the environment supports it; report skipped checks plainly.
 4. Inspect the built binary and compute SHA-256 using the same artifact naming and linker metadata as `.github/workflows/release.yml`. Do not substitute an unverified local convention for the workflow.
 5. Draft release notes from `docs/templates/release-notes.md`, including upgrade order, migration impact, rollback/recovery constraints, known risks, and exact verification evidence.
 6. Confirm the tag target and remote state immediately before proposing a tag. Stop after presenting the release plan unless the user explicitly authorizes external writes.

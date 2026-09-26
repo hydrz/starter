@@ -127,6 +127,33 @@ interface ${pascalFeature} {
   console.log(`  + ${routesTspPath}`);
 }
 
+// 2.1 Contract Service Entrypoint
+const serviceTspPath = join(contractDir, `${featureName}.tsp`);
+if (!existsSync(serviceTspPath)) {
+  writeFileSync(
+    serviceTspPath,
+    `import "@typespec/http";
+import "@typespec/openapi";
+import "@typespec/openapi3";
+
+import "../../common/models.tsp";
+import "../../common/responses.tsp";
+import "./models.tsp";
+import "./routes.tsp";
+
+using TypeSpec.Http;
+using TypeSpec.OpenAPI;
+using Starter.Common;
+
+@service(#{ title: "${pascalFeature} API" })
+@info(#{ version: "0.1.0" })
+@server("http://localhost:8080", "Local development")
+namespace Starter.${pascalFeature};
+`,
+  );
+  console.log(`  + ${serviceTspPath}`);
+}
+
 // 3. Register in packages/contracts/main.tsp
 const mainTspPath = join(repositoryRoot, "packages", "contracts", "main.tsp");
 const mainTsp = readFileSync(mainTspPath, "utf8");

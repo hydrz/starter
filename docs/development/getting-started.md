@@ -35,7 +35,7 @@ Vite 在开发环境将 `/api` 代理到 Go 服务，因此浏览器请求保持
 | --- | --- |
 | `pnpm dev` | 并行启动 Go 和 Web 开发服务 |
 | `pnpm test` | 运行 Go 和 Web 测试 |
-| `pnpm check` | 运行生成漂移、格式、Go、SQL、Web 与 Shell 静态检查 |
+| `pnpm check` | 运行生成漂移、格式、Go、SQL 与 Web 静态检查 |
 | `pnpm format` | 统一格式化 Go、TypeSpec 与 Web 源文件 |
 | `pnpm build` | 构建 Web，并将其嵌入输出到 `dist/server` 的 Go 二进制 |
 | `pnpm test:race` | 使用 Go race detector 运行后端测试 |
@@ -45,8 +45,8 @@ Vite 在开发环境将 `/api` 代理到 Go 服务，因此浏览器请求保持
 | `pnpm db:up` | 启动本地 PostgreSQL 并等待健康检查通过 |
 | `pnpm db:migrate` | 执行全部待处理 migration |
 | `pnpm db:status` | 查看数据库 migration 状态 |
+| `pnpm db:reset` | 重置本地数据库卷并重新执行全部 migration |
 | `pnpm db:down` | 停止本地 PostgreSQL |
-| `pnpm test:database` | 在临时 Compose 数据库中验证 migration 往返 |
 
 根命令是本地与 CI 的公共入口。子项目可以保留自己的具体命令，但 CI 不应复制内部实现。
 

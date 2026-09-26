@@ -11,7 +11,7 @@ Treat `packages/contracts/main.tsp` as the HTTP contract SSOT. Read `docs/develo
 
 1. Inspect `git status --short`, the request, and affected consumers. Do not overwrite unrelated changes.
 2. Clarify ambiguous compatibility, authorization, pagination, or error semantics before implementation. Preserve existing operation IDs unless a deliberate breaking change is approved.
-3. Edit TypeSpec only. Do not hand-edit `spec/generated/`, `internal/api/openapi.gen.go`, or `apps/web/src/api/generated/`.
+3. Edit TypeSpec only. Do not hand-edit `spec/generated/`, `internal/api/`, or `apps/web/src/api/generated/`.
 4. Run `pnpm generate:contract`, inspect the OpenAPI diff, then run `pnpm generate:server` and `pnpm generate:web`.
 5. Adapt the HTTP implementation and frontend callers to the generated interfaces. Keep domain logic out of generated and transport code.
 6. Add or update transport and consumer tests for success, validation, authorization, and stable public errors as applicable.

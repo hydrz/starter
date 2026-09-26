@@ -29,3 +29,20 @@ func Migrate(ctx context.Context, databaseURL string) error {
 	}
 	return nil
 }
+
+func Status(ctx context.Context, databaseURL string) error {
+	database, err := sql.Open("pgx", databaseURL)
+	if err != nil {
+		return fmt.Errorf("open migration database: %w", err)
+	}
+	defer database.Close()
+
+	goose.SetBaseFS(migrations)
+	if err := goose.SetDialect("postgres"); err != nil {
+		return fmt.Errorf("set migration dialect: %w", err)
+	}
+	if err := goose.StatusContext(ctx, database, "migrations"); err != nil {
+		return fmt.Errorf("check migration status: %w", err)
+	}
+	return nil
+}
