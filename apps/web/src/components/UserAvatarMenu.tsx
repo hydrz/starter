@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { ChevronDown, ExternalLink, ShieldCheck, User } from "lucide-react";
 import {
   DropdownMenu,
@@ -43,9 +44,11 @@ export function UserAvatarMenu() {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem className="text-muted-foreground">
-          <User size={13} />
-          <span>{m.user_menu_profile()}</span>
+        <DropdownMenuItem asChild className="text-muted-foreground">
+          <Link to="/app/account">
+            <User size={13} />
+            <span>{m.user_menu_profile()}</span>
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="text-muted-foreground">
           <a href="/api/docs" target="_blank" rel="noreferrer">
