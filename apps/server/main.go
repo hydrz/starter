@@ -18,13 +18,10 @@ import (
 	databaseMigrations "github.com/hydrz/starter/db"
 	"github.com/hydrz/starter/internal/announcement"
 	"github.com/hydrz/starter/internal/auth"
-<<<<<<< HEAD
+	"github.com/hydrz/starter/internal/authorization"
 	"github.com/hydrz/starter/internal/delivery"
 	"github.com/hydrz/starter/internal/notification"
-=======
-	"github.com/hydrz/starter/internal/authorization"
 	"github.com/hydrz/starter/internal/organization"
->>>>>>> 9e3f5da (feat: implement workstream C organizations, tenant-scoped resources, and casbin rbac)
 	"github.com/hydrz/starter/internal/platform/config"
 	"github.com/hydrz/starter/internal/platform/database"
 	apphttp "github.com/hydrz/starter/internal/platform/httpserver"
