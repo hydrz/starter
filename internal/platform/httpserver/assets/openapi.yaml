@@ -270,6 +270,41 @@ components:
           type: string
         message:
           type: string
+    Common.ConflictResponse:
+      type: object
+      required:
+        - body
+      properties:
+        body:
+          $ref: '#/components/schemas/ApiError'
+    Common.ForbiddenResponse:
+      type: object
+      required:
+        - body
+      properties:
+        body:
+          $ref: '#/components/schemas/ApiError'
+    Common.PreconditionFailedResponse:
+      type: object
+      required:
+        - body
+      properties:
+        body:
+          $ref: '#/components/schemas/ApiError'
+    Common.TooManyRequestsResponse:
+      type: object
+      required:
+        - body
+      properties:
+        body:
+          $ref: '#/components/schemas/ApiError'
+    Common.UnauthorizedResponse:
+      type: object
+      required:
+        - body
+      properties:
+        body:
+          $ref: '#/components/schemas/ApiError'
     Page_Announcement:
       type: object
       required:

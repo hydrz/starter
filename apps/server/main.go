@@ -16,16 +16,13 @@ import (
 
 	databaseMigrations "github.com/hydrz/starter/db"
 	"github.com/hydrz/starter/internal/announcement"
+	"github.com/hydrz/starter/internal/platform/config"
 	"github.com/hydrz/starter/internal/platform/database"
 	apphttp "github.com/hydrz/starter/internal/platform/httpserver"
 	"github.com/hydrz/starter/internal/store"
 )
 
-const (
-	defaultAddress     = ":8080"
-	defaultDatabaseURL = "postgres://starter:starter@127.0.0.1:5432/starter?sslmode=disable"
-	shutdownTimeout    = 10 * time.Second
-)
+const shutdownTimeout = 10 * time.Second
 
 var (
 	version   = "dev"
@@ -36,25 +33,30 @@ var (
 func main() {
 	_ = godotenv.Load()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	cfg, err := config.Load(os.LookupEnv)
+	if err != nil {
+		logger.Error("configuration invalid", "error", err)
+		os.Exit(1)
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
 		case "healthcheck":
-			if err := healthcheck(); err != nil {
+			if err := healthcheck(cfg.Address); err != nil {
 				logger.Error("healthcheck failed", "error", err)
 				os.Exit(1)
 			}
 			return
 		case "migrate":
-			if err := databaseMigrations.Migrate(ctx, databaseURL()); err != nil {
+			if err := databaseMigrations.Migrate(ctx, cfg.DatabaseURL); err != nil {
 				logger.Error("database migration failed", "error", err)
 				os.Exit(1)
 			}
 			logger.Info("database migrations completed")
 			return
 		case "status":
-			if err := databaseMigrations.Status(ctx, databaseURL()); err != nil {
+			if err := databaseMigrations.Status(ctx, cfg.DatabaseURL); err != nil {
 				logger.Error("database migration status failed", "error", err)
 				os.Exit(1)
 			}
@@ -62,15 +64,15 @@ func main() {
 		}
 	}
 
-	if os.Getenv("AUTO_MIGRATE") != "false" {
-		if err := databaseMigrations.Migrate(ctx, databaseURL()); err != nil {
+	if cfg.AutoMigrate {
+		if err := databaseMigrations.Migrate(ctx, cfg.DatabaseURL); err != nil {
 			logger.Error("automatic database migration failed", "error", err)
 			os.Exit(1)
 		}
 		logger.Info("database migrations applied automatically")
 	}
 
-	pool, err := database.Open(ctx, databaseURL())
+	pool, err := database.Open(ctx, cfg.DatabaseURL)
 	if err != nil {
 		logger.Error("database connection failed", "error", err)
 		os.Exit(1)
@@ -84,7 +86,7 @@ func main() {
 		os.Exit(1)
 	}
 	server := &http.Server{
-		Addr:              address(),
+		Addr:              cfg.Address,
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
@@ -115,8 +117,7 @@ func main() {
 	logger.Info("http server stopped")
 }
 
-func healthcheck() error {
-	addr := address()
+func healthcheck(addr string) error {
 	if strings.HasPrefix(addr, ":") {
 		addr = "127.0.0.1" + addr
 	}
@@ -131,24 +132,4 @@ func healthcheck() error {
 		return fmt.Errorf("readiness endpoint returned %s", response.Status)
 	}
 	return nil
-}
-
-func databaseURL() string {
-	if value := os.Getenv("DATABASE_URL"); value != "" {
-		return value
-	}
-	return defaultDatabaseURL
-}
-
-func address() string {
-	if value := os.Getenv("HTTP_ADDRESS"); value != "" {
-		return value
-	}
-	if port := os.Getenv("PORT"); port != "" {
-		if strings.HasPrefix(port, ":") {
-			return port
-		}
-		return ":" + port
-	}
-	return defaultAddress
 }
