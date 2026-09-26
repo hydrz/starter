@@ -13,6 +13,7 @@
 | [身份平台架构](architecture/identity-platform.md) | Active | Architecture | 2026-09-26 | 180 天 |
 | [身份平台实施台账](implementation/identity-platform-ledger.md) | Active | Platform Engineering | 2026-09-26 | 90 天 |
 | [身份平台契约映射](implementation/identity-platform-contract-map.md) | Active | API Guild | 2026-09-26 | 180 天 |
+| [平台底座任务调度手册](implementation/platform-foundation-tasks.md) | Active | Platform Engineering | 2026-09-26 | 90 天 |
 | [实施路线](delivery-roadmap.md) | Active | Platform Engineering | 2026-09-25 | 每阶段 |
 | [本地开发](development/getting-started.md) | Active | Developer Experience | 2026-09-25 | 90 天 |
 | [契约开发](development/contracts.md) | Active | API Guild | 2026-09-24 | 180 天 |
