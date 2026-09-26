@@ -29,12 +29,10 @@ func (repository *PostgresRepository) q(ctx context.Context) *store.Queries {
 }
 
 func (repository *PostgresRepository) List(ctx context.Context, filter Filter) ([]Announcement, int64, error) {
-	status := store.NullAnnouncementStatus{}
+	var status *store.AnnouncementStatus
 	if filter.Status != nil {
-		status = store.NullAnnouncementStatus{
-			AnnouncementStatus: store.AnnouncementStatus(*filter.Status),
-			Valid:              true,
-		}
+		s := store.AnnouncementStatus(*filter.Status)
+		status = &s
 	}
 
 	total, err := repository.q(ctx).CountAnnouncements(ctx, status)

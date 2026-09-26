@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:20.20.2-alpine AS web
+FROM node:24.21.0-alpine AS web
 WORKDIR /src
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -11,7 +11,7 @@ COPY apps/web apps/web
 COPY internal/platform/webui internal/platform/webui
 RUN pnpm build:web
 
-FROM golang:1.24.3-alpine AS build
+FROM golang:1.27.1-alpine AS build
 WORKDIR /src
 RUN apk add --no-cache ca-certificates
 COPY go.mod go.sum ./
