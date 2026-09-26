@@ -65,7 +65,10 @@ Stripe is a generic payment/subscription/entitlement integration: it maps verifi
 | C — organizations/Casbin | Authorization | B account/session interfaces agreed | domain membership model, policy model, three-part decision tests |
 | D — outbox/delivery | Messaging | A config and schema conventions agreed | outbox migration/sqlc, claim/retry/idempotency tests; SMTP adapter only |
 | E — Stripe/entitlements | Billing | C authorization boundary agreed | webhook verification, projections, entitlement integration tests |
-| F — product UI | Product Web | B/C public contracts generated | Orval-only clients, user-facing states, no hand-authored endpoint shapes |
+| F — Email OTP, TOTP/MFA, OAuth, WebAuthn | Identity | B session-issuance interface stable | forward-only schema, single-use/atomic challenge consumption, no parallel JWT/refresh issuance, provider callback threat model reviewed |
+| G — product UI | Product Web | E/F public contracts generated | Orval-only clients, user-facing states, no hand-authored endpoint shapes |
+
+`F` was reassigned from `product UI` to the second identity wave (email OTP, TOTP/MFA, OAuth, WebAuthn) once that work was scoped; `product UI` moved to `G` to avoid a duplicate letter. See the [implementation ledger](../implementation/identity-platform-ledger.md) for current status.
 
 No workstream may hand-edit generated artifacts, add an endpoint outside TypeSpec, bypass sqlc/Goose, use environment validation errors that expose secrets, or collapse delivery into notification. Cross-workstream changes pass their owner gate and are recorded in the implementation ledger.
 
