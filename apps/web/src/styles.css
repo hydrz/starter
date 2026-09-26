@@ -1,5 +1,27 @@
 @import "tailwindcss";
 
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+}
+
 :root {
   font-family: Inter, "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
   color: #17201c;
@@ -29,6 +51,31 @@
   --radius: 0.5rem;
 }
 
+.dark {
+  color: #eef3ef;
+  background: #0e1511;
+
+  --background: 153 25% 6%;
+  --foreground: 120 7% 95%;
+  --card: 153 22% 9%;
+  --card-foreground: 120 7% 95%;
+  --popover: 153 22% 9%;
+  --popover-foreground: 120 7% 95%;
+  --primary: 81 65% 68%;
+  --primary-foreground: 153 25% 10%;
+  --secondary: 153 18% 14%;
+  --secondary-foreground: 120 7% 95%;
+  --muted: 153 18% 14%;
+  --muted-foreground: 150 5% 65%;
+  --accent: 81 65% 68%;
+  --accent-foreground: 153 25% 10%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 153 18% 16%;
+  --input: 153 18% 16%;
+  --ring: 81 65% 68%;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -39,16 +86,23 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 a {
   color: inherit;
   text-decoration: none;
 }
 
+/* App Console Shell */
 .shell {
   display: grid;
   grid-template-columns: 240px 1fr;
   min-height: 100vh;
+  transition: grid-template-columns 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .sidebar {
   position: fixed;
@@ -59,6 +113,15 @@ a {
   padding: 28px 22px;
   color: #eef3ef;
   background: #18221d;
+  border-right: 1px solid rgb(255 255 255 / 6%);
+  transition:
+    width 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.2s ease;
+  z-index: 40;
+}
+.dark .sidebar {
+  background: #090f0c;
+  border-right: 1px solid rgb(255 255 255 / 8%);
 }
 .brand {
   display: flex;
@@ -78,6 +141,8 @@ a {
   border-radius: 50%;
   color: #b9e277;
   font-size: 13px;
+  font-weight: 700;
+  background: rgb(185 226 119 / 8%);
 }
 nav {
   display: grid;
@@ -98,6 +163,11 @@ nav {
   color: #fff;
   background: #24312a;
 }
+.dark .nav-item:hover,
+.dark .nav-item.active {
+  background: #17241e;
+  color: #e6fced;
+}
 .nav-dot {
   width: 5px;
   height: 5px;
@@ -114,12 +184,16 @@ nav {
   color: #859189;
   font-size: 11px;
 }
+.dark .sidebar-footer {
+  border-top-color: #1a2720;
+}
 .pulse {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #b9e277;
   box-shadow: 0 0 0 4px rgb(185 226 119 / 9%);
+  display: inline-block;
 }
 .pulse.unavailable {
   background: #d6a95d;
@@ -132,21 +206,28 @@ main {
 }
 .topbar {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  min-height: 126px;
-  padding: 32px 0 25px;
+  min-height: 80px;
+  padding: 24px 0 20px;
   border-bottom: 1px solid #d7dbd5;
+}
+.dark .topbar {
+  border-bottom-color: #1e2c24;
 }
 .eyebrow {
   color: #788079;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.dark .eyebrow {
+  color: #8c998f;
 }
 h1 {
-  margin: 8px 0 0;
-  font-size: 19px;
+  margin: 4px 0 0;
+  font-size: 20px;
   font-weight: 600;
 }
 .phase,
@@ -171,6 +252,9 @@ h1 {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+.dark .kicker {
+  color: #a4ce5d;
+}
 h2 {
   max-width: 760px;
   margin: 0;
@@ -186,6 +270,9 @@ h2 {
   font-size: 14px;
   line-height: 1.8;
 }
+.dark .hero-copy {
+  color: #9baa9f;
+}
 .metric {
   min-height: 154px;
   padding: 19px;
@@ -193,11 +280,19 @@ h2 {
   border-radius: 10px;
   background: rgb(255 255 255 / 32%);
 }
+.dark .metric {
+  border-color: #213028;
+  background: rgb(255 255 255 / 3%);
+}
 .metric span,
 .metric small {
   display: block;
   color: #7a837c;
   font-size: 10px;
+}
+.dark .metric span,
+.dark .metric small {
+  color: #8c998f;
 }
 .metric strong {
   display: block;
@@ -210,9 +305,15 @@ h2 {
   padding: 38px 0 48px;
   border-top: 1px solid #d7dbd5;
 }
+.dark .section {
+  border-top-color: #1e2c24;
+}
 .announcements {
   padding: 38px 0 48px;
   border-top: 1px solid #d7dbd5;
+}
+.dark .announcements {
+  border-top-color: #1e2c24;
 }
 .announcement-grid {
   display: grid;
@@ -226,6 +327,11 @@ h2 {
   border-radius: 8px;
   background: #f7f8f5;
 }
+.dark .announcement-form,
+.dark .announcement-list {
+  border-color: #213028;
+  background: #111a14;
+}
 .announcement-form {
   display: grid;
   gap: 16px;
@@ -237,6 +343,9 @@ h2 {
   color: #59625c;
   font-size: 11px;
   font-weight: 600;
+}
+.dark .announcement-form label {
+  color: #9baa9f;
 }
 .announcement-form input,
 .announcement-form textarea,
@@ -250,6 +359,13 @@ h2 {
   font: inherit;
   font-size: 12px;
   outline: none;
+}
+.dark .announcement-form input,
+.dark .announcement-form textarea,
+.dark .announcement-form select {
+  border-color: #2b3d33;
+  background: #0d1510;
+  color: #eef3ef;
 }
 .announcement-form textarea {
   resize: vertical;
@@ -284,8 +400,15 @@ h2 {
   font-weight: 600;
   cursor: pointer;
 }
+.dark .announcement-form button {
+  background: #b9e277;
+  color: #101c13;
+}
 .announcement-form button:hover {
   background: #31493a;
+}
+.dark .announcement-form button:hover {
+  background: #cbf08d;
 }
 .announcement-form button:disabled {
   cursor: wait;
@@ -302,6 +425,10 @@ h2 {
   border: 1px solid #e0e3de;
   border-radius: 6px;
   background: #fff;
+}
+.dark .announcement-item {
+  border-color: #213028;
+  background: #141f18;
 }
 .announcement-item > div {
   display: flex;
@@ -326,6 +453,9 @@ h2 {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+.dark .announcement-item p {
+  color: #9baa9f;
+}
 .item-actions {
   display: flex;
   gap: 8px;
@@ -342,6 +472,11 @@ h2 {
   font-size: 9px;
   cursor: pointer;
 }
+.dark .item-actions button {
+  border-color: #283930;
+  background: #131c16;
+  color: #9baa9f;
+}
 .item-actions button:hover {
   border-color: #9faa9e;
 }
@@ -355,9 +490,17 @@ h2 {
   background: #eef1e8;
   font-size: 9px;
 }
+.dark .status {
+  color: #b9e277;
+  background: #1e2d21;
+}
 .status.published {
   color: #45622d;
   background: #e4efd9;
+}
+.dark .status.published {
+  color: #cbf08d;
+  background: #233724;
 }
 .empty-state {
   align-self: center;
@@ -397,9 +540,16 @@ h3 {
     transform 0.2s ease,
     border-color 0.2s ease;
 }
+.dark .card {
+  border-color: #213028;
+  background: #111a14;
+}
 .card:hover {
   transform: translateY(-3px);
   border-color: #aeb9a5;
+}
+.dark .card:hover {
+  border-color: #3b5244;
 }
 .card-number {
   color: #899189;
@@ -415,6 +565,9 @@ h3 {
   color: #747c76;
   font-size: 12px;
 }
+.dark .card p {
+  color: #9baa9f;
+}
 .card-state {
   align-self: flex-start;
   padding: 5px 8px;
@@ -423,9 +576,16 @@ h3 {
   background: #e9efdf;
   font-size: 9px;
 }
+.dark .card-state {
+  color: #b9e277;
+  background: #1d2b20;
+}
 .workflow {
   padding: 38px 0;
   border-top: 1px solid #d7dbd5;
+}
+.dark .workflow {
+  border-top-color: #1e2c24;
 }
 .workflow-row {
   display: grid;
@@ -439,6 +599,9 @@ h3 {
   padding: 17px 0;
   border-top: 1px solid #aeb5ae;
 }
+.dark .workflow-step {
+  border-top-color: #2a3c31;
+}
 .workflow-step:not(:last-child) {
   margin-right: 28px;
 }
@@ -451,6 +614,10 @@ h3 {
   border-radius: 50%;
   color: #788078;
   font-size: 9px;
+}
+.dark .workflow-step span {
+  border-color: #2f4337;
+  color: #8f9c94;
 }
 .workflow-step strong {
   font-size: 12px;
