@@ -8,11 +8,13 @@ import type { ReactNode } from "react";
 import {
   Activity,
   AlertTriangle,
+  CreditCard,
   FileCode,
   Globe,
   LayoutDashboard,
   Megaphone,
   Settings,
+  User,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -46,6 +48,7 @@ function getNavItems(orgSlug: string): Array<AppNavItem> {
       to: `${base}/invitations`,
       icon: UserPlus,
     },
+    { label: m.nav_billing(), to: `${base}/billing`, icon: CreditCard },
     { label: m.nav_settings(), to: `${base}/settings`, icon: Settings },
     {
       label: m.nav_observability(),
@@ -63,6 +66,7 @@ function getNavItems(orgSlug: string): Array<AppNavItem> {
 
 function getSecondaryNavItems(): Array<AppNavItem> {
   return [
+    { label: m.nav_account(), to: "/app/account", icon: User },
     { label: m.nav_back_to_landing(), to: "/", icon: Globe, exact: true },
   ];
 }
@@ -73,6 +77,9 @@ function getPageTitle(pathname: string) {
   }
   if (pathname.includes("/invitations")) {
     return m.console_page_invitations();
+  }
+  if (pathname.includes("/billing")) {
+    return m.console_page_billing();
   }
   if (pathname.includes("/settings")) {
     return m.console_page_settings();
