@@ -1,24 +1,37 @@
-# 身份平台实施交接清单
+# 身份平台云端交接清单
 
 - **状态**：Active
 - **负责人**：Platform Engineering
 - **最后复审**：2026-09-26
 - **复审周期**：每次交接
 
-本文件用于在新会话恢复身份平台实施；架构决策以 ADR、架构文档、契约图谱和实施台账为准。
+本文件面向新的云端会话。它只依赖已推送的 Git 仓库和 `main` 分支；不要求本机 worktree、临时分支、会话记录或尚未提交的文件存在。
 
-## 已进入 PR 的范围
+## 已合并基线
 
-当前 PR：[hydrz/starter#17](https://github.com/hydrz/starter/pull/17)，功能分支 `feat/identity-platform-foundation` 包含以下已验证 workstream：
+[PR #17](https://github.com/hydrz/starter/pull/17) 已合并。云端会话应从当前 `main` 开始：
 
-| Workstream | 提交 | 交付 |
-| --- | --- | --- |
-| A — Foundation | `1336f6f` | 配置加载器、公共 TypeSpec 错误响应、ADR、架构文档、契约图谱与实施台账。 |
-| B — Identity | `2444864` | Argon2id 密码、Ed25519 access JWT、opaque refresh family、防重放、API key、认证 TypeSpec/ogen/Orval。 |
-| D — Delivery | `4b65633` | PostgreSQL outbox worker、SMTP/Noop channel、HTML/Text 模板、notification intent 到 delivery 的路由。 |
-| C — Organization + RBAC | `c72befe`, `83aec7d` | 个人组织自动创建、成员/邀请、Casbin domain RBAC、公告租户化、组织 TypeSpec/ogen/Orval。 |
+```bash
+git switch main
+git pull --ff-only origin main
+```
 
-功能分支已通过：
+基线提交为：
+
+```text
+6c45a9e feat: add identity platform foundation (#17)
+```
+
+该提交已包含并经验证：
+
+| Workstream | 已交付能力 |
+| --- | --- |
+| A — Foundation | 分组配置、Ed25519 JWT keyset、公共 TypeSpec 错误响应、ADR、架构文档、Ledger、契约图谱。 |
+| B — Identity | Argon2id 密码、短期 Ed25519 access JWT、opaque refresh family、防重放、API key、认证 API。 |
+| C — Organization + RBAC | 自动个人组织、成员和邀请、Casbin domain RBAC、公告租户化、组织 API。 |
+| D — Delivery | PostgreSQL outbox worker、SMTP/Noop channel、HTML/Text 模板、notification intent 到 delivery 的路由。 |
+
+基线验证已通过：
 
 ```bash
 pnpm check
@@ -28,94 +41,95 @@ pnpm check
 pnpm test
 ```
 
-`pnpm test:race` 尚未通过：本地 Go 工具链要求 `CGO_ENABLED=1` 才支持 `-race`，需要具备 C 编译环境后再执行。
-
-## PR 与合并状态
-
-- PR #17 已推送并已开启 Auto-fix/CI 监控。
-- 当前仓库不允许 GitHub auto-merge；PR 创建时 `reviewDecision=REVIEW_REQUIRED`。
-- 等 CI 和审查要求满足后，需要有权限的用户在 GitHub 手动合并。
-- PR 合并前不要清理 `feat/identity-platform-foundation` 分支。
-
-## 主分支与功能分支
-
-当前会话工作目录位于 `feat/identity-platform-foundation`。为创建 PR，本地 `main` 已安全恢复到 `origin/main` 的 `0c57756`；完整 A–D/C 成果均保留在 PR 分支中。
+`pnpm test:race` 需要启用 CGO 且具备 C 编译环境；在满足该前提的云端环境中应补跑：
 
 ```bash
-git status --short --branch
+CGO_ENABLED=1 pnpm test:race
 ```
+
+## 云端会话必须先阅读的权威文件
+
+按以下顺序读取，所有新实现必须与其一致：
+
+1. [身份平台架构](../architecture/identity-platform.md)
+2. [身份平台实施台账](identity-platform-ledger.md)
+3. [身份平台契约映射](identity-platform-contract-map.md)
+4. [ADR 索引](../adr/README.md)，尤其 ADR-0003 至 ADR-0007
+5. [`AGENTS.md`](../../AGENTS.md)
+
+这些文件已定义：单 Go 二进制约束、TypeSpec/Goose/sqlc 的 SSOT 边界、JWT/refresh 模型、Casbin 三段授权、delivery 与 notification 分层、Stripe entitlement 投影，以及工作流验证要求。
+
+## 下一步：重新启动第二波 workstream
+
+此前本地会话曾启动 Stripe 和高级认证实现，但它们在 **提交前** 被上游运行时中断。它们未进入 `main`、未进入任何可依赖的远程分支，云端会话不应假设这些工作存在或尝试恢复本地临时目录。
+
+应在当前 `main` 创建新的隔离分支/worktree，重新实施并验证下列两个 workstream。两个实现可并行，但共享文件由主 Agent 串行整合；每个完成后必须先提交，再成为后续工作的基线。
+
+### E — Stripe 支付、订阅与权益
+
+目标：支持一次性 Checkout 与循环订阅，但把业务能力统一投影为组织级 entitlement。
+
+**应新增或扩展的边界**：
+
+- 新迁移和 sqlc 查询：`billing_accounts`、`checkout_sessions`、`subscriptions`、`one_time_purchases`、`stripe_webhook_events`、`entitlements`；金额必须使用最小货币单位整数与 ISO 币种；Stripe event ID 必须唯一。
+- `internal/billing/` 是唯一可导入 Stripe SDK 的领域包；其他模块只能依赖窄的 `EntitlementReader`。
+- TypeSpec `packages/contracts/features/billing/`：组织 billing summary、创建 Checkout session、创建 Customer Portal session。
+- 组织作用域 billing route 必须同时经过：身份认证 → 当前 membership → Casbin domain permission → billing account 归属复核。
+- 服务器端 catalog 只接受受控 `priceKey`，再映射到 Stripe Price ID；浏览器不得传入金额、Stripe customer/price/subscription ID 或任意 success/cancel URL。
+- Webhook 使用独立 raw-body handler：先限制 body 大小、验证 `Stripe-Signature`，再解析；Webhook 是 entitlement/subscription 状态的唯一来源。Checkout 回跳不能直接授予权益。
+- 用唯一 event ID 的持久化记录保证幂等；瞬态持久化失败必须返回 5xx 以触发 Stripe 重试，或进入有证据的重试流程。
+- 计费事件如需通知，只写 notification/outbox intent，绝不直接发 SMTP。
+
+**主 Agent 必须验收的安全不变量**：
+
+- 重复或乱序 webhook 不会重复授予、错误撤销或丢失权益；
+- 取消订阅不会错误撤销已经获得的一次性权益；
+- 任意跨组织 customer/portal/checkout 访问被拒绝；
+- 不记录 webhook 原文、支付密钥或支付卡数据到日志和业务表；
+- 不让前端回跳、HTTP 状态或浏览器数据成为付款完成的事实来源。
+
+### F — Email OTP、TOTP、OAuth 与 Passkey
+
+目标：在现有 `internal/auth.Service` 上扩展认证方式；所有成功路径必须复用 Workstream B 的同一 JWT/refresh family 签发逻辑。
+
+**应新增或扩展的边界**：
+
+- 新的 forward-only migration 与 sqlc 查询：email OTP challenges、TOTP factor、recovery codes、MFA challenge、OAuth account、OAuth authorization state、WebAuthn credential、WebAuthn challenge。
+- Email OTP：代码只存 HMAC digest，具备过期、尝试次数、单次消费、按邮箱/IP 限流；请求对未知邮箱保持不可枚举语义；发送走现有 outbox/notification/delivery 管道。
+- TOTP：使用标准实现；secret 以独立对称密钥进行 AES-GCM 加密存储；两步 enrollment；recovery code 仅展示一次、只存 hash、单次消费。是否启用后强制 MFA 必须成为显式文档化决策。
+- Google/GitHub OAuth：持久化一次性 state、nonce 和 PKCE verifier；严格固定回调 origin；身份唯一键为 `(provider, provider_subject)`，绝不能按邮箱自动关联。链接已有账号必须在已认证且近期重认证的会话中显式执行。
+- Passkey：采用成熟纯 Go WebAuthn 库；challenge 服务端持久化、短时有效、单次消费；注册必须要求已认证会话；discoverable 登录成功后调用既有统一 session issuer。
+- 扩展现有 TypeSpec `packages/contracts/features/auth/`，再执行 `pnpm generate`；不得手写 ogen/Orval 文件。
+
+**主 Agent 必须验收的安全不变量**：
+
+- OTP/TOTP/OAuth/Passkey 没有平行 JWT、refresh token 或 session 逻辑；
+- challenge/state/recovery code 均具备服务端持久化、过期和原子单次消费；
+- TOTP secret 从不明文存储；
+- OAuth provider email 不是账号关联依据；
+- Passkey 注册未认证时被拒绝；
+- WebAuthn 验证 origin、RP ID、challenge、credential 归属和 sign counter。
+
+## 云端实施与整合协议
+
+1. 从 `main` 创建 feature 分支，或由主 Agent 创建隔离 worktree；不可依赖本机临时分支名。
+2. 先修改 TypeSpec/SQL 源文件，再执行生成：
 
 ```bash
-git log --oneline origin/main..HEAD
+pnpm generate
 ```
 
-## 未完成的第二波 worktree（严禁删除）
-
-### Workstream E — Stripe 支付、订阅与权益
-
-- 路径：`C:\Users\nan\github.com\hydrz\starter\.claude\worktrees\agent-a202de09c8133c81f`
-- 分支：`worktree-agent-a202de09c8133c81f`
-- 基线：`83aec7d`
-- 状态：子 Agent 因上游网关 502 中断，未完成独立复核或提交。
-- 已报告但尚未采信的工作：`00004_create_billing_and_entitlements.sql`、`db/queries/billing.sql`、`internal/billing/`、billing TypeSpec。
-- 已知收尾编译问题：
-  1. `internal/billing/handler.go` 缺少 `strings` import；
-  2. `internal/billing/service.go` 有未使用 `time` import，且 `handleCheckoutSessionCompleted` 中 `rec` 未使用。
-
-恢复时先检查 diff 与状态，修复编译，运行生成/测试/全量门禁，补 Ledger 并提交。主 Agent 必须审查：
-
-- webhook 读取原始 body、先验签再解析、请求体有上限；
-- `stripe_webhook_events` 使用 event ID 唯一约束实现幂等；
-- Checkout redirect 不直接发放 entitlement；
-- 价格、金额、customer ID、成功/取消 URL 不可由客户端任意指定；
-- billing endpoint 同时经过 membership、Casbin 与 billing-account 归属验证。
-
-### Workstream F — OTP、TOTP、OAuth、Passkey
-
-- 路径：`C:\Users\nan\github.com\hydrz\starter\.claude\worktrees\agent-af8348bbdda8716d2`
-- 分支：`worktree-agent-af8348bbdda8716d2`
-- 基线：`83aec7d`
-- 状态：子 Agent 同样因上游网关 502 中断，未完成独立复核或提交。
-- 已报告但尚未采信的工作：`00005_create_advanced_auth_credentials.sql`、OTP/OAuth/WebAuthn 查询、`internal/auth` 扩展、auth TypeSpec 扩展。
-- 中断前最后行动：修改 `internal/notification/service.go` 的 `handleAuthEvent` 中 `kind` 字段；必须审查该变动是否符合 delivery/notification 分层和模板路由。
-
-恢复后必须复核：
-
-- OTP/TOTP/OAuth/Passkey 成功路径均调用 Workstream B 的同一 session/refresh issuer；
-- OTP、恢复码、OAuth state、PKCE verifier 与 WebAuthn challenge 均有服务端存储、过期和单次消费；
-- TOTP secret 加密存储，恢复码只展示一次且仅存 hash；
-- OAuth 身份唯一键为 `(provider, provider_subject)`，不得按邮箱自动关联；
-- Passkey 注册需要既有认证，discoverable 登录成功后走统一 session 创建。
-
-## 接手标准操作程序
-
-1. 首先阅读：
-   - [身份平台架构](../architecture/identity-platform.md)
+3. 严禁手改以下生成路径：
+   - `spec/generated/`
+   - `internal/api/`
+   - `internal/store/`
+   - `apps/web/src/api/generated/`
+4. 每个 workstream 完成前必须更新：
    - [身份平台实施台账](identity-platform-ledger.md)
    - [身份平台契约映射](identity-platform-contract-map.md)
-   - [ADR 索引](../adr/README.md)
-   - `C:\Users\nan\.claude\plans\snuggly-painting-hejlsberg.md`
-2. 不信任子 Agent 自述，先逐个检查 E/F：
-
-```bash
-git -C "C:\Users\nan\github.com\hydrz\starter\.claude\worktrees\agent-a202de09c8133c81f" status --short
-```
-
-```bash
-git -C "C:\Users\nan\github.com\hydrz\starter\.claude\worktrees\agent-a202de09c8133c81f" log --oneline -5
-```
-
-```bash
-git -C "C:\Users\nan\github.com\hydrz\starter\.claude\worktrees\agent-af8348bbdda8716d2" status --short
-```
-
-```bash
-git -C "C:\Users\nan\github.com\hydrz\starter\.claude\worktrees\agent-af8348bbdda8716d2" log --oneline -5
-```
-
-3. 每个 workstream 必须先在自己的 worktree 完成并提交，再基于已提交的最新 main rebase；不要将子 Agent 未提交改动复制到主工作树。
-4. 生成代码冲突时，修改 TypeSpec/SQL SSOT 后运行 `pnpm generate`；禁止手工解决 `internal/api/`、`internal/store/`、`spec/generated/`、`apps/web/src/api/generated/` 的内容冲突。
-5. 合并每个 workstream 后，在功能分支重新运行：
+   - 需要长期决策时新增/更新 ADR
+5. 每个 workstream 必须在独立分支中提交；主 Agent 审阅 diff、重跑生成与测试后再合并。
+6. 合并后必须在最新集成分支运行：
 
 ```bash
 pnpm check
@@ -125,10 +139,12 @@ pnpm check
 pnpm test
 ```
 
-6. E/F 合并后再启动 Workstream G：前端 access-token coordinator、登录/组织/安全设置/计费 UI 和真实浏览器 E2E 验证。
+7. E/F 都完成并合并后，才能开始 Workstream G：前端 access-token coordinator、认证/组织/安全设置/计费 UI，以及真实浏览器端到端验证。
 
-## 清理边界
+## 云端运行注意事项
 
-- PR 合并后，可清理已纳入 PR 的 A/B/C/D 临时 worktree 与相应已合并分支。
-- 严禁清理 `agent-a202de09c8133c81f` 与 `agent-af8348bbdda8716d2`，它们持有未提交的 E/F 工作。
-- 确认远程 `main` 已包含 PR #17 后，才可删除 `feat/identity-platform-foundation` 的远程/本地分支和 A–D/C 临时 worktree。
+- 配置使用 `.env.example` 中定义的变量；不要提交实际密钥或生产连接串。
+- 完整认证、SMTP、OAuth、WebAuthn、Stripe 验证需由云端/CI 注入测试凭据；缺少可选服务时应覆盖“disabled”配置路径。
+- Stripe 测试使用独立 test-mode key 和测试 webhook secret；不混用生产凭据。
+- WebAuthn 需要可验证的 HTTPS origin（本地开发例外按配置与浏览器规则处理）。
+- 在云端实现中不创建依赖本机路径、个人 worktree、交互式终端状态或未提交文件的文档和脚本。
