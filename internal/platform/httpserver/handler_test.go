@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -616,4 +617,106 @@ func TestBillingRouting(t *testing.T) {
 			t.Errorf("status = %d, want %d", rec.Code, http.StatusBadRequest)
 		}
 	})
+}
+
+// failingAnnouncementRepository.List returns an unexpected, non-typed error
+// (as a live Stripe API failure once did for billing) so it takes the
+// generated announcementsapi HTTPHandler's `return nil, err` fallback path,
+// exercising the shared ogen ErrorHandler installed in NewHandler.
+type failingAnnouncementRepository struct{ err error }
+
+func (r *failingAnnouncementRepository) List(context.Context, uuid.UUID, announcement.Filter) ([]announcement.Announcement, int64, error) {
+	return nil, 0, r.err
+}
+func (r *failingAnnouncementRepository) Get(context.Context, uuid.UUID, string) (announcement.Announcement, error) {
+	return announcement.Announcement{}, r.err
+}
+func (r *failingAnnouncementRepository) Create(context.Context, uuid.UUID, announcement.Input) (announcement.Announcement, error) {
+	return announcement.Announcement{}, r.err
+}
+func (r *failingAnnouncementRepository) Update(context.Context, uuid.UUID, string, announcement.Input) (announcement.Announcement, error) {
+	return announcement.Announcement{}, r.err
+}
+func (r *failingAnnouncementRepository) Delete(context.Context, uuid.UUID, string) error {
+	return r.err
+}
+
+// TestUnhandledErrorNeverLeaksRawDetail reproduces the live-walkthrough bug:
+// a handler method returning an unhandled (nil, err) for an error that is
+// not one of the operation's declared typed responses must never surface
+// err.Error() (which here stands in for internal diagnostic/vendor detail,
+// e.g. a leaked outbound URL) to the HTTP client. It must instead get the
+// platform's ApiError shape ({code, message}) with a fixed, non-diagnostic
+// message and status 500.
+func TestUnhandledErrorNeverLeaksRawDetail(t *testing.T) {
+	t.Parallel()
+
+	const leaked = "dial tcp 10.0.0.5:443: connect: outbound to https://internal-vendor.example/secret?key=topsecret failed"
+	repo := &failingAnnouncementRepository{err: errors.New(leaked)}
+	service := announcement.NewService(repo)
+
+	orgID := "a0000000-0000-0000-0000-000000000099"
+	request := httptest.NewRequest(http.MethodGet, "/api/organizations/"+orgID+"/announcements", nil)
+	recorder := httptest.NewRecorder()
+
+	newHandler(t, service, nil).ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusInternalServerError)
+	}
+
+	body := recorder.Body.String()
+	if strings.Contains(body, leaked) {
+		t.Fatalf("response body leaked raw internal error detail: %s", body)
+	}
+	if strings.Contains(body, "outbound") || strings.Contains(body, "topsecret") {
+		t.Fatalf("response body leaked internal error fragments: %s", body)
+	}
+
+	var decoded struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	}
+	if err := json.NewDecoder(recorder.Body).Decode(&decoded); err != nil {
+		t.Fatalf("decode response as ApiError shape {code, message}: %v; body = %s", err, body)
+	}
+	if decoded.Code == "" || decoded.Message == "" {
+		t.Fatalf("expected non-empty ApiError code/message, got %+v", decoded)
+	}
+	if decoded.Message == leaked {
+		t.Fatalf("ApiError.message echoed the raw internal error: %q", decoded.Message)
+	}
+}
+
+// TestSecurityHeaders asserts the global security-header middleware sets
+// its fixed headers on an ordinary response, and that HSTS is present only
+// when the request is signaled as having arrived over TLS.
+func TestSecurityHeaders(t *testing.T) {
+	t.Parallel()
+
+	request := httptest.NewRequest(http.MethodGet, "/api/healthz", nil)
+	recorder := httptest.NewRecorder()
+	newHandler(t, nil, nil).ServeHTTP(recorder, request)
+
+	header := recorder.Header()
+	for name, want := range map[string]string{
+		"X-Content-Type-Options": "nosniff",
+		"Referrer-Policy":        "strict-origin-when-cross-origin",
+		"X-Frame-Options":        "DENY",
+	} {
+		if got := header.Get(name); got != want {
+			t.Errorf("header %s = %q, want %q", name, got, want)
+		}
+	}
+	if got := header.Get("Strict-Transport-Security"); got != "" {
+		t.Errorf("Strict-Transport-Security = %q, want empty for a plain HTTP request", got)
+	}
+
+	tlsRequest := httptest.NewRequest(http.MethodGet, "/api/healthz", nil)
+	tlsRequest.Header.Set("X-Forwarded-Proto", "https")
+	tlsRecorder := httptest.NewRecorder()
+	newHandler(t, nil, nil).ServeHTTP(tlsRecorder, tlsRequest)
+	if got := tlsRecorder.Header().Get("Strict-Transport-Security"); got != "max-age=63072000; includeSubDomains" {
+		t.Errorf("Strict-Transport-Security = %q for X-Forwarded-Proto: https request, want max-age=63072000; includeSubDomains", got)
+	}
 }

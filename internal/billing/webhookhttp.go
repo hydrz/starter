@@ -3,6 +3,7 @@ package billing
 import (
 	"errors"
 	"io"
+	"net"
 	"net/http"
 )
 
@@ -18,15 +19,31 @@ const maxWebhookBodyBytes = 1 << 20 // 1 MiB, well above Stripe's typical event 
 // the opposite order from a normal decoded-JSON operation.
 type WebhookHTTPHandler struct {
 	service *Service
+	limiter *ipWindowLimiter
 }
 
 func NewWebhookHTTPHandler(service *Service) *WebhookHTTPHandler {
-	return &WebhookHTTPHandler{service: service}
+	return &WebhookHTTPHandler{
+		service: service,
+		limiter: newIPWindowLimiter(service.clock, webhookRateLimitWindow, webhookRateLimitPerWindow),
+	}
 }
 
 func (h *WebhookHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Rate limit by source IP before any body read or HMAC verification
+	// work: the endpoint is unauthenticated, so this is the only cheap
+	// signal available to bound the cost an attacker can force. 429 is a
+	// status Stripe's own retry logic treats as retryable, so a legitimate
+	// burst above the (generous) ceiling still eventually gets through on
+	// redelivery. No diagnostic detail is ever included in the response
+	// body, consistent with never leaking internal detail to a caller.
+	if !h.limiter.Allow(clientIP(r)) {
+		w.WriteHeader(http.StatusTooManyRequests)
 		return
 	}
 
@@ -50,4 +67,18 @@ func (h *WebhookHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// Stripe retries delivery; it is never swallowed as a 2xx.
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+}
+
+// clientIP extracts the request's source IP for rate-limit keying.
+// internal/platform/httpserver.NewHandler installs chi's RealIP middleware
+// globally (ahead of every route, including this one), so r.RemoteAddr is
+// already the resolved client address by the time this handler runs; only
+// the port needs stripping. A malformed RemoteAddr falls back to the raw
+// value rather than failing the request.
+func clientIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }

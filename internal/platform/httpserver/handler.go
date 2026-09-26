@@ -66,6 +66,10 @@ func NewHandler(
 	router.Use(middleware.RealIP)
 	router.Use(AccessLog(slog.Default()))
 	router.Use(middleware.Recoverer)
+	// SecurityHeaders sets baseline response headers (nosniff, referrer
+	// policy, frame denial, and conditional HSTS) on every response; see
+	// security_headers.go for why HSTS is conditional.
+	router.Use(SecurityHeaders)
 	// auth.WithHTTPContext exposes the raw request/response via context so
 	// auth.BearerTokenFromContext (used by every AuthenticationMiddleware
 	// call, not just the auth API's own routes) and the refresh-cookie
@@ -73,12 +77,18 @@ func NewHandler(
 	// tokens are silently invisible to every route outside /api/auth/*.
 	router.Use(auth.WithHTTPContext)
 
+	// errorHandler replaces every generated *api.NewServer(...)'s default
+	// error handler so an unhandled (return nil, err) fallback never
+	// serializes raw internal/vendor error text to the client; see
+	// errors.go.
+	errorHandler := NewAPIErrorHandler(slog.Default())
+
 	router.Get("/api/openapi.yaml", openAPISpecYAML)
 	router.Get("/api/openapi.json", openAPISpecJSON)
 	router.Get("/api/docs", scalarReference)
 	router.Get("/api/docs/scalar.js", scalarScript)
 
-	systemServer, err := systemapi.NewServer(&SystemHandler{readiness: readiness})
+	systemServer, err := systemapi.NewServer(&SystemHandler{readiness: readiness}, systemapi.WithErrorHandler(errorHandler))
 	if err != nil {
 		return nil, fmt.Errorf("initialize system api server: %w", err)
 	}
@@ -88,7 +98,7 @@ func NewHandler(
 	var authMiddleware func(http.Handler) http.Handler
 	if identity != nil {
 		authMiddleware = identity.AuthenticationMiddleware
-		authServer, err := authapi.NewServer(auth.NewHTTPHandler(identity))
+		authServer, err := authapi.NewServer(auth.NewHTTPHandler(identity), authapi.WithErrorHandler(errorHandler))
 		if err != nil {
 			return nil, fmt.Errorf("initialize auth api server: %w", err)
 		}
@@ -104,7 +114,7 @@ func NewHandler(
 	}
 
 	if orgs != nil {
-		orgServer, err := organizationsapi.NewServer(organization.NewHTTPHandler(orgs))
+		orgServer, err := organizationsapi.NewServer(organization.NewHTTPHandler(orgs), organizationsapi.WithErrorHandler(errorHandler))
 		if err != nil {
 			return nil, fmt.Errorf("initialize organizations api server: %w", err)
 		}
@@ -141,7 +151,7 @@ func NewHandler(
 	}
 
 	if announcements != nil {
-		announcementServer, err := announcementsapi.NewServer(announcement.NewHTTPHandler(announcements))
+		announcementServer, err := announcementsapi.NewServer(announcement.NewHTTPHandler(announcements), announcementsapi.WithErrorHandler(errorHandler))
 		if err != nil {
 			return nil, fmt.Errorf("initialize announcements api server: %w", err)
 		}
@@ -164,7 +174,7 @@ func NewHandler(
 	}
 
 	if billingService != nil {
-		billingServer, err := billingapi.NewServer(billing.NewHTTPHandler(billingService))
+		billingServer, err := billingapi.NewServer(billing.NewHTTPHandler(billingService), billingapi.WithErrorHandler(errorHandler))
 		if err != nil {
 			return nil, fmt.Errorf("initialize billing api server: %w", err)
 		}
