@@ -1,47 +1,58 @@
+import * as m from "../../paraglide/messages";
+
 export function TechStackSection() {
   const groups = [
     {
-      category: "协议与契约层",
+      category: m.landing_tech_group_contracts(),
       items: [
-        { name: "TypeSpec", role: "声明式 API 契约语言" },
-        { name: "OpenAPI 3.0", role: "业界标准接口规范" },
-        { name: "Scalar", role: "100% 离线内嵌交互式文档" },
-        { name: "ogen", role: "Go 高性能强类型契约引擎与校验器" },
-        { name: "Orval", role: "React Query Hooks 自动生成" },
+        { name: "TypeSpec", role: m.landing_tech_role_typespec() },
+        { name: "OpenAPI 3.0", role: m.landing_tech_role_openapi() },
+        { name: "Scalar", role: m.landing_tech_role_scalar() },
+        { name: "ogen", role: m.landing_tech_role_ogen() },
+        { name: "Orval", role: m.landing_tech_role_orval() },
       ],
     },
     {
-      category: "现代化前端栈",
+      category: m.landing_tech_group_frontend(),
       items: [
-        { name: "React 19", role: "最新现代化 UI 渲染引擎" },
-        { name: "TypeScript", role: "端到端全链路类型安全" },
-        { name: "TanStack Router", role: "100% 类型化文件与代码路由" },
-        { name: "TanStack Query", role: "强大的异步状态管理与缓存" },
-        { name: "Tailwind CSS v4", role: "超快下一代原子化样式引擎" },
-        { name: "shadcn/ui", role: "基于 Radix/CVA 的可复用组件" },
-        { name: "Zod & Hook Form", role: "模式驱动的前端表单校验" },
+        { name: "React 19", role: m.landing_tech_role_react() },
+        { name: "TypeScript", role: m.landing_tech_role_typescript() },
+        {
+          name: "TanStack Router",
+          role: m.landing_tech_role_tanstack_router(),
+        },
+        { name: "TanStack Query", role: m.landing_tech_role_tanstack_query() },
+        { name: "Tailwind CSS v4", role: m.landing_tech_role_tailwind() },
+        { name: "shadcn/ui", role: m.landing_tech_role_shadcn() },
+        { name: "Zod & Hook Form", role: m.landing_tech_role_zod_rhf() },
       ],
     },
     {
-      category: "Go 后端与数据层",
+      category: m.landing_tech_group_backend(),
       items: [
-        { name: "Go 1.27", role: "编译型高并发服务端运行时" },
-        { name: "Chi Router", role: "极轻量、符合标准库习惯的 HTTP 路由" },
-        { name: "PostgreSQL 17", role: "现代化关系型数据引擎" },
-        { name: "sqlc", role: "SQL 编译期验证与 Go 代码生成" },
-        { name: "pgx/v5", role: "极速高性能原生数据库驱动池" },
-        { name: "Goose", role: "显式正向版本化数据库迁移" },
+        { name: "Go 1.27", role: m.landing_tech_role_go() },
+        { name: "Chi Router", role: m.landing_tech_role_chi() },
+        { name: "PostgreSQL 17", role: m.landing_tech_role_postgres() },
+        { name: "sqlc", role: m.landing_tech_role_sqlc() },
+        { name: "pgx/v5", role: m.landing_tech_role_pgx() },
+        { name: "Goose", role: m.landing_tech_role_goose() },
       ],
     },
     {
-      category: "工程基线与交付",
+      category: m.landing_tech_group_delivery(),
       items: [
-        { name: "Go embed", role: "前端静态产物完全嵌入单二进制" },
-        { name: "Docker Compose", role: "开箱即用的一键本地环境" },
-        { name: "pnpm Workspaces", role: "高性能 Monorepo 依赖管理" },
-        { name: "Vitest & Testify", role: "前后端单元与集成测试套件" },
-        { name: "GitHub Actions", role: "严格的分支保护与自动化流水线" },
-        { name: "Dependabot", role: "每周依赖安全与小版本自动更新" },
+        { name: "Go embed", role: m.landing_tech_role_go_embed() },
+        {
+          name: "Docker Compose",
+          role: m.landing_tech_role_docker_compose(),
+        },
+        {
+          name: "pnpm Workspaces",
+          role: m.landing_tech_role_pnpm_workspaces(),
+        },
+        { name: "Vitest & Testify", role: m.landing_tech_role_vitest() },
+        { name: "GitHub Actions", role: m.landing_tech_role_actions() },
+        { name: "Dependabot", role: m.landing_tech_role_dependabot() },
       ],
     },
   ];
@@ -51,13 +62,13 @@ export function TechStackSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <span className="text-xs font-semibold uppercase tracking-wider text-accent-foreground dark:text-accent">
-            MODERN TECH STACK
+            {m.landing_tech_eyebrow()}
           </span>
           <h2 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            精心甄选的现代化全栈技术选型
+            {m.landing_tech_title()}
           </h2>
           <p className="mt-3 text-base text-muted-foreground">
-            拒绝过度工程，聚焦于开发者生产力（DX）、长期可维护性与交付确定性。
+            {m.landing_tech_subtitle()}
           </p>
         </div>
 
