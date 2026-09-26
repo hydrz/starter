@@ -121,12 +121,12 @@ func TestVerifyRejectsTamperedSignature(t *testing.T) {
 	}
 
 	parts := strings.Split(token, ".")
-	// Flip the last character of the signature segment.
+	// Flip the first character of the signature segment.
 	sig := []byte(parts[2])
-	if sig[len(sig)-1] == 'A' {
-		sig[len(sig)-1] = 'B'
+	if sig[0] == 'A' {
+		sig[0] = 'B'
 	} else {
-		sig[len(sig)-1] = 'A'
+		sig[0] = 'A'
 	}
 	tampered := parts[0] + "." + parts[1] + "." + string(sig)
 

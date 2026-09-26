@@ -55,3 +55,14 @@ WHERE id = $1 AND status = 'claimed';
 SELECT id, notification_intent_id, outbox_event_id, channel, recipient, subject, text_body, html_body, idempotency_key, created_at
 FROM delivery_messages
 WHERE outbox_event_id = $1;
+
+-- name: GetOutboxEventByID :one
+SELECT id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, last_error, created_at
+FROM outbox_events
+WHERE id = $1;
+
+-- name: ListDeliveryAttemptsByMessage :many
+SELECT id, delivery_message_id, attempt_number, status, provider_response, error_message, started_at, completed_at
+FROM delivery_attempts
+WHERE delivery_message_id = $1
+ORDER BY attempt_number ASC;

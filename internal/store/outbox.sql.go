@@ -260,6 +260,69 @@ func (q *Queries) GetDeliveryMessageByOutboxEvent(ctx context.Context, outboxEve
 	return i, err
 }
 
+const getOutboxEventByID = `-- name: GetOutboxEventByID :one
+SELECT id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, last_error, created_at
+FROM outbox_events
+WHERE id = $1
+`
+
+func (q *Queries) GetOutboxEventByID(ctx context.Context, id pgtype.UUID) (OutboxEvent, error) {
+	row := q.db.QueryRow(ctx, getOutboxEventByID, id)
+	var i OutboxEvent
+	err := row.Scan(
+		&i.ID,
+		&i.Topic,
+		&i.AggregateType,
+		&i.AggregateID,
+		&i.Payload,
+		&i.IdempotencyKey,
+		&i.AvailableAt,
+		&i.ClaimedAt,
+		&i.ClaimToken,
+		&i.Attempts,
+		&i.ProcessedAt,
+		&i.LastError,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const listDeliveryAttemptsByMessage = `-- name: ListDeliveryAttemptsByMessage :many
+SELECT id, delivery_message_id, attempt_number, status, provider_response, error_message, started_at, completed_at
+FROM delivery_attempts
+WHERE delivery_message_id = $1
+ORDER BY attempt_number ASC
+`
+
+func (q *Queries) ListDeliveryAttemptsByMessage(ctx context.Context, deliveryMessageID pgtype.UUID) ([]DeliveryAttempt, error) {
+	rows, err := q.db.Query(ctx, listDeliveryAttemptsByMessage, deliveryMessageID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DeliveryAttempt{}
+	for rows.Next() {
+		var i DeliveryAttempt
+		if err := rows.Scan(
+			&i.ID,
+			&i.DeliveryMessageID,
+			&i.AttemptNumber,
+			&i.Status,
+			&i.ProviderResponse,
+			&i.ErrorMessage,
+			&i.StartedAt,
+			&i.CompletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const markOutboxEventProcessed = `-- name: MarkOutboxEventProcessed :execrows
 UPDATE outbox_events
 SET processed_at = now(), claimed_at = NULL, claim_token = NULL, last_error = NULL

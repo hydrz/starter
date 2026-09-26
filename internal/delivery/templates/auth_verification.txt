@@ -1,0 +1,16 @@
+Hello,
+
+Thank you for signing up for {{.AppName}}. Please verify your email address to activate your account.
+
+Your verification code is:
+{{.Token}}
+{{if .ActionURL}}
+Alternatively, you can verify your email by clicking the following link:
+{{.ActionURL}}
+{{end}}
+This code will expire in {{.ExpiresIn}}.
+
+If you did not create an account with {{.AppName}}, please disregard this email.
+
+Best regards,
+The {{.AppName}} Team

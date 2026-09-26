@@ -20,7 +20,7 @@
 | A — Foundation, governance, configuration, shared infrastructure | Platform Architecture | In progress | Integrated | 主 Agent 已复核并合入；后续工作流只通过公开 config/TypeSpec 边界接入 | 配置加载器、通用错误响应、ADR、架构/契约图谱 |
 | B — Identity and sessions | Identity | Planned | Ready for integration | A 已就绪；认证契约和 schema 评审 | 账户、会话、JWT access/opaque refresh 实现 |
 | C — Organizations and authorization | Authorization | Planned | Planned | B account identity 稳定；三段授权输入评审 | 组织、成员关系、Casbin model/policy/adapters |
-| D — Delivery and outbox | Messaging | Planned | Planned | A 已就绪；通知 intent 和事务边界评审 | outbox、worker、SMTP delivery adapter |
+| D — Delivery and outbox | Messaging | Planned | Ready for integration | A/B 已就绪；通知 intent 和 outbox claim 评审 | outbox worker、channel 抽象、SMTP 适配器、邮件模板与通知路由 |
 | E — Stripe and entitlements | Billing | Planned | Planned | C 授权边界确认；webhook 安全评审 | Stripe projection、订阅、entitlement |
 | F — Product UI | Product Web | Planned | Planned | B/C 生成的公开契约与授权语义稳定 | Orval client usage、账户/组织界面 |
 
@@ -46,6 +46,16 @@
 - Public HTTP surface lives at `packages/contracts/features/auth/{models,routes,auth}.tsp`, imported from `main.tsp`, compiled only through `pnpm generate`; all operations are mounted at `/api/auth/*` (`internal/platform/httpserver/handler.go`), reusing A's common `ApiError`/`UnauthorizedResponse`/`ConflictResponse`/`TooManyRequestsResponse` models.
 - `httpserver.NewHandler` gained a third, optional `*auth.Service` parameter; when nil (auth disabled), no `/api/auth/*` route is registered and existing health/docs/announcements behavior is unchanged. `auth.AuthenticationMiddleware` only resolves an optional bearer principal into context for the auth handler's own operations (e.g. `GetCurrentIdentity`, session/API-key management); it does not protect any other route, per the integration gate reserving global authorization middleware for workstream C.
 - `apps/server/main.go` keeps A's config-driven `cfg.Address`/`cfg.DatabaseURL`/`cfg.AutoMigrate` startup logic unchanged and adds only identity-service wiring: when `cfg.Auth.Enabled`, it builds `auth.Service` via `buildIdentityService` and passes it into `apphttp.NewHandler`. `config.AuthConfig` gained one additional required field, `SecretDigestPepper` (env `AUTH_SECRET_PEPPER`), joining the existing all-or-none auth group; it is independent, high-entropy secret material unrelated to `SigningPrivateKey`, used only to key `auth.SecretDigester`.
+
+## D 的接口决策
+
+- New package `internal/delivery` provides the outbox worker (`delivery.Worker`), delivery channel abstraction (`delivery.Channel`, `delivery.Message`), standard SMTP adapter (`delivery.SMTPChannel`, `delivery.NoopChannel`), and dual-mode template rendering engine (`delivery.TemplateRenderer`).
+- Outbox processor (`delivery.Worker`) periodically claims batches of due events (`available_at <= now() AND processed_at IS NULL AND (claimed_at IS NULL OR claimed_at < now() - timeout)`) using PostgreSQL `SELECT ... FOR UPDATE SKIP LOCKED` (`ClaimOutboxEvents`), parameterized by `config.WorkerConfig.BatchSize` (default 50), `config.WorkerConfig.PollInterval` (default 1s), and `ClaimTimeout` (default 5m). Shutdown is gracefully coordinated via `context.Context`.
+- SMTP channel (`delivery.SMTPChannel`) supports standard SMTP, Resend, and Cloudflare Email Routing with proper TLS/STARTTLS handling (direct TLS on port 465, STARTTLS upgrade on port 587, PLAIN authentication, and RFC 2822/5322 MIME `multipart/alternative` formatting with UTF-8 text and HTML). `delivery.NoopChannel` allows development and testing without SMTP credentials.
+- Dual-mode email templates for `auth.verification_requested` and `auth.password_reset_requested` use standard library `html/template` and `text/template` embedded via `embed.FS` (`internal/delivery/templates/`).
+- Domain package `internal/notification` provides `Service` implementing `delivery.Handler`. When `auth.verification_requested` or `auth.password_reset_requested` outbox events are claimed, it translates them into `notification_intents`, renders dual-mode templates, persists `delivery_messages` with channel `smtp` and unique idempotency key (`outbox:<event-id>:smtp`), and records `delivery_attempts`.
+- On delivery success, records attempt status `sent` with provider response and marks outbox event processed (`MarkOutboxEventProcessed`). On delivery failure, records attempt status `failed` with error message, computes exponential backoff (`CalculateBackoff`), and schedules retry (`RetryOutboxEvent`).
+- `apps/server/main.go` wires `delivery.Worker` in the background when `cfg.Worker.Enabled || cfg.SMTP.Enabled`, stopping cleanly on SIGTERM/SIGINT within the shutdown timeout.
 
 ## Verification evidence
 
@@ -90,6 +100,21 @@
 | 2026-09-26 | B (review fix) | `go build ./... && go vet ./... && go test ./...` | Passed after the rebase and pepper-config fix. |
 | 2026-09-26 | B (review fix) | `pnpm check:format` | Passed. |
 | 2026-09-26 | B (review fix) | `git diff --check` | Passed. |
+| 2026-09-26 | D | `pnpm install --frozen-lockfile` | Passed; installed dependencies for TypeSpec / contract tools in this worktree. |
+| 2026-09-26 | D | `pnpm generate` | Passed; compiled contracts, generated server/web/sqlc queries including new outbox helper queries. |
+| 2026-09-26 | D | `go build ./...` | Passed. |
+| 2026-09-26 | D | `go vet ./...` | Passed. |
+| 2026-09-26 | D | `go test -v ./internal/delivery` | Passed; 15 unit tests covering dual-mode MIME message construction, text-only MIME, non-ASCII header encoding, noop channel, mock SMTP server with plain auth and recipient rejection, HTML/text template rendering, HTML escaping, and outbox worker lifecycle, batching, error continuation, and context cancellation. |
+| 2026-09-26 | D | `go test -v ./internal/notification` | Passed; 8 unit tests covering verification intent and message generation, password reset message generation, failure attempt tracking and exponential backoff retry scheduling, idempotency with pre-existing delivery messages, backoff calculation, and unknown topic/channel error handling. |
+| 2026-09-26 | D | `go test -count=1 ./...` | Passed across all packages in repository. |
+| 2026-09-26 | D | `pnpm check:format` | Passed (gofmt, TypeSpec format, Prettier). |
+| 2026-09-26 | D | `pnpm check:docs` | Passed for 40 Markdown files. |
+| 2026-09-26 | D | `pnpm check:skills` | Passed for 5 skills. |
+| 2026-09-26 | D | `pnpm check:actions` | Passed (actionlint). |
+| 2026-09-26 | D | `pnpm check:go` | Passed (go vet). |
+| 2026-09-26 | D | `pnpm check:sql` | Passed (sqlc vet). |
+| 2026-09-26 | D | `pnpm check:web` | Passed (eslint and tsc). |
+| 2026-09-26 | D | `git diff --check` | Passed. |
 
 ## Integration checklist for later owners
 

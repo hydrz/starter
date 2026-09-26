@@ -18,6 +18,8 @@ import (
 	databaseMigrations "github.com/hydrz/starter/db"
 	"github.com/hydrz/starter/internal/announcement"
 	"github.com/hydrz/starter/internal/auth"
+	"github.com/hydrz/starter/internal/delivery"
+	"github.com/hydrz/starter/internal/notification"
 	"github.com/hydrz/starter/internal/platform/config"
 	"github.com/hydrz/starter/internal/platform/database"
 	apphttp "github.com/hydrz/starter/internal/platform/httpserver"
@@ -92,6 +94,19 @@ func main() {
 		}
 	}
 
+	var outboxWorker *delivery.Worker
+	if cfg.Worker.Enabled || cfg.SMTP.Enabled {
+		outboxWorker, err = buildOutboxWorker(cfg, store.New(pool), logger)
+		if err != nil {
+			logger.Error("outbox worker initialization failed", "error", err)
+			os.Exit(1)
+		}
+		if err := outboxWorker.Start(ctx); err != nil {
+			logger.Error("outbox worker start failed", "error", err)
+			os.Exit(1)
+		}
+	}
+
 	handler, err := apphttp.NewHandler(announcementService, pool, identityService)
 	if err != nil {
 		logger.Error("http handler initialization failed", "error", err)
@@ -121,6 +136,14 @@ func main() {
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
+
+	if outboxWorker != nil {
+		if err := outboxWorker.Stop(shutdownCtx); err != nil {
+			logger.Error("outbox worker graceful shutdown failed", "error", err)
+		} else {
+			logger.Info("outbox worker stopped")
+		}
+	}
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.Error("graceful shutdown failed", "error", err)
@@ -178,4 +201,41 @@ func buildIdentityService(authConfig config.AuthConfig, queries *store.Queries, 
 		AccessTokenTTL:  authConfig.AccessTokenTTL,
 		RefreshTokenTTL: authConfig.RefreshTokenTTL,
 	})
+}
+
+// buildOutboxWorker wires internal/delivery.Worker with an embedded template renderer,
+// an SMTP (or noop) delivery channel, and the notification routing service.
+func buildOutboxWorker(cfg config.Config, queries *store.Queries, logger *slog.Logger) (*delivery.Worker, error) {
+	renderer, err := delivery.NewTemplateRenderer("Starter")
+	if err != nil {
+		return nil, fmt.Errorf("create template renderer: %w", err)
+	}
+
+	channels := make(map[string]delivery.Channel)
+	if cfg.SMTP.Enabled {
+		channels[notification.ChannelSMTP] = delivery.NewSMTPChannel(cfg.SMTP)
+	} else {
+		channels[notification.ChannelSMTP] = delivery.NewNoopChannel("smtp-noop", logger)
+	}
+
+	notificationRepo := notification.NewPostgresRepository(queries)
+	notificationService, err := notification.NewService(notification.Dependencies{
+		Repository: notificationRepo,
+		Renderer:   renderer,
+		Channels:   channels,
+		Clock:      notification.SystemClock{},
+		Logger:     logger,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create notification service: %w", err)
+	}
+
+	claimer := delivery.NewPostgresClaimer(queries)
+	worker := delivery.NewWorker(claimer, notificationService, delivery.WorkerOptions{
+		PollInterval: cfg.Worker.PollInterval,
+		BatchSize:    cfg.Worker.BatchSize,
+		Logger:       logger,
+	})
+
+	return worker, nil
 }
