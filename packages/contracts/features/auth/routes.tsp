@@ -27,6 +27,7 @@ interface Auth {
   @summary("Sign in with email and password")
   passwordSignIn(@TypeSpec.Http.body input: PasswordSignInInput):
     | AccessTokenResponse
+    | MFAChallengeResponse
     | BadRequestResponse
     | UnauthorizedResponse
     | TooManyRequestsResponse;
@@ -123,4 +124,131 @@ interface Auth {
     | NoContentResponse
     | UnauthorizedResponse
     | NotFoundResponse;
+
+  @TypeSpec.Http.post
+  @TypeSpec.Http.route("/otp/request")
+  @operationId("requestEmailOTP")
+  @summary("Request an email one-time sign-in code")
+  requestEmailOTP(@TypeSpec.Http.body input: EmailOTPRequestInput):
+    | NoContentResponse
+    | BadRequestResponse
+    | TooManyRequestsResponse;
+
+  @TypeSpec.Http.post
+  @TypeSpec.Http.route("/otp/verify")
+  @operationId("verifyEmailOTP")
+  @summary("Verify an email one-time sign-in code and complete sign-in")
+  verifyEmailOTP(@TypeSpec.Http.body input: EmailOTPVerifyInput):
+    | AccessTokenResponse
+    | MFAChallengeResponse
+    | BadRequestResponse
+    | UnauthorizedResponse;
+
+  @TypeSpec.Http.post
+  @TypeSpec.Http.route("/mfa/totp/enroll/begin")
+  @operationId("beginTOTPEnrollment")
+  @summary("Begin enrolling a TOTP authenticator app")
+  beginTOTPEnrollment(): TOTPEnrollmentBeginResponse | UnauthorizedResponse;
+
+  @TypeSpec.Http.post
+  @TypeSpec.Http.route("/mfa/totp/enroll/confirm")
+  @operationId("confirmTOTPEnrollment")
+  @summary("Confirm a TOTP enrollment and receive recovery codes once")
+  confirmTOTPEnrollment(@TypeSpec.Http.body input: TOTPEnrollmentConfirmInput):
+    | TOTPEnrollmentConfirmResponse
+    | BadRequestResponse
+    | UnauthorizedResponse;
+
+  @TypeSpec.Http.post
+  @TypeSpec.Http.route("/mfa/challenge/verify")
+  @operationId("verifyMFAChallenge")
+  @summary("Complete sign-in with a TOTP or recovery code")
+  verifyMFAChallenge(@TypeSpec.Http.body input: MFAChallengeVerifyInput):
+    | AccessTokenResponse
+    | BadRequestResponse
+    | UnauthorizedResponse;
+
+  @TypeSpec.Http.post
+  @TypeSpec.Http.route("/oauth/{provider}/begin")
+  @operationId("beginOAuthSignIn")
+  @summary("Begin an OAuth sign-in with Google or GitHub")
+  beginOAuthSignIn(@TypeSpec.Http.path provider: OAuthProvider):
+    | OAuthAuthorizationResponse
+    | BadRequestResponse;
+
+  @TypeSpec.Http.post
+  @TypeSpec.Http.route("/oauth/{provider}/callback")
+  @operationId("completeOAuthSignIn")
+  @summary("Complete an OAuth sign-in callback")
+  completeOAuthSignIn(
+    @TypeSpec.Http.path provider: OAuthProvider,
+    @TypeSpec.Http.body input: OAuthCallbackInput,
+  ):
+    | AccessTokenResponse
+    | MFAChallengeResponse
+    | BadRequestResponse
+    | UnauthorizedResponse;
+
+  @TypeSpec.Http.post
+  @TypeSpec.Http.route("/oauth/{provider}/link/begin")
+  @operationId("beginOAuthLink")
+  @summary("Begin linking an OAuth provider to the current, recently-authenticated account")
+  beginOAuthLink(@TypeSpec.Http.path provider: OAuthProvider):
+    | OAuthAuthorizationResponse
+    | BadRequestResponse
+    | UnauthorizedResponse
+    | ForbiddenResponse;
+
+  @TypeSpec.Http.post
+  @TypeSpec.Http.route("/oauth/{provider}/link/callback")
+  @operationId("completeOAuthLink")
+  @summary("Complete linking an OAuth provider callback")
+  completeOAuthLink(
+    @TypeSpec.Http.path provider: OAuthProvider,
+    @TypeSpec.Http.body input: OAuthCallbackInput,
+  ):
+    | NoContentResponse
+    | BadRequestResponse
+    | UnauthorizedResponse
+    | ConflictResponse;
+
+  @TypeSpec.Http.get
+  @TypeSpec.Http.route("/oauth/accounts")
+  @operationId("listOAuthAccounts")
+  @summary("List OAuth providers linked to the current account")
+  listOAuthAccounts(): OAuthAccount[] | UnauthorizedResponse;
+
+  @TypeSpec.Http.post
+  @TypeSpec.Http.route("/webauthn/registration/begin")
+  @operationId("beginWebAuthnRegistration")
+  @summary("Begin registering a passkey for the current account")
+  beginWebAuthnRegistration():
+    | WebAuthnRegistrationBeginResponse
+    | UnauthorizedResponse;
+
+  @TypeSpec.Http.post
+  @TypeSpec.Http.route("/webauthn/registration/finish")
+  @operationId("finishWebAuthnRegistration")
+  @summary("Finish registering a passkey for the current account")
+  finishWebAuthnRegistration(
+    @TypeSpec.Http.body input: WebAuthnRegistrationFinishInput,
+  ): NoContentResponse | BadRequestResponse | UnauthorizedResponse;
+
+  @TypeSpec.Http.post
+  @TypeSpec.Http.route("/webauthn/authentication/begin")
+  @operationId("beginWebAuthnAuthentication")
+  @summary("Begin a discoverable (usernameless) passkey sign-in")
+  beginWebAuthnAuthentication(): WebAuthnAuthenticationBeginResponse;
+
+  @TypeSpec.Http.post
+  @TypeSpec.Http.route("/webauthn/authentication/finish")
+  @operationId("finishWebAuthnAuthentication")
+  @summary("Finish a passkey sign-in and complete sign-in")
+  finishWebAuthnAuthentication(
+    @TypeSpec.Http.body input: WebAuthnAuthenticationFinishInput,
+  ):
+    | AccessTokenResponse
+    | MFAChallengeResponse
+    | BadRequestResponse
+    | UnauthorizedResponse;
 }

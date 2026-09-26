@@ -102,6 +102,7 @@ func TestLoadEnablesAndValidatesOptionalGroups(t *testing.T) {
 		authAccessTokenTTLEnv:        "20m",
 		authRefreshTokenTTLEnv:       "720h",
 		authSecretPepperEnv:          "at-least-sixteen-bytes-of-entropy",
+		authTOTPEncryptionKeyEnv:     encodeBase64URL(make([]byte, totpEncryptionKeyLength)),
 		"OAUTH_GOOGLE_CLIENT_ID":     "google-client",
 		"OAUTH_GOOGLE_CLIENT_SECRET": "google-secret",
 		"OAUTH_GOOGLE_REDIRECT_URL":  "https://app.example.test/api/auth/google/callback",
@@ -247,6 +248,7 @@ func validAuthEnvironment(t *testing.T, privateKey ed25519.PrivateKey, publicKey
 		authAccessTokenTTLEnv:     "15m",
 		authRefreshTokenTTLEnv:    "720h",
 		authSecretPepperEnv:       "at-least-sixteen-bytes-of-entropy",
+		authTOTPEncryptionKeyEnv:  encodeBase64URL(make([]byte, totpEncryptionKeyLength)),
 	}
 }
 

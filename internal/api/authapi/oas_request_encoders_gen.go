@@ -10,6 +10,34 @@ import (
 	ht "github.com/ogen-go/ogen/http"
 )
 
+func encodeCompleteOAuthLinkRequest(
+	req *OAuthCallbackInput,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCompleteOAuthSignInRequest(
+	req *OAuthCallbackInput,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeConfirmEmailVerificationRequest(
 	req *VerificationConfirmInput,
 	r *http.Request,
@@ -38,6 +66,20 @@ func encodeConfirmPasswordResetRequest(
 	return nil
 }
 
+func encodeConfirmTOTPEnrollmentRequest(
+	req *TOTPEnrollmentConfirmInput,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateAPIKeyRequest(
 	req *APIKeyCreateInput,
 	r *http.Request,
@@ -52,8 +94,50 @@ func encodeCreateAPIKeyRequest(
 	return nil
 }
 
+func encodeFinishWebAuthnAuthenticationRequest(
+	req *WebAuthnAuthenticationFinishInput,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeFinishWebAuthnRegistrationRequest(
+	req *WebAuthnRegistrationFinishInput,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodePasswordSignInRequest(
 	req *PasswordSignInInput,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeRequestEmailOTPRequest(
+	req *EmailOTPRequestInput,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -96,6 +180,34 @@ func encodeRequestPasswordResetRequest(
 
 func encodeSignUpRequest(
 	req *SignUpInput,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeVerifyEmailOTPRequest(
+	req *EmailOTPVerifyInput,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeVerifyMFAChallengeRequest(
+	req *MFAChallengeVerifyInput,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

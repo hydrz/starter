@@ -15,6 +15,298 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
+// BeginOAuthLinkParams is parameters of beginOAuthLink operation.
+type BeginOAuthLinkParams struct {
+	Provider OAuthProvider
+}
+
+func unpackBeginOAuthLinkParams(packed middleware.Parameters) (params BeginOAuthLinkParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "provider",
+			In:   "path",
+		}
+		params.Provider = packed[key].(OAuthProvider)
+	}
+	return params
+}
+
+func decodeBeginOAuthLinkParams(args [1]string, argsEscaped bool, r *http.Request) (params BeginOAuthLinkParams, _ error) {
+	// Decode path: provider.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "provider",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Provider = OAuthProvider(c)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.Provider.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "provider",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// BeginOAuthSignInParams is parameters of beginOAuthSignIn operation.
+type BeginOAuthSignInParams struct {
+	Provider OAuthProvider
+}
+
+func unpackBeginOAuthSignInParams(packed middleware.Parameters) (params BeginOAuthSignInParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "provider",
+			In:   "path",
+		}
+		params.Provider = packed[key].(OAuthProvider)
+	}
+	return params
+}
+
+func decodeBeginOAuthSignInParams(args [1]string, argsEscaped bool, r *http.Request) (params BeginOAuthSignInParams, _ error) {
+	// Decode path: provider.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "provider",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Provider = OAuthProvider(c)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.Provider.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "provider",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CompleteOAuthLinkParams is parameters of completeOAuthLink operation.
+type CompleteOAuthLinkParams struct {
+	Provider OAuthProvider
+}
+
+func unpackCompleteOAuthLinkParams(packed middleware.Parameters) (params CompleteOAuthLinkParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "provider",
+			In:   "path",
+		}
+		params.Provider = packed[key].(OAuthProvider)
+	}
+	return params
+}
+
+func decodeCompleteOAuthLinkParams(args [1]string, argsEscaped bool, r *http.Request) (params CompleteOAuthLinkParams, _ error) {
+	// Decode path: provider.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "provider",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Provider = OAuthProvider(c)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.Provider.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "provider",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CompleteOAuthSignInParams is parameters of completeOAuthSignIn operation.
+type CompleteOAuthSignInParams struct {
+	Provider OAuthProvider
+}
+
+func unpackCompleteOAuthSignInParams(packed middleware.Parameters) (params CompleteOAuthSignInParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "provider",
+			In:   "path",
+		}
+		params.Provider = packed[key].(OAuthProvider)
+	}
+	return params
+}
+
+func decodeCompleteOAuthSignInParams(args [1]string, argsEscaped bool, r *http.Request) (params CompleteOAuthSignInParams, _ error) {
+	// Decode path: provider.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "provider",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Provider = OAuthProvider(c)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.Provider.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "provider",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // RevokeAPIKeyParams is parameters of revokeAPIKey operation.
 type RevokeAPIKeyParams struct {
 	ID uuid.UUID

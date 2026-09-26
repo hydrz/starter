@@ -29,13 +29,28 @@ import type {
   AccessTokenResponse,
   ApiError,
   CreatedAPIKey,
+  EmailOTPRequestInput,
+  EmailOTPVerifyInput,
   Identity,
+  MFAChallengeBody,
+  MFAChallengeVerifyInput,
+  OAuthAccount,
+  OAuthAuthorizationResponse,
+  OAuthCallbackInput,
+  OAuthProvider,
   PasswordResetConfirmInput,
   PasswordSignInInput,
   Session,
   SignUpInput,
+  TOTPEnrollmentBeginResponse,
+  TOTPEnrollmentConfirmInput,
+  TOTPEnrollmentConfirmResponse,
   VerificationConfirmInput,
-  VerificationRequestInput
+  VerificationRequestInput,
+  WebAuthnAuthenticationBeginResponse,
+  WebAuthnAuthenticationFinishInput,
+  WebAuthnRegistrationBeginResponse,
+  WebAuthnRegistrationFinishInput
 } from '../model';
 
 import { customClient } from '../../client';
@@ -506,7 +521,1095 @@ export function useGetCurrentIdentity<TData = Awaited<ReturnType<typeof getCurre
 
 
 
-export type confirmPasswordResetResponse204 = {
+export type verifyMFAChallengeResponse200 = {
+  data: AccessTokenResponse
+  status: 200
+}
+
+export type verifyMFAChallengeResponse400 = {
+  data: ApiError
+  status: 400
+}
+
+export type verifyMFAChallengeResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type verifyMFAChallengeResponseSuccess = (verifyMFAChallengeResponse200) & {
+  headers: Headers;
+};
+export type verifyMFAChallengeResponseError = (verifyMFAChallengeResponse400 | verifyMFAChallengeResponse401) & {
+  headers: Headers;
+};
+
+export type verifyMFAChallengeResponse = (verifyMFAChallengeResponseSuccess | verifyMFAChallengeResponseError)
+
+export const getVerifyMFAChallengeUrl = () => {
+
+
+
+
+  return `/api/auth/mfa/challenge/verify`
+}
+
+/**
+ * @summary Complete sign-in with a TOTP or recovery code
+ */
+export const verifyMFAChallenge = async (mFAChallengeVerifyInput: MFAChallengeVerifyInput, options?: Parameters<typeof customClient>[1]): Promise<verifyMFAChallengeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customClient<verifyMFAChallengeResponse>(getVerifyMFAChallengeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mFAChallengeVerifyInput)
+  }
+);}
+
+
+
+
+
+export const getVerifyMFAChallengeMutationKey = () => ['verifyMFAChallenge'] as const;
+
+export const getVerifyMFAChallengeMutationOptions = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyMFAChallenge>>, TError,VerifyMFAChallengeMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyMFAChallenge>>, TError,VerifyMFAChallengeMutationVariables, TContext> => {
+
+const mutationKey = getVerifyMFAChallengeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyMFAChallenge>>, VerifyMFAChallengeMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyMFAChallenge(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyMFAChallengeMutationResult = NonNullable<Awaited<ReturnType<typeof verifyMFAChallenge>>>
+    export type VerifyMFAChallengeMutationBody = MFAChallengeVerifyInput
+    export type VerifyMFAChallengeMutationError = ApiError
+    export type VerifyMFAChallengeMutationVariables = {data: MFAChallengeVerifyInput}
+
+    /**
+ * @summary Complete sign-in with a TOTP or recovery code
+ */
+export const useVerifyMFAChallenge = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyMFAChallenge>>, TError,VerifyMFAChallengeMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof verifyMFAChallenge>>,
+        TError,
+        VerifyMFAChallengeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getVerifyMFAChallengeMutationOptions(options), queryClient);
+    }
+    export type beginTOTPEnrollmentResponse200 = {
+  data: TOTPEnrollmentBeginResponse
+  status: 200
+}
+
+export type beginTOTPEnrollmentResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type beginTOTPEnrollmentResponseSuccess = (beginTOTPEnrollmentResponse200) & {
+  headers: Headers;
+};
+export type beginTOTPEnrollmentResponseError = (beginTOTPEnrollmentResponse401) & {
+  headers: Headers;
+};
+
+export type beginTOTPEnrollmentResponse = (beginTOTPEnrollmentResponseSuccess | beginTOTPEnrollmentResponseError)
+
+export const getBeginTOTPEnrollmentUrl = () => {
+
+
+
+
+  return `/api/auth/mfa/totp/enroll/begin`
+}
+
+/**
+ * @summary Begin enrolling a TOTP authenticator app
+ */
+export const beginTOTPEnrollment = async ( options?: Parameters<typeof customClient>[1]): Promise<beginTOTPEnrollmentResponse> => {
+
+  return customClient<beginTOTPEnrollmentResponse>(getBeginTOTPEnrollmentUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getBeginTOTPEnrollmentMutationKey = () => ['beginTOTPEnrollment'] as const;
+
+export const getBeginTOTPEnrollmentMutationOptions = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginTOTPEnrollment>>, TError,void, TContext>, request?: SecondParameter<typeof customClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof beginTOTPEnrollment>>, TError,void, TContext> => {
+
+const mutationKey = getBeginTOTPEnrollmentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof beginTOTPEnrollment>>, void> = () => {
+
+
+          return  beginTOTPEnrollment(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BeginTOTPEnrollmentMutationResult = NonNullable<Awaited<ReturnType<typeof beginTOTPEnrollment>>>
+
+    export type BeginTOTPEnrollmentMutationError = ApiError
+
+
+    /**
+ * @summary Begin enrolling a TOTP authenticator app
+ */
+export const useBeginTOTPEnrollment = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginTOTPEnrollment>>, TError,void, TContext>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof beginTOTPEnrollment>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getBeginTOTPEnrollmentMutationOptions(options), queryClient);
+    }
+    export type confirmTOTPEnrollmentResponse200 = {
+  data: TOTPEnrollmentConfirmResponse
+  status: 200
+}
+
+export type confirmTOTPEnrollmentResponse400 = {
+  data: ApiError
+  status: 400
+}
+
+export type confirmTOTPEnrollmentResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type confirmTOTPEnrollmentResponseSuccess = (confirmTOTPEnrollmentResponse200) & {
+  headers: Headers;
+};
+export type confirmTOTPEnrollmentResponseError = (confirmTOTPEnrollmentResponse400 | confirmTOTPEnrollmentResponse401) & {
+  headers: Headers;
+};
+
+export type confirmTOTPEnrollmentResponse = (confirmTOTPEnrollmentResponseSuccess | confirmTOTPEnrollmentResponseError)
+
+export const getConfirmTOTPEnrollmentUrl = () => {
+
+
+
+
+  return `/api/auth/mfa/totp/enroll/confirm`
+}
+
+/**
+ * @summary Confirm a TOTP enrollment and receive recovery codes once
+ */
+export const confirmTOTPEnrollment = async (tOTPEnrollmentConfirmInput: TOTPEnrollmentConfirmInput, options?: Parameters<typeof customClient>[1]): Promise<confirmTOTPEnrollmentResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customClient<confirmTOTPEnrollmentResponse>(getConfirmTOTPEnrollmentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(tOTPEnrollmentConfirmInput)
+  }
+);}
+
+
+
+
+
+export const getConfirmTOTPEnrollmentMutationKey = () => ['confirmTOTPEnrollment'] as const;
+
+export const getConfirmTOTPEnrollmentMutationOptions = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmTOTPEnrollment>>, TError,ConfirmTOTPEnrollmentMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmTOTPEnrollment>>, TError,ConfirmTOTPEnrollmentMutationVariables, TContext> => {
+
+const mutationKey = getConfirmTOTPEnrollmentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmTOTPEnrollment>>, ConfirmTOTPEnrollmentMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmTOTPEnrollment(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmTOTPEnrollmentMutationResult = NonNullable<Awaited<ReturnType<typeof confirmTOTPEnrollment>>>
+    export type ConfirmTOTPEnrollmentMutationBody = TOTPEnrollmentConfirmInput
+    export type ConfirmTOTPEnrollmentMutationError = ApiError
+    export type ConfirmTOTPEnrollmentMutationVariables = {data: TOTPEnrollmentConfirmInput}
+
+    /**
+ * @summary Confirm a TOTP enrollment and receive recovery codes once
+ */
+export const useConfirmTOTPEnrollment = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmTOTPEnrollment>>, TError,ConfirmTOTPEnrollmentMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof confirmTOTPEnrollment>>,
+        TError,
+        ConfirmTOTPEnrollmentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConfirmTOTPEnrollmentMutationOptions(options), queryClient);
+    }
+    export type listOAuthAccountsResponse200 = {
+  data: OAuthAccount[]
+  status: 200
+}
+
+export type listOAuthAccountsResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type listOAuthAccountsResponseSuccess = (listOAuthAccountsResponse200) & {
+  headers: Headers;
+};
+export type listOAuthAccountsResponseError = (listOAuthAccountsResponse401) & {
+  headers: Headers;
+};
+
+export type listOAuthAccountsResponse = (listOAuthAccountsResponseSuccess | listOAuthAccountsResponseError)
+
+export const getListOAuthAccountsUrl = () => {
+
+
+
+
+  return `/api/auth/oauth/accounts`
+}
+
+/**
+ * @summary List OAuth providers linked to the current account
+ */
+export const listOAuthAccounts = async ( options?: Parameters<typeof customClient>[1]): Promise<listOAuthAccountsResponse> => {
+
+  return customClient<listOAuthAccountsResponse>(getListOAuthAccountsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListOAuthAccountsQueryKey = () => {
+    return [
+    `/api/auth/oauth/accounts`
+    ] as const;
+    }
+
+
+export const getListOAuthAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listOAuthAccounts>>, TError = ApiError>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listOAuthAccounts>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListOAuthAccountsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOAuthAccounts>>> = ({ signal }) => listOAuthAccounts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOAuthAccounts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListOAuthAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof listOAuthAccounts>>>
+export type ListOAuthAccountsQueryError = ApiError
+
+
+export function useListOAuthAccounts<TData = Awaited<ReturnType<typeof listOAuthAccounts>>, TError = ApiError>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listOAuthAccounts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listOAuthAccounts>>,
+          TError,
+          Awaited<ReturnType<typeof listOAuthAccounts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListOAuthAccounts<TData = Awaited<ReturnType<typeof listOAuthAccounts>>, TError = ApiError>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listOAuthAccounts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listOAuthAccounts>>,
+          TError,
+          Awaited<ReturnType<typeof listOAuthAccounts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListOAuthAccounts<TData = Awaited<ReturnType<typeof listOAuthAccounts>>, TError = ApiError>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listOAuthAccounts>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List OAuth providers linked to the current account
+ */
+
+export function useListOAuthAccounts<TData = Awaited<ReturnType<typeof listOAuthAccounts>>, TError = ApiError>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listOAuthAccounts>>, TError, TData>>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListOAuthAccountsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type beginOAuthSignInResponse200 = {
+  data: OAuthAuthorizationResponse
+  status: 200
+}
+
+export type beginOAuthSignInResponse400 = {
+  data: ApiError
+  status: 400
+}
+
+export type beginOAuthSignInResponseSuccess = (beginOAuthSignInResponse200) & {
+  headers: Headers;
+};
+export type beginOAuthSignInResponseError = (beginOAuthSignInResponse400) & {
+  headers: Headers;
+};
+
+export type beginOAuthSignInResponse = (beginOAuthSignInResponseSuccess | beginOAuthSignInResponseError)
+
+export const getBeginOAuthSignInUrl = (provider: OAuthProvider,) => {
+
+
+
+
+  return `/api/auth/oauth/${provider}/begin`
+}
+
+/**
+ * @summary Begin an OAuth sign-in with Google or GitHub
+ */
+export const beginOAuthSignIn = async (provider: OAuthProvider, options?: Parameters<typeof customClient>[1]): Promise<beginOAuthSignInResponse> => {
+
+  return customClient<beginOAuthSignInResponse>(getBeginOAuthSignInUrl(provider),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getBeginOAuthSignInMutationKey = () => ['beginOAuthSignIn'] as const;
+
+export const getBeginOAuthSignInMutationOptions = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginOAuthSignIn>>, TError,BeginOAuthSignInMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof beginOAuthSignIn>>, TError,BeginOAuthSignInMutationVariables, TContext> => {
+
+const mutationKey = getBeginOAuthSignInMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof beginOAuthSignIn>>, BeginOAuthSignInMutationVariables> = (props) => {
+          const {provider} = props ?? {};
+
+          return  beginOAuthSignIn(provider,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BeginOAuthSignInMutationResult = NonNullable<Awaited<ReturnType<typeof beginOAuthSignIn>>>
+
+    export type BeginOAuthSignInMutationError = ApiError
+    export type BeginOAuthSignInMutationVariables = {provider: OAuthProvider}
+
+    /**
+ * @summary Begin an OAuth sign-in with Google or GitHub
+ */
+export const useBeginOAuthSignIn = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginOAuthSignIn>>, TError,BeginOAuthSignInMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof beginOAuthSignIn>>,
+        TError,
+        BeginOAuthSignInMutationVariables,
+        TContext
+      > => {
+      return useMutation(getBeginOAuthSignInMutationOptions(options), queryClient);
+    }
+    export type completeOAuthSignInResponse200 = {
+  data: AccessTokenResponse
+  status: 200
+}
+
+export type completeOAuthSignInResponse202 = {
+  data: MFAChallengeBody
+  status: 202
+}
+
+export type completeOAuthSignInResponse400 = {
+  data: ApiError
+  status: 400
+}
+
+export type completeOAuthSignInResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type completeOAuthSignInResponseSuccess = (completeOAuthSignInResponse200 | completeOAuthSignInResponse202) & {
+  headers: Headers;
+};
+export type completeOAuthSignInResponseError = (completeOAuthSignInResponse400 | completeOAuthSignInResponse401) & {
+  headers: Headers;
+};
+
+export type completeOAuthSignInResponse = (completeOAuthSignInResponseSuccess | completeOAuthSignInResponseError)
+
+export const getCompleteOAuthSignInUrl = (provider: OAuthProvider,) => {
+
+
+
+
+  return `/api/auth/oauth/${provider}/callback`
+}
+
+/**
+ * @summary Complete an OAuth sign-in callback
+ */
+export const completeOAuthSignIn = async (provider: OAuthProvider,
+    oAuthCallbackInput: OAuthCallbackInput, options?: Parameters<typeof customClient>[1]): Promise<completeOAuthSignInResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customClient<completeOAuthSignInResponse>(getCompleteOAuthSignInUrl(provider),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(oAuthCallbackInput)
+  }
+);}
+
+
+
+
+
+export const getCompleteOAuthSignInMutationKey = () => ['completeOAuthSignIn'] as const;
+
+export const getCompleteOAuthSignInMutationOptions = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeOAuthSignIn>>, TError,CompleteOAuthSignInMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeOAuthSignIn>>, TError,CompleteOAuthSignInMutationVariables, TContext> => {
+
+const mutationKey = getCompleteOAuthSignInMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeOAuthSignIn>>, CompleteOAuthSignInMutationVariables> = (props) => {
+          const {provider,data} = props ?? {};
+
+          return  completeOAuthSignIn(provider,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteOAuthSignInMutationResult = NonNullable<Awaited<ReturnType<typeof completeOAuthSignIn>>>
+    export type CompleteOAuthSignInMutationBody = OAuthCallbackInput
+    export type CompleteOAuthSignInMutationError = ApiError
+    export type CompleteOAuthSignInMutationVariables = {provider: OAuthProvider;data: OAuthCallbackInput}
+
+    /**
+ * @summary Complete an OAuth sign-in callback
+ */
+export const useCompleteOAuthSignIn = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeOAuthSignIn>>, TError,CompleteOAuthSignInMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof completeOAuthSignIn>>,
+        TError,
+        CompleteOAuthSignInMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCompleteOAuthSignInMutationOptions(options), queryClient);
+    }
+    export type beginOAuthLinkResponse200 = {
+  data: OAuthAuthorizationResponse
+  status: 200
+}
+
+export type beginOAuthLinkResponse400 = {
+  data: ApiError
+  status: 400
+}
+
+export type beginOAuthLinkResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type beginOAuthLinkResponse403 = {
+  data: ApiError
+  status: 403
+}
+
+export type beginOAuthLinkResponseSuccess = (beginOAuthLinkResponse200) & {
+  headers: Headers;
+};
+export type beginOAuthLinkResponseError = (beginOAuthLinkResponse400 | beginOAuthLinkResponse401 | beginOAuthLinkResponse403) & {
+  headers: Headers;
+};
+
+export type beginOAuthLinkResponse = (beginOAuthLinkResponseSuccess | beginOAuthLinkResponseError)
+
+export const getBeginOAuthLinkUrl = (provider: OAuthProvider,) => {
+
+
+
+
+  return `/api/auth/oauth/${provider}/link/begin`
+}
+
+/**
+ * @summary Begin linking an OAuth provider to the current, recently-authenticated account
+ */
+export const beginOAuthLink = async (provider: OAuthProvider, options?: Parameters<typeof customClient>[1]): Promise<beginOAuthLinkResponse> => {
+
+  return customClient<beginOAuthLinkResponse>(getBeginOAuthLinkUrl(provider),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getBeginOAuthLinkMutationKey = () => ['beginOAuthLink'] as const;
+
+export const getBeginOAuthLinkMutationOptions = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginOAuthLink>>, TError,BeginOAuthLinkMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof beginOAuthLink>>, TError,BeginOAuthLinkMutationVariables, TContext> => {
+
+const mutationKey = getBeginOAuthLinkMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof beginOAuthLink>>, BeginOAuthLinkMutationVariables> = (props) => {
+          const {provider} = props ?? {};
+
+          return  beginOAuthLink(provider,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BeginOAuthLinkMutationResult = NonNullable<Awaited<ReturnType<typeof beginOAuthLink>>>
+
+    export type BeginOAuthLinkMutationError = ApiError
+    export type BeginOAuthLinkMutationVariables = {provider: OAuthProvider}
+
+    /**
+ * @summary Begin linking an OAuth provider to the current, recently-authenticated account
+ */
+export const useBeginOAuthLink = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginOAuthLink>>, TError,BeginOAuthLinkMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof beginOAuthLink>>,
+        TError,
+        BeginOAuthLinkMutationVariables,
+        TContext
+      > => {
+      return useMutation(getBeginOAuthLinkMutationOptions(options), queryClient);
+    }
+    export type completeOAuthLinkResponse204 = {
+  data: void
+  status: 204
+}
+
+export type completeOAuthLinkResponse400 = {
+  data: ApiError
+  status: 400
+}
+
+export type completeOAuthLinkResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type completeOAuthLinkResponse409 = {
+  data: ApiError
+  status: 409
+}
+
+export type completeOAuthLinkResponseSuccess = (completeOAuthLinkResponse204) & {
+  headers: Headers;
+};
+export type completeOAuthLinkResponseError = (completeOAuthLinkResponse400 | completeOAuthLinkResponse401 | completeOAuthLinkResponse409) & {
+  headers: Headers;
+};
+
+export type completeOAuthLinkResponse = (completeOAuthLinkResponseSuccess | completeOAuthLinkResponseError)
+
+export const getCompleteOAuthLinkUrl = (provider: OAuthProvider,) => {
+
+
+
+
+  return `/api/auth/oauth/${provider}/link/callback`
+}
+
+/**
+ * @summary Complete linking an OAuth provider callback
+ */
+export const completeOAuthLink = async (provider: OAuthProvider,
+    oAuthCallbackInput: OAuthCallbackInput, options?: Parameters<typeof customClient>[1]): Promise<completeOAuthLinkResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customClient<completeOAuthLinkResponse>(getCompleteOAuthLinkUrl(provider),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(oAuthCallbackInput)
+  }
+);}
+
+
+
+
+
+export const getCompleteOAuthLinkMutationKey = () => ['completeOAuthLink'] as const;
+
+export const getCompleteOAuthLinkMutationOptions = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeOAuthLink>>, TError,CompleteOAuthLinkMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeOAuthLink>>, TError,CompleteOAuthLinkMutationVariables, TContext> => {
+
+const mutationKey = getCompleteOAuthLinkMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeOAuthLink>>, CompleteOAuthLinkMutationVariables> = (props) => {
+          const {provider,data} = props ?? {};
+
+          return  completeOAuthLink(provider,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteOAuthLinkMutationResult = NonNullable<Awaited<ReturnType<typeof completeOAuthLink>>>
+    export type CompleteOAuthLinkMutationBody = OAuthCallbackInput
+    export type CompleteOAuthLinkMutationError = ApiError
+    export type CompleteOAuthLinkMutationVariables = {provider: OAuthProvider;data: OAuthCallbackInput}
+
+    /**
+ * @summary Complete linking an OAuth provider callback
+ */
+export const useCompleteOAuthLink = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeOAuthLink>>, TError,CompleteOAuthLinkMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof completeOAuthLink>>,
+        TError,
+        CompleteOAuthLinkMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCompleteOAuthLinkMutationOptions(options), queryClient);
+    }
+    export type requestEmailOTPResponse204 = {
+  data: void
+  status: 204
+}
+
+export type requestEmailOTPResponse400 = {
+  data: ApiError
+  status: 400
+}
+
+export type requestEmailOTPResponse429 = {
+  data: ApiError
+  status: 429
+}
+
+export type requestEmailOTPResponseSuccess = (requestEmailOTPResponse204) & {
+  headers: Headers;
+};
+export type requestEmailOTPResponseError = (requestEmailOTPResponse400 | requestEmailOTPResponse429) & {
+  headers: Headers;
+};
+
+export type requestEmailOTPResponse = (requestEmailOTPResponseSuccess | requestEmailOTPResponseError)
+
+export const getRequestEmailOTPUrl = () => {
+
+
+
+
+  return `/api/auth/otp/request`
+}
+
+/**
+ * @summary Request an email one-time sign-in code
+ */
+export const requestEmailOTP = async (emailOTPRequestInput: EmailOTPRequestInput, options?: Parameters<typeof customClient>[1]): Promise<requestEmailOTPResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customClient<requestEmailOTPResponse>(getRequestEmailOTPUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(emailOTPRequestInput)
+  }
+);}
+
+
+
+
+
+export const getRequestEmailOTPMutationKey = () => ['requestEmailOTP'] as const;
+
+export const getRequestEmailOTPMutationOptions = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestEmailOTP>>, TError,RequestEmailOTPMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestEmailOTP>>, TError,RequestEmailOTPMutationVariables, TContext> => {
+
+const mutationKey = getRequestEmailOTPMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestEmailOTP>>, RequestEmailOTPMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestEmailOTP(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestEmailOTPMutationResult = NonNullable<Awaited<ReturnType<typeof requestEmailOTP>>>
+    export type RequestEmailOTPMutationBody = EmailOTPRequestInput
+    export type RequestEmailOTPMutationError = ApiError
+    export type RequestEmailOTPMutationVariables = {data: EmailOTPRequestInput}
+
+    /**
+ * @summary Request an email one-time sign-in code
+ */
+export const useRequestEmailOTP = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestEmailOTP>>, TError,RequestEmailOTPMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof requestEmailOTP>>,
+        TError,
+        RequestEmailOTPMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestEmailOTPMutationOptions(options), queryClient);
+    }
+    export type verifyEmailOTPResponse200 = {
+  data: AccessTokenResponse
+  status: 200
+}
+
+export type verifyEmailOTPResponse202 = {
+  data: MFAChallengeBody
+  status: 202
+}
+
+export type verifyEmailOTPResponse400 = {
+  data: ApiError
+  status: 400
+}
+
+export type verifyEmailOTPResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type verifyEmailOTPResponseSuccess = (verifyEmailOTPResponse200 | verifyEmailOTPResponse202) & {
+  headers: Headers;
+};
+export type verifyEmailOTPResponseError = (verifyEmailOTPResponse400 | verifyEmailOTPResponse401) & {
+  headers: Headers;
+};
+
+export type verifyEmailOTPResponse = (verifyEmailOTPResponseSuccess | verifyEmailOTPResponseError)
+
+export const getVerifyEmailOTPUrl = () => {
+
+
+
+
+  return `/api/auth/otp/verify`
+}
+
+/**
+ * @summary Verify an email one-time sign-in code and complete sign-in
+ */
+export const verifyEmailOTP = async (emailOTPVerifyInput: EmailOTPVerifyInput, options?: Parameters<typeof customClient>[1]): Promise<verifyEmailOTPResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customClient<verifyEmailOTPResponse>(getVerifyEmailOTPUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(emailOTPVerifyInput)
+  }
+);}
+
+
+
+
+
+export const getVerifyEmailOTPMutationKey = () => ['verifyEmailOTP'] as const;
+
+export const getVerifyEmailOTPMutationOptions = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyEmailOTP>>, TError,VerifyEmailOTPMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyEmailOTP>>, TError,VerifyEmailOTPMutationVariables, TContext> => {
+
+const mutationKey = getVerifyEmailOTPMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyEmailOTP>>, VerifyEmailOTPMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyEmailOTP(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyEmailOTPMutationResult = NonNullable<Awaited<ReturnType<typeof verifyEmailOTP>>>
+    export type VerifyEmailOTPMutationBody = EmailOTPVerifyInput
+    export type VerifyEmailOTPMutationError = ApiError
+    export type VerifyEmailOTPMutationVariables = {data: EmailOTPVerifyInput}
+
+    /**
+ * @summary Verify an email one-time sign-in code and complete sign-in
+ */
+export const useVerifyEmailOTP = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyEmailOTP>>, TError,VerifyEmailOTPMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof verifyEmailOTP>>,
+        TError,
+        VerifyEmailOTPMutationVariables,
+        TContext
+      > => {
+      return useMutation(getVerifyEmailOTPMutationOptions(options), queryClient);
+    }
+    export type confirmPasswordResetResponse204 = {
   data: void
   status: 204
 }
@@ -1041,6 +2144,11 @@ export const useRevokeSession = <TError = ApiError,
   status: 200
 }
 
+export type passwordSignInResponse202 = {
+  data: MFAChallengeBody
+  status: 202
+}
+
 export type passwordSignInResponse400 = {
   data: ApiError
   status: 400
@@ -1056,7 +2164,7 @@ export type passwordSignInResponse429 = {
   status: 429
 }
 
-export type passwordSignInResponseSuccess = (passwordSignInResponse200) & {
+export type passwordSignInResponseSuccess = (passwordSignInResponse200 | passwordSignInResponse202) & {
   headers: Headers;
 };
 export type passwordSignInResponseError = (passwordSignInResponse400 | passwordSignInResponse401 | passwordSignInResponse429) & {
@@ -1576,4 +2684,408 @@ export const useRequestEmailVerification = <TError = ApiError,
         TContext
       > => {
       return useMutation(getRequestEmailVerificationMutationOptions(options), queryClient);
+    }
+    export type beginWebAuthnAuthenticationResponse200 = {
+  data: WebAuthnAuthenticationBeginResponse
+  status: 200
+}
+
+export type beginWebAuthnAuthenticationResponseSuccess = (beginWebAuthnAuthenticationResponse200) & {
+  headers: Headers;
+};
+;
+
+export type beginWebAuthnAuthenticationResponse = (beginWebAuthnAuthenticationResponseSuccess)
+
+export const getBeginWebAuthnAuthenticationUrl = () => {
+
+
+
+
+  return `/api/auth/webauthn/authentication/begin`
+}
+
+/**
+ * @summary Begin a discoverable (usernameless) passkey sign-in
+ */
+export const beginWebAuthnAuthentication = async ( options?: Parameters<typeof customClient>[1]): Promise<beginWebAuthnAuthenticationResponse> => {
+
+  return customClient<beginWebAuthnAuthenticationResponse>(getBeginWebAuthnAuthenticationUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getBeginWebAuthnAuthenticationMutationKey = () => ['beginWebAuthnAuthentication'] as const;
+
+export const getBeginWebAuthnAuthenticationMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginWebAuthnAuthentication>>, TError,void, TContext>, request?: SecondParameter<typeof customClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof beginWebAuthnAuthentication>>, TError,void, TContext> => {
+
+const mutationKey = getBeginWebAuthnAuthenticationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof beginWebAuthnAuthentication>>, void> = () => {
+
+
+          return  beginWebAuthnAuthentication(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BeginWebAuthnAuthenticationMutationResult = NonNullable<Awaited<ReturnType<typeof beginWebAuthnAuthentication>>>
+
+    export type BeginWebAuthnAuthenticationMutationError = unknown
+
+
+    /**
+ * @summary Begin a discoverable (usernameless) passkey sign-in
+ */
+export const useBeginWebAuthnAuthentication = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginWebAuthnAuthentication>>, TError,void, TContext>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof beginWebAuthnAuthentication>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getBeginWebAuthnAuthenticationMutationOptions(options), queryClient);
+    }
+    export type finishWebAuthnAuthenticationResponse200 = {
+  data: AccessTokenResponse
+  status: 200
+}
+
+export type finishWebAuthnAuthenticationResponse202 = {
+  data: MFAChallengeBody
+  status: 202
+}
+
+export type finishWebAuthnAuthenticationResponse400 = {
+  data: ApiError
+  status: 400
+}
+
+export type finishWebAuthnAuthenticationResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type finishWebAuthnAuthenticationResponseSuccess = (finishWebAuthnAuthenticationResponse200 | finishWebAuthnAuthenticationResponse202) & {
+  headers: Headers;
+};
+export type finishWebAuthnAuthenticationResponseError = (finishWebAuthnAuthenticationResponse400 | finishWebAuthnAuthenticationResponse401) & {
+  headers: Headers;
+};
+
+export type finishWebAuthnAuthenticationResponse = (finishWebAuthnAuthenticationResponseSuccess | finishWebAuthnAuthenticationResponseError)
+
+export const getFinishWebAuthnAuthenticationUrl = () => {
+
+
+
+
+  return `/api/auth/webauthn/authentication/finish`
+}
+
+/**
+ * @summary Finish a passkey sign-in and complete sign-in
+ */
+export const finishWebAuthnAuthentication = async (webAuthnAuthenticationFinishInput: WebAuthnAuthenticationFinishInput, options?: Parameters<typeof customClient>[1]): Promise<finishWebAuthnAuthenticationResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customClient<finishWebAuthnAuthenticationResponse>(getFinishWebAuthnAuthenticationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(webAuthnAuthenticationFinishInput)
+  }
+);}
+
+
+
+
+
+export const getFinishWebAuthnAuthenticationMutationKey = () => ['finishWebAuthnAuthentication'] as const;
+
+export const getFinishWebAuthnAuthenticationMutationOptions = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finishWebAuthnAuthentication>>, TError,FinishWebAuthnAuthenticationMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof finishWebAuthnAuthentication>>, TError,FinishWebAuthnAuthenticationMutationVariables, TContext> => {
+
+const mutationKey = getFinishWebAuthnAuthenticationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof finishWebAuthnAuthentication>>, FinishWebAuthnAuthenticationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  finishWebAuthnAuthentication(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FinishWebAuthnAuthenticationMutationResult = NonNullable<Awaited<ReturnType<typeof finishWebAuthnAuthentication>>>
+    export type FinishWebAuthnAuthenticationMutationBody = WebAuthnAuthenticationFinishInput
+    export type FinishWebAuthnAuthenticationMutationError = ApiError
+    export type FinishWebAuthnAuthenticationMutationVariables = {data: WebAuthnAuthenticationFinishInput}
+
+    /**
+ * @summary Finish a passkey sign-in and complete sign-in
+ */
+export const useFinishWebAuthnAuthentication = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finishWebAuthnAuthentication>>, TError,FinishWebAuthnAuthenticationMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof finishWebAuthnAuthentication>>,
+        TError,
+        FinishWebAuthnAuthenticationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getFinishWebAuthnAuthenticationMutationOptions(options), queryClient);
+    }
+    export type beginWebAuthnRegistrationResponse200 = {
+  data: WebAuthnRegistrationBeginResponse
+  status: 200
+}
+
+export type beginWebAuthnRegistrationResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type beginWebAuthnRegistrationResponseSuccess = (beginWebAuthnRegistrationResponse200) & {
+  headers: Headers;
+};
+export type beginWebAuthnRegistrationResponseError = (beginWebAuthnRegistrationResponse401) & {
+  headers: Headers;
+};
+
+export type beginWebAuthnRegistrationResponse = (beginWebAuthnRegistrationResponseSuccess | beginWebAuthnRegistrationResponseError)
+
+export const getBeginWebAuthnRegistrationUrl = () => {
+
+
+
+
+  return `/api/auth/webauthn/registration/begin`
+}
+
+/**
+ * @summary Begin registering a passkey for the current account
+ */
+export const beginWebAuthnRegistration = async ( options?: Parameters<typeof customClient>[1]): Promise<beginWebAuthnRegistrationResponse> => {
+
+  return customClient<beginWebAuthnRegistrationResponse>(getBeginWebAuthnRegistrationUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getBeginWebAuthnRegistrationMutationKey = () => ['beginWebAuthnRegistration'] as const;
+
+export const getBeginWebAuthnRegistrationMutationOptions = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginWebAuthnRegistration>>, TError,void, TContext>, request?: SecondParameter<typeof customClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof beginWebAuthnRegistration>>, TError,void, TContext> => {
+
+const mutationKey = getBeginWebAuthnRegistrationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof beginWebAuthnRegistration>>, void> = () => {
+
+
+          return  beginWebAuthnRegistration(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BeginWebAuthnRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof beginWebAuthnRegistration>>>
+
+    export type BeginWebAuthnRegistrationMutationError = ApiError
+
+
+    /**
+ * @summary Begin registering a passkey for the current account
+ */
+export const useBeginWebAuthnRegistration = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginWebAuthnRegistration>>, TError,void, TContext>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof beginWebAuthnRegistration>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getBeginWebAuthnRegistrationMutationOptions(options), queryClient);
+    }
+    export type finishWebAuthnRegistrationResponse204 = {
+  data: void
+  status: 204
+}
+
+export type finishWebAuthnRegistrationResponse400 = {
+  data: ApiError
+  status: 400
+}
+
+export type finishWebAuthnRegistrationResponse401 = {
+  data: ApiError
+  status: 401
+}
+
+export type finishWebAuthnRegistrationResponseSuccess = (finishWebAuthnRegistrationResponse204) & {
+  headers: Headers;
+};
+export type finishWebAuthnRegistrationResponseError = (finishWebAuthnRegistrationResponse400 | finishWebAuthnRegistrationResponse401) & {
+  headers: Headers;
+};
+
+export type finishWebAuthnRegistrationResponse = (finishWebAuthnRegistrationResponseSuccess | finishWebAuthnRegistrationResponseError)
+
+export const getFinishWebAuthnRegistrationUrl = () => {
+
+
+
+
+  return `/api/auth/webauthn/registration/finish`
+}
+
+/**
+ * @summary Finish registering a passkey for the current account
+ */
+export const finishWebAuthnRegistration = async (webAuthnRegistrationFinishInput: WebAuthnRegistrationFinishInput, options?: Parameters<typeof customClient>[1]): Promise<finishWebAuthnRegistrationResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customClient<finishWebAuthnRegistrationResponse>(getFinishWebAuthnRegistrationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(webAuthnRegistrationFinishInput)
+  }
+);}
+
+
+
+
+
+export const getFinishWebAuthnRegistrationMutationKey = () => ['finishWebAuthnRegistration'] as const;
+
+export const getFinishWebAuthnRegistrationMutationOptions = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finishWebAuthnRegistration>>, TError,FinishWebAuthnRegistrationMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof finishWebAuthnRegistration>>, TError,FinishWebAuthnRegistrationMutationVariables, TContext> => {
+
+const mutationKey = getFinishWebAuthnRegistrationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof finishWebAuthnRegistration>>, FinishWebAuthnRegistrationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  finishWebAuthnRegistration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FinishWebAuthnRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof finishWebAuthnRegistration>>>
+    export type FinishWebAuthnRegistrationMutationBody = WebAuthnRegistrationFinishInput
+    export type FinishWebAuthnRegistrationMutationError = ApiError
+    export type FinishWebAuthnRegistrationMutationVariables = {data: WebAuthnRegistrationFinishInput}
+
+    /**
+ * @summary Finish registering a passkey for the current account
+ */
+export const useFinishWebAuthnRegistration = <TError = ApiError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finishWebAuthnRegistration>>, TError,FinishWebAuthnRegistrationMutationVariables, TContext>, request?: SecondParameter<typeof customClient>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof finishWebAuthnRegistration>>,
+        TError,
+        FinishWebAuthnRegistrationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getFinishWebAuthnRegistrationMutationOptions(options), queryClient);
     }

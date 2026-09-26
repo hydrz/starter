@@ -13,6 +13,69 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
+// BeginOAuthLink implements beginOAuthLink operation.
+//
+// Begin linking an OAuth provider to the current, recently-authenticated account.
+//
+// POST /api/auth/oauth/{provider}/link/begin
+func (UnimplementedHandler) BeginOAuthLink(ctx context.Context, params BeginOAuthLinkParams) (r BeginOAuthLinkRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// BeginOAuthSignIn implements beginOAuthSignIn operation.
+//
+// Begin an OAuth sign-in with Google or GitHub.
+//
+// POST /api/auth/oauth/{provider}/begin
+func (UnimplementedHandler) BeginOAuthSignIn(ctx context.Context, params BeginOAuthSignInParams) (r BeginOAuthSignInRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// BeginTOTPEnrollment implements beginTOTPEnrollment operation.
+//
+// Begin enrolling a TOTP authenticator app.
+//
+// POST /api/auth/mfa/totp/enroll/begin
+func (UnimplementedHandler) BeginTOTPEnrollment(ctx context.Context) (r BeginTOTPEnrollmentRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// BeginWebAuthnAuthentication implements beginWebAuthnAuthentication operation.
+//
+// Begin a discoverable (usernameless) passkey sign-in.
+//
+// POST /api/auth/webauthn/authentication/begin
+func (UnimplementedHandler) BeginWebAuthnAuthentication(ctx context.Context) (r *WebAuthnAuthenticationBeginResponse, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// BeginWebAuthnRegistration implements beginWebAuthnRegistration operation.
+//
+// Begin registering a passkey for the current account.
+//
+// POST /api/auth/webauthn/registration/begin
+func (UnimplementedHandler) BeginWebAuthnRegistration(ctx context.Context) (r BeginWebAuthnRegistrationRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CompleteOAuthLink implements completeOAuthLink operation.
+//
+// Complete linking an OAuth provider callback.
+//
+// POST /api/auth/oauth/{provider}/link/callback
+func (UnimplementedHandler) CompleteOAuthLink(ctx context.Context, req *OAuthCallbackInput, params CompleteOAuthLinkParams) (r CompleteOAuthLinkRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CompleteOAuthSignIn implements completeOAuthSignIn operation.
+//
+// Complete an OAuth sign-in callback.
+//
+// POST /api/auth/oauth/{provider}/callback
+func (UnimplementedHandler) CompleteOAuthSignIn(ctx context.Context, req *OAuthCallbackInput, params CompleteOAuthSignInParams) (r CompleteOAuthSignInRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ConfirmEmailVerification implements confirmEmailVerification operation.
 //
 // Confirm an email verification token.
@@ -31,12 +94,39 @@ func (UnimplementedHandler) ConfirmPasswordReset(ctx context.Context, req *Passw
 	return r, ht.ErrNotImplemented
 }
 
+// ConfirmTOTPEnrollment implements confirmTOTPEnrollment operation.
+//
+// Confirm a TOTP enrollment and receive recovery codes once.
+//
+// POST /api/auth/mfa/totp/enroll/confirm
+func (UnimplementedHandler) ConfirmTOTPEnrollment(ctx context.Context, req *TOTPEnrollmentConfirmInput) (r ConfirmTOTPEnrollmentRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateAPIKey implements createAPIKey operation.
 //
 // Create an API key.
 //
 // POST /api/auth/api-keys
 func (UnimplementedHandler) CreateAPIKey(ctx context.Context, req *APIKeyCreateInput) (r CreateAPIKeyRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// FinishWebAuthnAuthentication implements finishWebAuthnAuthentication operation.
+//
+// Finish a passkey sign-in and complete sign-in.
+//
+// POST /api/auth/webauthn/authentication/finish
+func (UnimplementedHandler) FinishWebAuthnAuthentication(ctx context.Context, req *WebAuthnAuthenticationFinishInput) (r FinishWebAuthnAuthenticationRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// FinishWebAuthnRegistration implements finishWebAuthnRegistration operation.
+//
+// Finish registering a passkey for the current account.
+//
+// POST /api/auth/webauthn/registration/finish
+func (UnimplementedHandler) FinishWebAuthnRegistration(ctx context.Context, req *WebAuthnRegistrationFinishInput) (r FinishWebAuthnRegistrationRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -55,6 +145,15 @@ func (UnimplementedHandler) GetCurrentIdentity(ctx context.Context) (r GetCurren
 //
 // GET /api/auth/api-keys
 func (UnimplementedHandler) ListAPIKeys(ctx context.Context) (r ListAPIKeysRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListOAuthAccounts implements listOAuthAccounts operation.
+//
+// List OAuth providers linked to the current account.
+//
+// GET /api/auth/oauth/accounts
+func (UnimplementedHandler) ListOAuthAccounts(ctx context.Context) (r ListOAuthAccountsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -82,6 +181,15 @@ func (UnimplementedHandler) PasswordSignIn(ctx context.Context, req *PasswordSig
 //
 // POST /api/auth/refresh
 func (UnimplementedHandler) RefreshAccessToken(ctx context.Context) (r RefreshAccessTokenRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RequestEmailOTP implements requestEmailOTP operation.
+//
+// Request an email one-time sign-in code.
+//
+// POST /api/auth/otp/request
+func (UnimplementedHandler) RequestEmailOTP(ctx context.Context, req *EmailOTPRequestInput) (r RequestEmailOTPRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -136,5 +244,23 @@ func (UnimplementedHandler) SignOut(ctx context.Context) (r SignOutRes, _ error)
 //
 // POST /api/auth/sign-up
 func (UnimplementedHandler) SignUp(ctx context.Context, req *SignUpInput) (r SignUpRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// VerifyEmailOTP implements verifyEmailOTP operation.
+//
+// Verify an email one-time sign-in code and complete sign-in.
+//
+// POST /api/auth/otp/verify
+func (UnimplementedHandler) VerifyEmailOTP(ctx context.Context, req *EmailOTPVerifyInput) (r VerifyEmailOTPRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// VerifyMFAChallenge implements verifyMFAChallenge operation.
+//
+// Complete sign-in with a TOTP or recovery code.
+//
+// POST /api/auth/mfa/challenge/verify
+func (UnimplementedHandler) VerifyMFAChallenge(ctx context.Context, req *MFAChallengeVerifyInput) (r VerifyMFAChallengeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }

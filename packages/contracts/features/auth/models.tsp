@@ -99,3 +99,113 @@ model APIKey {
 model CreatedAPIKey extends APIKey {
   key: string;
 }
+
+// A 202 (not 200) distinguishes "primary credential accepted, a second
+// factor is still required" from a completed sign-in at the same operation,
+// so ogen can generate distinct response variants instead of an ambiguous
+// same-status anyOf.
+@friendlyName("MFAChallengeResponse")
+model MFAChallengeResponse {
+  @TypeSpec.Http.statusCode statusCode: 202;
+  @TypeSpec.Http.body body: MFAChallengeBody;
+}
+
+@friendlyName("MFAChallengeBody")
+model MFAChallengeBody {
+  mfaRequired: true;
+  challengeId: string;
+}
+
+@friendlyName("EmailOTPRequestInput")
+model EmailOTPRequestInput {
+  @format("email")
+  email: string;
+}
+
+@friendlyName("EmailOTPVerifyInput")
+model EmailOTPVerifyInput {
+  @format("email")
+  email: string;
+
+  @minLength(6)
+  @maxLength(6)
+  code: string;
+}
+
+@friendlyName("TOTPEnrollmentBeginResponse")
+model TOTPEnrollmentBeginResponse {
+  factorId: string;
+  secret: string;
+  otpauthUrl: string;
+}
+
+@friendlyName("TOTPEnrollmentConfirmInput")
+model TOTPEnrollmentConfirmInput {
+  factorId: string;
+
+  @minLength(6)
+  @maxLength(6)
+  code: string;
+}
+
+@friendlyName("TOTPEnrollmentConfirmResponse")
+model TOTPEnrollmentConfirmResponse {
+  recoveryCodes: string[];
+}
+
+@friendlyName("MFAChallengeVerifyInput")
+model MFAChallengeVerifyInput {
+  challengeId: string;
+
+  @minLength(1)
+  code: string;
+}
+
+@friendlyName("OAuthProvider")
+enum OAuthProvider {
+  google,
+  github,
+}
+
+@friendlyName("OAuthAuthorizationResponse")
+model OAuthAuthorizationResponse {
+  authorizationUrl: string;
+}
+
+@friendlyName("OAuthCallbackInput")
+model OAuthCallbackInput {
+  state: string;
+  code: string;
+}
+
+@friendlyName("OAuthAccount")
+model OAuthAccount {
+  provider: OAuthProvider;
+  subject: string;
+  email?: string;
+  createdAt: utcDateTime;
+}
+
+@friendlyName("WebAuthnRegistrationBeginResponse")
+model WebAuthnRegistrationBeginResponse {
+  /** The raw PublicKeyCredentialCreationOptions JSON for navigator.credentials.create(). */
+  publicKey: Record<unknown>;
+}
+
+@friendlyName("WebAuthnRegistrationFinishInput")
+model WebAuthnRegistrationFinishInput {
+  /** The raw PublicKeyCredential JSON from navigator.credentials.create(). */
+  credential: Record<unknown>;
+}
+
+@friendlyName("WebAuthnAuthenticationBeginResponse")
+model WebAuthnAuthenticationBeginResponse {
+  /** The raw PublicKeyCredentialRequestOptions JSON for navigator.credentials.get(). */
+  publicKey: Record<unknown>;
+}
+
+@friendlyName("WebAuthnAuthenticationFinishInput")
+model WebAuthnAuthenticationFinishInput {
+  /** The raw PublicKeyCredential JSON from navigator.credentials.get(). */
+  credential: Record<unknown>;
+}

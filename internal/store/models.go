@@ -131,6 +131,19 @@ type DeliveryMessage struct {
 	CreatedAt            pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
+type EmailOtpChallenge struct {
+	ID           pgtype.UUID        `db:"id" json:"id"`
+	Email        string             `db:"email" json:"email"`
+	Purpose      string             `db:"purpose" json:"purpose"`
+	CodeDigest   []byte             `db:"code_digest" json:"code_digest"`
+	IpAddress    *netip.Addr        `db:"ip_address" json:"ip_address"`
+	AttemptCount int32              `db:"attempt_count" json:"attempt_count"`
+	MaxAttempts  int32              `db:"max_attempts" json:"max_attempts"`
+	ExpiresAt    pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	ConsumedAt   pgtype.Timestamptz `db:"consumed_at" json:"consumed_at"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
 type Entitlement struct {
 	ID                pgtype.UUID        `db:"id" json:"id"`
 	OrganizationID    pgtype.UUID        `db:"organization_id" json:"organization_id"`
@@ -144,12 +157,43 @@ type Entitlement struct {
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
+type MfaChallenge struct {
+	ID         pgtype.UUID        `db:"id" json:"id"`
+	UserID     pgtype.UUID        `db:"user_id" json:"user_id"`
+	FactorID   pgtype.UUID        `db:"factor_id" json:"factor_id"`
+	ExpiresAt  pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	ConsumedAt pgtype.Timestamptz `db:"consumed_at" json:"consumed_at"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
 type NotificationIntent struct {
 	ID              pgtype.UUID        `db:"id" json:"id"`
 	RecipientUserID pgtype.UUID        `db:"recipient_user_id" json:"recipient_user_id"`
 	Kind            string             `db:"kind" json:"kind"`
 	Payload         []byte             `db:"payload" json:"payload"`
 	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type OauthAccount struct {
+	ID              pgtype.UUID        `db:"id" json:"id"`
+	UserID          pgtype.UUID        `db:"user_id" json:"user_id"`
+	Provider        string             `db:"provider" json:"provider"`
+	ProviderSubject string             `db:"provider_subject" json:"provider_subject"`
+	Email           *string            `db:"email" json:"email"`
+	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type OauthAuthorizationState struct {
+	ID            pgtype.UUID        `db:"id" json:"id"`
+	Provider      string             `db:"provider" json:"provider"`
+	StateDigest   []byte             `db:"state_digest" json:"state_digest"`
+	Nonce         string             `db:"nonce" json:"nonce"`
+	CodeVerifier  string             `db:"code_verifier" json:"code_verifier"`
+	Intent        string             `db:"intent" json:"intent"`
+	LinkingUserID pgtype.UUID        `db:"linking_user_id" json:"linking_user_id"`
+	ExpiresAt     pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	ConsumedAt    pgtype.Timestamptz `db:"consumed_at" json:"consumed_at"`
+	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
 type OneTimePurchase struct {
@@ -260,6 +304,24 @@ type Subscription struct {
 	UpdatedAt            pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
+type TotpFactor struct {
+	ID               pgtype.UUID        `db:"id" json:"id"`
+	UserID           pgtype.UUID        `db:"user_id" json:"user_id"`
+	SecretCiphertext []byte             `db:"secret_ciphertext" json:"secret_ciphertext"`
+	SecretNonce      []byte             `db:"secret_nonce" json:"secret_nonce"`
+	Status           string             `db:"status" json:"status"`
+	CreatedAt        pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	VerifiedAt       pgtype.Timestamptz `db:"verified_at" json:"verified_at"`
+}
+
+type TotpRecoveryCode struct {
+	ID         pgtype.UUID        `db:"id" json:"id"`
+	FactorID   pgtype.UUID        `db:"factor_id" json:"factor_id"`
+	CodeDigest []byte             `db:"code_digest" json:"code_digest"`
+	ConsumedAt pgtype.Timestamptz `db:"consumed_at" json:"consumed_at"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
 type User struct {
 	ID              pgtype.UUID        `db:"id" json:"id"`
 	Email           string             `db:"email" json:"email"`
@@ -267,4 +329,30 @@ type User struct {
 	EmailVerifiedAt pgtype.Timestamptz `db:"email_verified_at" json:"email_verified_at"`
 	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type WebauthnChallenge struct {
+	ID          pgtype.UUID        `db:"id" json:"id"`
+	Ceremony    string             `db:"ceremony" json:"ceremony"`
+	UserID      pgtype.UUID        `db:"user_id" json:"user_id"`
+	Challenge   []byte             `db:"challenge" json:"challenge"`
+	SessionData []byte             `db:"session_data" json:"session_data"`
+	ExpiresAt   pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	ConsumedAt  pgtype.Timestamptz `db:"consumed_at" json:"consumed_at"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type WebauthnCredential struct {
+	ID              pgtype.UUID        `db:"id" json:"id"`
+	UserID          pgtype.UUID        `db:"user_id" json:"user_id"`
+	CredentialID    []byte             `db:"credential_id" json:"credential_id"`
+	PublicKey       []byte             `db:"public_key" json:"public_key"`
+	AttestationType string             `db:"attestation_type" json:"attestation_type"`
+	Aaguid          []byte             `db:"aaguid" json:"aaguid"`
+	SignCount       int64              `db:"sign_count" json:"sign_count"`
+	Transports      *string            `db:"transports" json:"transports"`
+	UserHandle      []byte             `db:"user_handle" json:"user_handle"`
+	Name            *string            `db:"name" json:"name"`
+	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	LastUsedAt      pgtype.Timestamptz `db:"last_used_at" json:"last_used_at"`
 }
