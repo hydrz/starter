@@ -19,6 +19,7 @@ import (
 	"github.com/hydrz/starter/internal/announcement"
 	"github.com/hydrz/starter/internal/auth"
 	"github.com/hydrz/starter/internal/authorization"
+	"github.com/hydrz/starter/internal/billing"
 	"github.com/hydrz/starter/internal/delivery"
 	"github.com/hydrz/starter/internal/notification"
 	"github.com/hydrz/starter/internal/organization"
@@ -115,6 +116,15 @@ func main() {
 		}
 	}
 
+	var billingService *billing.Service
+	if cfg.Stripe.Enabled {
+		billingService, err = buildBillingService(cfg.Stripe, queries, pool)
+		if err != nil {
+			logger.Error("billing service initialization failed", "error", err)
+			os.Exit(1)
+		}
+	}
+
 	var outboxWorker *delivery.Worker
 	if cfg.Worker.Enabled || cfg.SMTP.Enabled {
 		outboxWorker, err = buildOutboxWorker(cfg, store.New(pool), logger)
@@ -128,7 +138,7 @@ func main() {
 		}
 	}
 
-	handler, err := apphttp.NewHandler(announcementService, pool, identityService, orgService, authzService)
+	handler, err := apphttp.NewHandler(announcementService, pool, identityService, orgService, authzService, billingService)
 	if err != nil {
 		logger.Error("http handler initialization failed", "error", err)
 		os.Exit(1)
@@ -223,6 +233,51 @@ func buildIdentityService(authConfig config.AuthConfig, queries *store.Queries, 
 		AccessTokenTTL:     authConfig.AccessTokenTTL,
 		RefreshTokenTTL:    authConfig.RefreshTokenTTL,
 	})
+}
+
+// buildBillingService wires internal/billing.Service from the process
+// StripeConfig and a pgxpool-backed store. It never changes StripeConfig's
+// shape; it only consumes cfg.Stripe.{SecretKey,WebhookSecret}. The price
+// catalog and redirect URLs are billing-owned configuration (never
+// client-supplied): BILLING_PRICE_CATALOG is an optional JSON map from
+// server-controlled price key to Stripe price ID/feature key/mode (see
+// billing.ParseCatalogJSON); BILLING_SUCCESS_URL, BILLING_CANCEL_URL, and
+// BILLING_PORTAL_RETURN_URL fall back to same-origin defaults when unset.
+func buildBillingService(stripeConfig config.StripeConfig, queries *store.Queries, pool *pgxpool.Pool) (*billing.Service, error) {
+	gateway, err := billing.NewLiveGateway(stripeConfig.SecretKey)
+	if err != nil {
+		return nil, fmt.Errorf("create stripe gateway: %w", err)
+	}
+
+	catalog, err := billing.ParseCatalogJSON(os.Getenv("BILLING_PRICE_CATALOG"))
+	if err != nil {
+		return nil, err
+	}
+
+	return billing.NewService(billing.Dependencies{
+		BillingAccounts:  billing.NewPostgresBillingAccountRepository(queries),
+		CheckoutSessions: billing.NewPostgresCheckoutSessionRepository(queries),
+		Subscriptions:    billing.NewPostgresSubscriptionRepository(queries),
+		OneTimePurchases: billing.NewPostgresOneTimePurchaseRepository(queries),
+		WebhookEvents:    billing.NewPostgresWebhookEventRepository(queries),
+		Entitlements:     billing.NewPostgresEntitlementRepository(queries),
+		Transactor:       database.NewTransactor(pool),
+		Outbox:           billing.NewPostgresOutboxWriter(queries),
+		Gateway:          gateway,
+		Catalog:          catalog,
+		Clock:            billing.SystemClock{},
+		WebhookSecret:    stripeConfig.WebhookSecret,
+		SuccessURL:       envOrDefault("BILLING_SUCCESS_URL", "http://localhost:8080/billing/success"),
+		CancelURL:        envOrDefault("BILLING_CANCEL_URL", "http://localhost:8080/billing/cancel"),
+		PortalReturnURL:  envOrDefault("BILLING_PORTAL_RETURN_URL", "http://localhost:8080/billing"),
+	})
+}
+
+func envOrDefault(name, fallback string) string {
+	if value := os.Getenv(name); value != "" {
+		return value
+	}
+	return fallback
 }
 
 // buildOutboxWorker wires internal/delivery.Worker with an embedded template renderer,

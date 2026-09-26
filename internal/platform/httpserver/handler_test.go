@@ -17,6 +17,7 @@ import (
 	"github.com/hydrz/starter/internal/announcement"
 	"github.com/hydrz/starter/internal/auth"
 	"github.com/hydrz/starter/internal/authorization"
+	"github.com/hydrz/starter/internal/billing"
 	"github.com/hydrz/starter/internal/organization"
 	"github.com/hydrz/starter/internal/platform/httpserver"
 )
@@ -196,7 +197,7 @@ func TestReadiness(t *testing.T) {
 
 func newHandler(t *testing.T, service *announcement.Service, checker httpserver.HealthChecker) http.Handler {
 	t.Helper()
-	handler, err := httpserver.NewHandler(service, checker, nil, nil, nil)
+	handler, err := httpserver.NewHandler(service, checker, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("NewHandler() error = %v", err)
 	}
@@ -328,7 +329,7 @@ func TestOrganizationAndAuthorizationRouting(t *testing.T) {
 
 	annService := announcement.NewService(&announcementRepository{})
 
-	handler, err := httpserver.NewHandler(annService, healthChecker{}, nil, orgService, authzService)
+	handler, err := httpserver.NewHandler(annService, healthChecker{}, nil, orgService, authzService, nil)
 	if err != nil {
 		t.Fatalf("NewHandler() error = %v", err)
 	}
@@ -406,6 +407,213 @@ func TestOrganizationAndAuthorizationRouting(t *testing.T) {
 
 		if rec.Code == http.StatusForbidden || rec.Code == http.StatusUnauthorized {
 			t.Errorf("status = %d, expected authorized (non-401/403)", rec.Code)
+		}
+	})
+}
+
+// --- minimal billing.Service stubs for routing/authorization tests --------
+//
+// These satisfy billing's narrow repository ports with no-op/not-found
+// behavior; they exist only to exercise the four-check enforcement chain
+// (authenticate -> membership -> Casbin permission -> billing-account
+// ownership) at the HTTP routing layer. internal/billing's own package has
+// the full behavioral test suite (webhook idempotency, monotonic guard,
+// cancellation isolation, signature verification).
+
+type stubBillingAccounts struct{}
+
+func (stubBillingAccounts) GetOrCreate(context.Context, string, string) (billing.BillingAccount, error) {
+	return billing.BillingAccount{}, billing.ErrNotFound
+}
+func (stubBillingAccounts) GetByOrganization(context.Context, string) (billing.BillingAccount, error) {
+	return billing.BillingAccount{}, billing.ErrNotFound
+}
+func (stubBillingAccounts) GetByStripeCustomerID(context.Context, string) (billing.BillingAccount, error) {
+	return billing.BillingAccount{}, billing.ErrNotFound
+}
+
+type stubCheckoutSessions struct{}
+
+func (stubCheckoutSessions) Create(context.Context, string, string, string, string) (billing.CheckoutSession, error) {
+	return billing.CheckoutSession{}, nil
+}
+func (stubCheckoutSessions) GetByStripeID(context.Context, string) (billing.CheckoutSession, bool, error) {
+	return billing.CheckoutSession{}, false, nil
+}
+func (stubCheckoutSessions) UpdateStatus(context.Context, string, string) error { return nil }
+
+type stubSubscriptions struct{}
+
+func (stubSubscriptions) Upsert(context.Context, billing.UpsertSubscriptionInput) (billing.Subscription, bool, error) {
+	return billing.Subscription{}, false, nil
+}
+func (stubSubscriptions) GetByStripeID(context.Context, string) (billing.Subscription, bool, error) {
+	return billing.Subscription{}, false, nil
+}
+func (stubSubscriptions) GetLatestForBillingAccount(context.Context, string) (billing.Subscription, bool, error) {
+	return billing.Subscription{}, false, nil
+}
+
+type stubOneTimePurchases struct{}
+
+func (stubOneTimePurchases) Insert(context.Context, billing.InsertOneTimePurchaseInput) (billing.OneTimePurchase, bool, error) {
+	return billing.OneTimePurchase{}, false, nil
+}
+
+type stubWebhookEvents struct{}
+
+func (stubWebhookEvents) Insert(context.Context, string, string, time.Time) (bool, error) {
+	return false, nil
+}
+
+type stubEntitlements struct{}
+
+func (stubEntitlements) Upsert(context.Context, billing.UpsertEntitlementInput) (billing.Entitlement, error) {
+	return billing.Entitlement{}, nil
+}
+func (stubEntitlements) HasEntitlement(context.Context, string, string) (bool, error) {
+	return false, nil
+}
+func (stubEntitlements) ListForOrganization(context.Context, string) ([]billing.Entitlement, error) {
+	return nil, nil
+}
+
+type stubTransactor struct{}
+
+func (stubTransactor) WithinTransaction(ctx context.Context, fn func(context.Context) error) error {
+	return fn(ctx)
+}
+
+type stubGateway struct{}
+
+func (stubGateway) CreateCustomer(context.Context, string) (string, error) { return "cus_stub", nil }
+func (stubGateway) CreateCheckoutSession(context.Context, billing.CheckoutParams) (string, string, error) {
+	return "cs_stub", "https://stripe.test/checkout/stub", nil
+}
+func (stubGateway) CreatePortalSession(context.Context, string, string) (string, error) {
+	return "https://stripe.test/portal/stub", nil
+}
+
+func testBillingService(t *testing.T) *billing.Service {
+	t.Helper()
+	service, err := billing.NewService(billing.Dependencies{
+		BillingAccounts:  stubBillingAccounts{},
+		CheckoutSessions: stubCheckoutSessions{},
+		Subscriptions:    stubSubscriptions{},
+		OneTimePurchases: stubOneTimePurchases{},
+		WebhookEvents:    stubWebhookEvents{},
+		Entitlements:     stubEntitlements{},
+		Transactor:       stubTransactor{},
+		Gateway:          stubGateway{},
+		WebhookSecret:    "whsec_test",
+		SuccessURL:       "https://app.test/billing/success",
+		CancelURL:        "https://app.test/billing/cancel",
+		PortalReturnURL:  "https://app.test/billing",
+	})
+	if err != nil {
+		t.Fatalf("billing.NewService() error = %v", err)
+	}
+	return service
+}
+
+func TestBillingRouting(t *testing.T) {
+	t.Parallel()
+
+	orgID := "c0000000-0000-0000-0000-000000000003"
+	otherOrgID := "d0000000-0000-0000-0000-000000000004"
+	ownerUserID := "billing-owner-1"
+	memberUserID := "billing-member-2"
+	outsiderUserID := "billing-outsider-3"
+
+	adapter := authorization.NewMemoryAdapter([][]string{
+		{"p", "owner", "*", "billing", "read"},
+		{"p", "owner", "*", "billing", "checkout"},
+		{"p", "owner", "*", "billing", "portal"},
+		{"p", "member", "*", "billing", "read"},
+	})
+	enforcer, err := authorization.NewEnforcer(adapter)
+	if err != nil {
+		t.Fatalf("NewEnforcer() error = %v", err)
+	}
+	if _, err := enforcer.AddGroupingPolicy(ownerUserID, "owner", orgID); err != nil {
+		t.Fatalf("AddGroupingPolicy() error = %v", err)
+	}
+	if _, err := enforcer.AddGroupingPolicy(memberUserID, "member", orgID); err != nil {
+		t.Fatalf("AddGroupingPolicy() error = %v", err)
+	}
+	authzService := authorization.NewService(enforcer)
+
+	handler, err := httpserver.NewHandler(nil, healthChecker{}, nil, nil, authzService, testBillingService(t))
+	if err != nil {
+		t.Fatalf("NewHandler() error = %v", err)
+	}
+
+	t.Run("GET billing summary requires authentication", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/organizations/"+orgID+"/billing/summary", nil)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusUnauthorized {
+			t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
+		}
+	})
+
+	t.Run("GET billing summary for outsider (not a member) returns 403", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/organizations/"+orgID+"/billing/summary", nil)
+		ctx := auth.ContextWithPrincipal(req.Context(), outsiderUserID)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req.WithContext(ctx))
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("status = %d, want %d", rec.Code, http.StatusForbidden)
+		}
+	})
+
+	t.Run("GET billing summary for member succeeds", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/organizations/"+orgID+"/billing/summary", nil)
+		ctx := auth.ContextWithPrincipal(req.Context(), memberUserID)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req.WithContext(ctx))
+		if rec.Code != http.StatusOK {
+			t.Errorf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+		}
+	})
+
+	t.Run("POST checkout-sessions for member (read-only role) returns 403", func(t *testing.T) {
+		body := bytes.NewBufferString(`{"priceKey":"pro"}`)
+		req := httptest.NewRequest(http.MethodPost, "/api/organizations/"+orgID+"/billing/checkout-sessions", body)
+		req.Header.Set("Content-Type", "application/json")
+		ctx := auth.ContextWithPrincipal(req.Context(), memberUserID)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req.WithContext(ctx))
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("status = %d, want %d", rec.Code, http.StatusForbidden)
+		}
+	})
+
+	t.Run("POST checkout-sessions for owner in a DIFFERENT organization's URL is scoped, never cross-org", func(t *testing.T) {
+		// ownerUserID has no role at all in otherOrgID, so this must be
+		// rejected by the membership/permission check before it ever
+		// reaches billing-account resolution.
+		body := bytes.NewBufferString(`{"priceKey":"pro"}`)
+		req := httptest.NewRequest(http.MethodPost, "/api/organizations/"+otherOrgID+"/billing/checkout-sessions", body)
+		req.Header.Set("Content-Type", "application/json")
+		ctx := auth.ContextWithPrincipal(req.Context(), ownerUserID)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req.WithContext(ctx))
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("status = %d, want %d", rec.Code, http.StatusForbidden)
+		}
+	})
+
+	t.Run("Stripe webhook endpoint is mounted outside session auth and rejects an unsigned request", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/api/billing/webhooks/stripe", bytes.NewBufferString(`{}`))
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		// No Authorization/session cookie was supplied at all, yet the
+		// response is 400 (bad/missing signature), never 401/404: the
+		// webhook route is intentionally outside the authenticated JSON
+		// router, verifying Stripe's own HMAC signature instead.
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("status = %d, want %d", rec.Code, http.StatusBadRequest)
 		}
 	})
 }

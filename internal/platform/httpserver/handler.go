@@ -16,10 +16,12 @@ import (
 	"github.com/hydrz/starter/internal/announcement"
 	"github.com/hydrz/starter/internal/api/announcementsapi"
 	"github.com/hydrz/starter/internal/api/authapi"
+	"github.com/hydrz/starter/internal/api/billingapi"
 	"github.com/hydrz/starter/internal/api/organizationsapi"
 	"github.com/hydrz/starter/internal/api/systemapi"
 	"github.com/hydrz/starter/internal/auth"
 	"github.com/hydrz/starter/internal/authorization"
+	"github.com/hydrz/starter/internal/billing"
 	"github.com/hydrz/starter/internal/organization"
 	"github.com/hydrz/starter/internal/platform/webui"
 )
@@ -57,6 +59,7 @@ func NewHandler(
 	identity *auth.Service,
 	orgs *organization.Service,
 	authorizer authorization.PermissionEnforcer,
+	billingService *billing.Service,
 ) (http.Handler, error) {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
@@ -152,6 +155,32 @@ func NewHandler(
 				r.HandleFunc("/", announcementServer.ServeHTTP)
 			}
 		})
+	}
+
+	if billingService != nil {
+		billingServer, err := billingapi.NewServer(billing.NewHTTPHandler(billingService))
+		if err != nil {
+			return nil, fmt.Errorf("initialize billing api server: %w", err)
+		}
+
+		router.Route("/api/organizations/{organizationId}/billing", func(r chi.Router) {
+			if authMiddleware != nil {
+				r.Use(authMiddleware)
+			}
+			if authorizer != nil {
+				r.With(authorization.RequirePermission(authorizer, "billing", "read")).Get("/summary", billingServer.ServeHTTP)
+				r.With(authorization.RequirePermission(authorizer, "billing", "checkout")).Post("/checkout-sessions", billingServer.ServeHTTP)
+				r.With(authorization.RequirePermission(authorizer, "billing", "portal")).Post("/portal-sessions", billingServer.ServeHTTP)
+			} else {
+				r.HandleFunc("/*", billingServer.ServeHTTP)
+			}
+		})
+
+		// Stripe webhook delivery: a raw-body handler outside the
+		// TypeSpec/ogen JSON router (see billing.WebhookHTTPHandler), never
+		// behind session auth — Stripe authenticates itself via the
+		// Stripe-Signature HMAC header, verified before any JSON parsing.
+		router.Handle("/api/billing/webhooks/stripe", billing.NewWebhookHTTPHandler(billingService))
 	}
 
 	webHandler, err := webui.NewHandler()

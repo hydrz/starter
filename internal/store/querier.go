@@ -20,6 +20,8 @@ type Querier interface {
 	CountOrganizationOwners(ctx context.Context, organizationID pgtype.UUID) (int64, error)
 	CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (CreateAPIKeyRow, error)
 	CreateAnnouncement(ctx context.Context, arg CreateAnnouncementParams) (CreateAnnouncementRow, error)
+	CreateBillingAccount(ctx context.Context, arg CreateBillingAccountParams) (BillingAccount, error)
+	CreateCheckoutSession(ctx context.Context, arg CreateCheckoutSessionParams) (CheckoutSession, error)
 	CreateDeliveryAttempt(ctx context.Context, arg CreateDeliveryAttemptParams) (DeliveryAttempt, error)
 	CreateDeliveryMessage(ctx context.Context, arg CreateDeliveryMessageParams) (DeliveryMessage, error)
 	CreateInvitation(ctx context.Context, arg CreateInvitationParams) (OrganizationInvitation, error)
@@ -40,6 +42,9 @@ type Querier interface {
 	FindRefreshSession(ctx context.Context, tokenDigest []byte) (FindRefreshSessionRow, error)
 	GetActiveAPIKeyByDigest(ctx context.Context, secretDigest []byte) (GetActiveAPIKeyByDigestRow, error)
 	GetAnnouncement(ctx context.Context, arg GetAnnouncementParams) (GetAnnouncementRow, error)
+	GetBillingAccountByOrganization(ctx context.Context, organizationID pgtype.UUID) (BillingAccount, error)
+	GetBillingAccountByStripeCustomerID(ctx context.Context, stripeCustomerID string) (BillingAccount, error)
+	GetCheckoutSessionByStripeID(ctx context.Context, stripeCheckoutSessionID string) (CheckoutSession, error)
 	GetDeliveryMessageByOutboxEvent(ctx context.Context, outboxEventID pgtype.UUID) (DeliveryMessage, error)
 	GetInvitationByDigest(ctx context.Context, tokenDigest []byte) (OrganizationInvitation, error)
 	GetInvitationByID(ctx context.Context, id pgtype.UUID) (OrganizationInvitation, error)
@@ -47,17 +52,30 @@ type Querier interface {
 	GetOrganizationByID(ctx context.Context, id pgtype.UUID) (Organization, error)
 	GetOrganizationBySlug(ctx context.Context, slug string) (Organization, error)
 	GetOutboxEventByID(ctx context.Context, id pgtype.UUID) (OutboxEvent, error)
+	GetSubscriptionByStripeID(ctx context.Context, stripeSubscriptionID string) (Subscription, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
+	HasEntitlement(ctx context.Context, arg HasEntitlementParams) (bool, error)
 	InsertCasbinRule(ctx context.Context, arg InsertCasbinRuleParams) (CasbinRule, error)
+	// ON CONFLICT DO NOTHING makes re-delivery of the same checkout session's
+	// completion event idempotent at the row level, independent of the
+	// stripe_webhook_events dedup (defense in depth).
+	InsertOneTimePurchase(ctx context.Context, arg InsertOneTimePurchaseParams) (OneTimePurchase, error)
+	// Single-statement, constraint-based idempotency check: ON CONFLICT DO
+	// NOTHING means a duplicate delivery of the same Stripe event ID returns no
+	// row (not an error), which the caller treats as "already processed".
+	InsertWebhookEvent(ctx context.Context, arg InsertWebhookEventParams) (StripeWebhookEvent, error)
 	ListAPIKeysForUser(ctx context.Context, userID pgtype.UUID) ([]ListAPIKeysForUserRow, error)
 	ListAnnouncements(ctx context.Context, arg ListAnnouncementsParams) ([]ListAnnouncementsRow, error)
 	ListCasbinRules(ctx context.Context) ([]CasbinRule, error)
 	ListDeliveryAttemptsByMessage(ctx context.Context, deliveryMessageID pgtype.UUID) ([]DeliveryAttempt, error)
+	ListEntitlementsForOrganization(ctx context.Context, organizationID pgtype.UUID) ([]Entitlement, error)
 	ListInvitations(ctx context.Context, organizationID pgtype.UUID) ([]OrganizationInvitation, error)
 	ListMemberships(ctx context.Context, organizationID pgtype.UUID) ([]ListMembershipsRow, error)
+	ListOneTimePurchasesForBillingAccount(ctx context.Context, billingAccountID pgtype.UUID) ([]OneTimePurchase, error)
 	ListOrganizationsForUser(ctx context.Context, userID pgtype.UUID) ([]ListOrganizationsForUserRow, error)
 	ListRefreshSessionsForUser(ctx context.Context, userID pgtype.UUID) ([]ListRefreshSessionsForUserRow, error)
+	ListSubscriptionsForBillingAccount(ctx context.Context, billingAccountID pgtype.UUID) ([]Subscription, error)
 	MarkOutboxEventProcessed(ctx context.Context, arg MarkOutboxEventProcessedParams) (int64, error)
 	MarkUserEmailVerified(ctx context.Context, id pgtype.UUID) (int64, error)
 	RetryOutboxEvent(ctx context.Context, arg RetryOutboxEventParams) (int64, error)
@@ -67,9 +85,17 @@ type Querier interface {
 	RevokeRefreshFamily(ctx context.Context, arg RevokeRefreshFamilyParams) (int64, error)
 	RevokeRefreshSessionForUser(ctx context.Context, arg RevokeRefreshSessionForUserParams) (int64, error)
 	UpdateAnnouncement(ctx context.Context, arg UpdateAnnouncementParams) (UpdateAnnouncementRow, error)
+	UpdateCheckoutSessionStatus(ctx context.Context, arg UpdateCheckoutSessionStatusParams) (int64, error)
 	UpdateMembershipRole(ctx context.Context, arg UpdateMembershipRoleParams) (OrganizationMembership, error)
 	UpdateOrganization(ctx context.Context, arg UpdateOrganizationParams) (Organization, error)
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (int64, error)
+	UpsertEntitlement(ctx context.Context, arg UpsertEntitlementParams) (Entitlement, error)
+	// Monotonic guard: the ON CONFLICT DO UPDATE only fires when the incoming
+	// event is at least as new as the last one applied to this subscription, so
+	// an out-of-order (older) webhook delivery can never regress state. When the
+	// guard rejects the update, no row is returned (treat as a no-op, not an
+	// error).
+	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) (Subscription, error)
 }
 
 var _ Querier = (*Queries)(nil)

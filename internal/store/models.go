@@ -77,6 +77,14 @@ type ApiKey struct {
 	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
+type BillingAccount struct {
+	ID               pgtype.UUID        `db:"id" json:"id"`
+	OrganizationID   pgtype.UUID        `db:"organization_id" json:"organization_id"`
+	StripeCustomerID string             `db:"stripe_customer_id" json:"stripe_customer_id"`
+	CreatedAt        pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type CasbinRule struct {
 	ID    int64  `db:"id" json:"id"`
 	Ptype string `db:"ptype" json:"ptype"`
@@ -86,6 +94,17 @@ type CasbinRule struct {
 	V3    string `db:"v3" json:"v3"`
 	V4    string `db:"v4" json:"v4"`
 	V5    string `db:"v5" json:"v5"`
+}
+
+type CheckoutSession struct {
+	ID                      pgtype.UUID        `db:"id" json:"id"`
+	BillingAccountID        pgtype.UUID        `db:"billing_account_id" json:"billing_account_id"`
+	StripeCheckoutSessionID string             `db:"stripe_checkout_session_id" json:"stripe_checkout_session_id"`
+	PriceKey                string             `db:"price_key" json:"price_key"`
+	Mode                    string             `db:"mode" json:"mode"`
+	Status                  string             `db:"status" json:"status"`
+	CreatedAt               pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type DeliveryAttempt struct {
@@ -112,12 +131,36 @@ type DeliveryMessage struct {
 	CreatedAt            pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
+type Entitlement struct {
+	ID                pgtype.UUID        `db:"id" json:"id"`
+	OrganizationID    pgtype.UUID        `db:"organization_id" json:"organization_id"`
+	FeatureKey        string             `db:"feature_key" json:"feature_key"`
+	Source            string             `db:"source" json:"source"`
+	Enabled           bool               `db:"enabled" json:"enabled"`
+	ExpiresAt         pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	SubscriptionID    pgtype.UUID        `db:"subscription_id" json:"subscription_id"`
+	OneTimePurchaseID pgtype.UUID        `db:"one_time_purchase_id" json:"one_time_purchase_id"`
+	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type NotificationIntent struct {
 	ID              pgtype.UUID        `db:"id" json:"id"`
 	RecipientUserID pgtype.UUID        `db:"recipient_user_id" json:"recipient_user_id"`
 	Kind            string             `db:"kind" json:"kind"`
 	Payload         []byte             `db:"payload" json:"payload"`
 	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type OneTimePurchase struct {
+	ID                      pgtype.UUID        `db:"id" json:"id"`
+	BillingAccountID        pgtype.UUID        `db:"billing_account_id" json:"billing_account_id"`
+	StripeCheckoutSessionID string             `db:"stripe_checkout_session_id" json:"stripe_checkout_session_id"`
+	PriceKey                string             `db:"price_key" json:"price_key"`
+	AmountMinorUnits        int64              `db:"amount_minor_units" json:"amount_minor_units"`
+	Currency                string             `db:"currency" json:"currency"`
+	Status                  string             `db:"status" json:"status"`
+	CreatedAt               pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
 type OneTimeToken struct {
@@ -194,6 +237,27 @@ type RefreshTokenFamily struct {
 	RevokedAt    pgtype.Timestamptz `db:"revoked_at" json:"revoked_at"`
 	RevokeReason *string            `db:"revoke_reason" json:"revoke_reason"`
 	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type StripeWebhookEvent struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	StripeEventID  string             `db:"stripe_event_id" json:"stripe_event_id"`
+	EventType      string             `db:"event_type" json:"event_type"`
+	EventCreatedAt pgtype.Timestamptz `db:"event_created_at" json:"event_created_at"`
+	ReceivedAt     pgtype.Timestamptz `db:"received_at" json:"received_at"`
+}
+
+type Subscription struct {
+	ID                   pgtype.UUID        `db:"id" json:"id"`
+	BillingAccountID     pgtype.UUID        `db:"billing_account_id" json:"billing_account_id"`
+	StripeSubscriptionID string             `db:"stripe_subscription_id" json:"stripe_subscription_id"`
+	PriceKey             string             `db:"price_key" json:"price_key"`
+	Status               string             `db:"status" json:"status"`
+	CurrentPeriodEnd     pgtype.Timestamptz `db:"current_period_end" json:"current_period_end"`
+	CancelAtPeriodEnd    bool               `db:"cancel_at_period_end" json:"cancel_at_period_end"`
+	LastEventCreatedAt   pgtype.Timestamptz `db:"last_event_created_at" json:"last_event_created_at"`
+	CreatedAt            pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type User struct {
