@@ -52,7 +52,7 @@
 | B1 | 修复 Email OTP 投递 | - | notify | Done | #29 |
 | B2 | 可信代理与客户端 IP | - | http | Done | #32 |
 | B3 | 配置入口收敛 | - | main | Done | #28 |
-| F1 | 通用 outbox 分发与重试 | B1 | notify | Todo | |
+| F1 | 通用 outbox 分发与重试 | B1 | notify | Review | https://github.com/hydrz/starter/pull/34 |
 | F2 | 模块注册机制 | B3 | main, http | Todo | |
 | F3 | 仓储事务 helper | - | repo | Done | #27 |
 | F4 | 真实数据库集成测试 | F3 | repo | Todo | |
