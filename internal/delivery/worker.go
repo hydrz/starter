@@ -25,20 +25,20 @@ const (
 
 // OutboxEvent represents an event claimed from the outbox table.
 type OutboxEvent struct {
-	ID               string
-	Topic            string
-	AggregateType    string
-	AggregateID      string
-	Payload          []byte
-	IdempotencyKey   string
-	AvailableAt      time.Time
-	ClaimedAt        *time.Time
-	ClaimToken       *string
-	Attempts         int
-	ProcessedAt      *time.Time
-	DeadLetteredAt   *time.Time
-	LastError        *string
-	CreatedAt        time.Time
+	ID             string
+	Topic          string
+	AggregateType  string
+	AggregateID    string
+	Payload        []byte
+	IdempotencyKey string
+	AvailableAt    time.Time
+	ClaimedAt      *time.Time
+	ClaimToken     *string
+	Attempts       int
+	ProcessedAt    *time.Time
+	DeadLetteredAt *time.Time
+	LastError      *string
+	CreatedAt      time.Time
 }
 
 // Store defines the persistence operations needed by Worker.

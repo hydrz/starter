@@ -17,18 +17,18 @@ func (c fakeClock) Now() time.Time { return c.now }
 
 type transition struct {
 	eventID     string
-	claimToken string
+	claimToken  string
 	availableAt time.Time
 	lastError   string
 }
 
 type fakeStore struct {
-	mu            sync.Mutex
-	events        []delivery.OutboxEvent
-	claimErr      error
-	processed     []transition
-	retried       []transition
-	deadLettered  []transition
+	mu           sync.Mutex
+	events       []delivery.OutboxEvent
+	claimErr     error
+	processed    []transition
+	retried      []transition
+	deadLettered []transition
 }
 
 func (f *fakeStore) ClaimDueEvents(_ context.Context, claimToken string, _ time.Duration, batchSize int) ([]delivery.OutboxEvent, error) {
