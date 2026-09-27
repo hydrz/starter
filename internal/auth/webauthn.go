@@ -306,10 +306,7 @@ func NewPostgresWebAuthnCredentialRepository(queries *store.Queries) *PostgresWe
 }
 
 func (repository *PostgresWebAuthnCredentialRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return repository.queries.WithTx(tx)
-	}
-	return repository.queries
+	return database.Queries(ctx, repository.queries)
 }
 
 func (repository *PostgresWebAuthnCredentialRepository) Create(ctx context.Context, userID string, credentialID, publicKey []byte, signCount uint32, userHandle []byte) error {
@@ -384,10 +381,7 @@ func NewPostgresWebAuthnChallengeRepository(queries *store.Queries) *PostgresWeb
 }
 
 func (repository *PostgresWebAuthnChallengeRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return repository.queries.WithTx(tx)
-	}
-	return repository.queries
+	return database.Queries(ctx, repository.queries)
 }
 
 func (repository *PostgresWebAuthnChallengeRepository) Create(ctx context.Context, ceremony, userID string, challenge, sessionData []byte, expiresAt time.Time) error {

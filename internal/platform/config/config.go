@@ -19,27 +19,49 @@ import (
 const (
 	defaultAddress            = ":8080"
 	defaultDatabaseURL        = "postgres://starter:starter@127.0.0.1:5432/starter?sslmode=disable"
+	defaultAppName            = "Starter"
+	defaultAppBaseURL         = "http://localhost:8080"
 	defaultAccessTokenTTL     = 15 * time.Minute
 	defaultRefreshTokenTTL    = 30 * 24 * time.Hour
 	defaultWorkerPollInterval = time.Second
 	defaultWorkerBatchSize    = 50
+	defaultShutdownTimeout    = 10 * time.Second
 )
 
 // Config is the application configuration. Integrations whose Enabled field is
 // false are deliberately not initialized by the application.
 type Config struct {
-	DatabaseURL    string
-	Address        string
-	AutoMigrate    bool
-	TrustedProxies []netip.Prefix
+	DatabaseURL     string
+	Address         string
+	AutoMigrate     bool
+	ShutdownTimeout time.Duration
+	TrustedProxies  []netip.Prefix
+	App             AppConfig
+	Billing         BillingConfig
 
-	Auth          AuthConfig
-	OAuth         OAuthConfig
-	WebAuthn      WebAuthnConfig
-	SMTP          SMTPConfig
-	Stripe        StripeConfig
-	Worker        WorkerConfig
-	Authorization AuthorizationConfig
+	Auth     AuthConfig
+	OAuth    OAuthConfig
+	WebAuthn WebAuthnConfig
+	SMTP     SMTPConfig
+	Stripe   StripeConfig
+	Worker   WorkerConfig
+}
+
+// AppConfig holds application identity and the public base URL used to derive
+// same-origin links.
+type AppConfig struct {
+	Name    string
+	BaseURL string
+}
+
+// BillingConfig holds server-controlled catalog and redirect URL configuration.
+// It is independent from Stripe credentials so the catalog remains usable in
+// tests and can be validated even while Stripe is disabled.
+type BillingConfig struct {
+	PriceCatalog    string
+	SuccessURL      string
+	CancelURL       string
+	PortalReturnURL string
 }
 
 // AuthConfig supplies Ed25519 access-token material. Future token issuers must
@@ -68,6 +90,7 @@ type AuthConfig struct {
 	// never be derived from SigningPrivateKey or SecretDigestPepper: all
 	// three rotate independently for different reasons.
 	TOTPEncryptionKey []byte
+	TOTPIssuer        string
 }
 
 const (
@@ -79,6 +102,7 @@ const (
 	authRefreshTokenTTLEnv    = "AUTH_REFRESH_TOKEN_TTL"
 	authSecretPepperEnv       = "AUTH_SECRET_PEPPER"
 	authTOTPEncryptionKeyEnv  = "AUTH_TOTP_ENCRYPTION_KEY"
+	authTOTPIssuerEnv         = "AUTH_TOTP_ISSUER"
 
 	minSecretDigestPepperLength = 16
 	totpEncryptionKeyLength     = 32
@@ -125,12 +149,6 @@ type WorkerConfig struct {
 	BatchSize    int
 }
 
-type AuthorizationConfig struct {
-	Enabled    bool
-	ModelPath  string
-	PolicyPath string
-}
-
 // ValidationError reports configuration variable names only. It intentionally
 // excludes values so callers can log it without leaking credentials.
 type ValidationError struct {
@@ -150,13 +168,19 @@ func Load(lookup func(string) (string, bool)) (Config, error) {
 	}
 
 	cfg := Config{
-		DatabaseURL: valueOr(lookup, "DATABASE_URL", defaultDatabaseURL),
-		Address:     address(lookup),
-		AutoMigrate: valueOr(lookup, "AUTO_MIGRATE", "true") != "false",
+		DatabaseURL:     valueOr(lookup, "DATABASE_URL", defaultDatabaseURL),
+		Address:         address(lookup),
+		AutoMigrate:     valueOr(lookup, "AUTO_MIGRATE", "true") != "false",
+		ShutdownTimeout: defaultShutdownTimeout,
+		App: AppConfig{
+			Name:    valueOr(lookup, "APP_NAME", defaultAppName),
+			BaseURL: valueOr(lookup, "APP_BASE_URL", defaultAppBaseURL),
+		},
 		Auth: AuthConfig{
 			JWTIssuer:       valueOr(lookup, authIssuerEnv, "starter"),
 			AccessTokenTTL:  defaultAccessTokenTTL,
 			RefreshTokenTTL: defaultRefreshTokenTTL,
+			TOTPIssuer:      valueOr(lookup, authTOTPIssuerEnv, valueOr(lookup, "APP_NAME", defaultAppName)),
 		},
 		Worker: WorkerConfig{
 			PollInterval: defaultWorkerPollInterval,
@@ -173,7 +197,17 @@ func Load(lookup func(string) (string, bool)) (Config, error) {
 	if !validAddress(cfg.Address) {
 		invalid = append(invalid, "HTTP_ADDRESS")
 	}
+	if raw, present := lookup("SHUTDOWN_TIMEOUT"); present {
+		cfg.ShutdownTimeout = parseDuration(raw, "SHUTDOWN_TIMEOUT", &invalid)
+	}
 	cfg.TrustedProxies = parseCIDRList(valueOr(lookup, "TRUSTED_PROXIES", ""), "TRUSTED_PROXIES", &invalid)
+	if !validAbsoluteURL(cfg.App.BaseURL) {
+		invalid = append(invalid, "APP_BASE_URL")
+	}
+	if strings.TrimSpace(cfg.App.Name) == "" {
+		invalid = append(invalid, "APP_NAME")
+	}
+	cfg.Billing = loadBilling(lookup, &invalid, cfg.App)
 
 	cfg.Auth = loadAuth(lookup, &invalid, cfg.Auth)
 
@@ -182,7 +216,6 @@ func Load(lookup func(string) (string, bool)) (Config, error) {
 	cfg.WebAuthn = loadWebAuthn(lookup, &invalid)
 	cfg.SMTP = loadSMTP(lookup, &invalid)
 	cfg.Stripe = loadStripe(lookup, &invalid)
-	cfg.Authorization = loadAuthorization(lookup, &invalid)
 
 	if raw, present := lookup("WORKER_ENABLED"); present {
 		parsed, err := strconv.ParseBool(raw)
@@ -252,6 +285,33 @@ func validAddress(raw string) bool {
 	return err == nil
 }
 
+func validAbsoluteURL(raw string) bool {
+	parsed, err := url.ParseRequestURI(raw)
+	return err == nil && parsed.Scheme != "" && parsed.Host != ""
+}
+
+func loadBilling(lookup func(string) (string, bool), invalid *[]string, app AppConfig) BillingConfig {
+	billing := BillingConfig{
+		PriceCatalog:    valueOr(lookup, "BILLING_PRICE_CATALOG", ""),
+		SuccessURL:      valueOr(lookup, "BILLING_SUCCESS_URL", app.BaseURL+"/billing/success"),
+		CancelURL:       valueOr(lookup, "BILLING_CANCEL_URL", app.BaseURL+"/billing/cancel"),
+		PortalReturnURL: valueOr(lookup, "BILLING_PORTAL_RETURN_URL", app.BaseURL+"/billing"),
+	}
+	if billing.PriceCatalog != "" && !json.Valid([]byte(billing.PriceCatalog)) {
+		*invalid = append(*invalid, "BILLING_PRICE_CATALOG")
+	}
+	for name, value := range map[string]string{
+		"BILLING_SUCCESS_URL":       billing.SuccessURL,
+		"BILLING_CANCEL_URL":        billing.CancelURL,
+		"BILLING_PORTAL_RETURN_URL": billing.PortalReturnURL,
+	} {
+		if !validAbsoluteURL(value) {
+			*invalid = append(*invalid, name)
+		}
+	}
+	return billing
+}
+
 func loadAuth(lookup func(string) (string, bool), invalid *[]string, defaults AuthConfig) AuthConfig {
 	names := []string{authActiveKIDEnv, authSigningPrivateKeyEnv, authVerificationKeysetEnv, authIssuerEnv, authAccessTokenTTLEnv, authRefreshTokenTTLEnv, authSecretPepperEnv, authTOTPEncryptionKeyEnv}
 	var authInvalid []string
@@ -297,6 +357,7 @@ func loadAuth(lookup func(string) (string, bool), invalid *[]string, defaults Au
 		VerificationPublicKeys: publicKeys,
 		SecretDigestPepper:     []byte(secretDigestPepper),
 		TOTPEncryptionKey:      totpEncryptionKey,
+		TOTPIssuer:             defaults.TOTPIssuer,
 	}
 }
 
@@ -391,14 +452,6 @@ func loadStripe(lookup func(string) (string, bool), invalid *[]string) StripeCon
 		return StripeConfig{}
 	}
 	return StripeConfig{Enabled: true, SecretKey: valueOr(lookup, names[0], ""), WebhookSecret: valueOr(lookup, names[1], ""), PublishableKey: valueOr(lookup, names[2], "")}
-}
-
-func loadAuthorization(lookup func(string) (string, bool), invalid *[]string) AuthorizationConfig {
-	names := []string{"AUTHORIZATION_MODEL_PATH", "AUTHORIZATION_POLICY_PATH"}
-	if !requireGroup(lookup, invalid, names...) {
-		return AuthorizationConfig{}
-	}
-	return AuthorizationConfig{Enabled: true, ModelPath: valueOr(lookup, names[0], ""), PolicyPath: valueOr(lookup, names[1], "")}
 }
 
 func requireGroup(lookup func(string) (string, bool), invalid *[]string, names ...string) bool {

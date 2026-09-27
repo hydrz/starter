@@ -22,10 +22,7 @@ func NewPostgresRepository(queries *store.Queries) *PostgresRepository {
 }
 
 func (repository *PostgresRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return repository.queries.WithTx(tx)
-	}
-	return repository.queries
+	return database.Queries(ctx, repository.queries)
 }
 
 func (repository *PostgresRepository) List(ctx context.Context, organizationID uuid.UUID, filter Filter) ([]Announcement, int64, error) {

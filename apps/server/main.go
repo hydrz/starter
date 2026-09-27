@@ -29,8 +29,6 @@ import (
 	"github.com/hydrz/starter/internal/store"
 )
 
-const shutdownTimeout = 10 * time.Second
-
 var (
 	version   = "dev"
 	commit    = "unknown"
@@ -79,12 +77,13 @@ func main() {
 		logger.Info("database migrations applied automatically")
 	}
 
+	// The pool is intentionally not released via defer: shutdown closes it
+	// last, after HTTP request handling and the outbox worker have quiesced.
 	pool, err := database.Open(ctx, cfg.DatabaseURL)
 	if err != nil {
 		logger.Error("database connection failed", "error", err)
 		os.Exit(1)
 	}
-	defer pool.Close()
 
 	queries := store.New(pool)
 	announcementService := announcement.NewService(announcement.NewPostgresRepository(queries))
@@ -118,7 +117,7 @@ func main() {
 
 	var billingService *billing.Service
 	if cfg.Stripe.Enabled {
-		billingService, err = buildBillingService(cfg.Stripe, queries, pool)
+		billingService, err = buildBillingService(cfg, queries, pool)
 		if err != nil {
 			logger.Error("billing service initialization failed", "error", err)
 			os.Exit(1)
@@ -165,8 +164,18 @@ func main() {
 		logger.Info("shutdown requested")
 	}
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 	defer cancel()
+
+	// Shutdown first closes the listener and then waits for active HTTP
+	// requests. Only after request handling is quiesced do background workers
+	// stop, so their database work cannot race with a request that is still
+	// enqueueing an outbox event. The pool is deliberately last.
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		logger.Error("http server graceful shutdown failed", "error", err)
+	} else {
+		logger.Info("http server stopped")
+	}
 
 	if outboxWorker != nil {
 		if err := outboxWorker.Stop(shutdownCtx); err != nil {
@@ -176,11 +185,8 @@ func main() {
 		}
 	}
 
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		logger.Error("graceful shutdown failed", "error", err)
-		os.Exit(1)
-	}
-	logger.Info("http server stopped")
+	pool.Close()
+	logger.Info("database connection pool closed")
 }
 
 func healthcheck(addr string) error {
@@ -243,7 +249,7 @@ func buildIdentityService(cfg config.Config, queries *store.Queries, pool *pgxpo
 		RecoveryCodes: auth.NewPostgresTOTPRecoveryCodeRepository(queries),
 		MFAChallenges: auth.NewPostgresMFAChallengeRepository(queries),
 		TOTPCipher:    totpCipher,
-		TOTPIssuer:    envOrDefault("AUTH_TOTP_ISSUER", "Starter"),
+		TOTPIssuer:    authConfig.TOTPIssuer,
 
 		OAuthAccounts: auth.NewPostgresOAuthAccountRepository(queries),
 		OAuthStates:   auth.NewPostgresOAuthStateRepository(queries),
@@ -279,21 +285,16 @@ func buildOAuthClients(oauthConfig config.OAuthConfig) map[string]auth.OAuthClie
 	return clients
 }
 
-// buildBillingService wires internal/billing.Service from the process
-// StripeConfig and a pgxpool-backed store. It never changes StripeConfig's
-// shape; it only consumes cfg.Stripe.{SecretKey,WebhookSecret}. The price
-// catalog and redirect URLs are billing-owned configuration (never
-// client-supplied): BILLING_PRICE_CATALOG is an optional JSON map from
-// server-controlled price key to Stripe price ID/feature key/mode (see
-// billing.ParseCatalogJSON); BILLING_SUCCESS_URL, BILLING_CANCEL_URL, and
-// BILLING_PORTAL_RETURN_URL fall back to same-origin defaults when unset.
-func buildBillingService(stripeConfig config.StripeConfig, queries *store.Queries, pool *pgxpool.Pool) (*billing.Service, error) {
-	gateway, err := billing.NewLiveGateway(stripeConfig.SecretKey)
+// buildBillingService wires internal/billing.Service from centralized process
+// configuration and a pgxpool-backed store. The price catalog and redirect
+// URLs are server-controlled configuration and are never client-supplied.
+func buildBillingService(cfg config.Config, queries *store.Queries, pool *pgxpool.Pool) (*billing.Service, error) {
+	gateway, err := billing.NewLiveGateway(cfg.Stripe.SecretKey)
 	if err != nil {
 		return nil, fmt.Errorf("create stripe gateway: %w", err)
 	}
 
-	catalog, err := billing.ParseCatalogJSON(os.Getenv("BILLING_PRICE_CATALOG"))
+	catalog, err := billing.ParseCatalogJSON(cfg.Billing.PriceCatalog)
 	if err != nil {
 		return nil, err
 	}
@@ -310,24 +311,17 @@ func buildBillingService(stripeConfig config.StripeConfig, queries *store.Querie
 		Gateway:          gateway,
 		Catalog:          catalog,
 		Clock:            billing.SystemClock{},
-		WebhookSecret:    stripeConfig.WebhookSecret,
-		SuccessURL:       envOrDefault("BILLING_SUCCESS_URL", "http://localhost:8080/billing/success"),
-		CancelURL:        envOrDefault("BILLING_CANCEL_URL", "http://localhost:8080/billing/cancel"),
-		PortalReturnURL:  envOrDefault("BILLING_PORTAL_RETURN_URL", "http://localhost:8080/billing"),
+		WebhookSecret:    cfg.Stripe.WebhookSecret,
+		SuccessURL:       cfg.Billing.SuccessURL,
+		CancelURL:        cfg.Billing.CancelURL,
+		PortalReturnURL:  cfg.Billing.PortalReturnURL,
 	})
-}
-
-func envOrDefault(name, fallback string) string {
-	if value := os.Getenv(name); value != "" {
-		return value
-	}
-	return fallback
 }
 
 // buildOutboxWorker wires internal/delivery.Worker with an embedded template renderer,
 // an SMTP (or noop) delivery channel, and the notification routing service.
 func buildOutboxWorker(cfg config.Config, queries *store.Queries, logger *slog.Logger) (*delivery.Worker, error) {
-	renderer, err := delivery.NewTemplateRenderer("Starter")
+	renderer, err := delivery.NewTemplateRenderer(cfg.App.Name)
 	if err != nil {
 		return nil, fmt.Errorf("create template renderer: %w", err)
 	}

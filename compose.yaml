@@ -13,6 +13,10 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://starter:starter@postgres:5432/starter?sslmode=disable}
       PORT: "8080"
+      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-10s}
+    # Give the process room to finish in-flight requests, outbox work, and
+    # pool close within SHUTDOWN_TIMEOUT before Docker sends SIGKILL.
+    stop_grace_period: 30s
     ports:
       - "127.0.0.1:${APP_PORT:-8080}:8080"
     depends_on:

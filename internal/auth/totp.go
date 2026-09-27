@@ -281,10 +281,7 @@ func NewPostgresTOTPFactorRepository(queries *store.Queries) *PostgresTOTPFactor
 }
 
 func (repository *PostgresTOTPFactorRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return repository.queries.WithTx(tx)
-	}
-	return repository.queries
+	return database.Queries(ctx, repository.queries)
 }
 
 func (repository *PostgresTOTPFactorRepository) CreatePending(ctx context.Context, userID string, secretCiphertext, secretNonce []byte) (string, error) {
@@ -375,10 +372,7 @@ func NewPostgresTOTPRecoveryCodeRepository(queries *store.Queries) *PostgresTOTP
 }
 
 func (repository *PostgresTOTPRecoveryCodeRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return repository.queries.WithTx(tx)
-	}
-	return repository.queries
+	return database.Queries(ctx, repository.queries)
 }
 
 func (repository *PostgresTOTPRecoveryCodeRepository) CreateMany(ctx context.Context, factorID string, codeDigests [][]byte) error {
@@ -417,10 +411,7 @@ func NewPostgresMFAChallengeRepository(queries *store.Queries) *PostgresMFAChall
 }
 
 func (repository *PostgresMFAChallengeRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return repository.queries.WithTx(tx)
-	}
-	return repository.queries
+	return database.Queries(ctx, repository.queries)
 }
 
 func (repository *PostgresMFAChallengeRepository) Create(ctx context.Context, userID, factorID string, expiresAt time.Time) (string, error) {
