@@ -27,6 +27,9 @@ func TestLoadUsesCurrentApplicationDefaults(t *testing.T) {
 	if !cfg.AutoMigrate {
 		t.Error("AutoMigrate = false, want true")
 	}
+	if cfg.ShutdownTimeout != 10*time.Second {
+		t.Errorf("ShutdownTimeout = %s, want 10s", cfg.ShutdownTimeout)
+	}
 	if cfg.App.Name != defaultAppName || cfg.App.BaseURL != defaultAppBaseURL {
 		t.Errorf("App = %#v, want default application identity", cfg.App)
 	}
@@ -45,15 +48,16 @@ func TestLoadReadsServerSettings(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(mapLookup(map[string]string{
-		"DATABASE_URL": "postgres://user:password@example.test:5432/app?sslmode=require",
-		"PORT":         "9090",
-		"AUTO_MIGRATE": "false",
+		"DATABASE_URL":     "postgres://user:password@example.test:5432/app?sslmode=require",
+		"PORT":             "9090",
+		"AUTO_MIGRATE":     "false",
+		"SHUTDOWN_TIMEOUT": "25s",
 	}))
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if cfg.Address != ":9090" || cfg.AutoMigrate {
-		t.Errorf("server config = %#v, want address :9090 and auto migrate false", cfg)
+	if cfg.Address != ":9090" || cfg.AutoMigrate || cfg.ShutdownTimeout != 25*time.Second {
+		t.Errorf("server config = %#v, want address :9090, auto migrate false, and a 25s shutdown timeout", cfg)
 	}
 }
 

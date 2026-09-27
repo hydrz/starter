@@ -71,8 +71,8 @@
 | D1 | 完整切片生成器 | F2 | tools | Todo | |
 | D2 | 模块裁剪命令 | F2 | tools | Todo | |
 | D3 | E2E 测试 | F4 | - | Todo | |
-| D4 | 部署与迁移加固 | - | - | Todo | |
-| D5 | 着陆页预渲染 | - | web | Review | https://github.com/hydrz/starter/pull/30 |
+| D4 | 部署与迁移加固 | - | - | Done | #31 |
+| D5 | 着陆页预渲染 | - | web | Done | #30 |
 
 ## 4. 任务卡
 

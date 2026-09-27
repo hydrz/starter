@@ -29,8 +29,6 @@ import (
 	"github.com/hydrz/starter/internal/store"
 )
 
-const shutdownTimeout = 10 * time.Second
-
 var (
 	version   = "dev"
 	commit    = "unknown"
@@ -79,12 +77,13 @@ func main() {
 		logger.Info("database migrations applied automatically")
 	}
 
+	// The pool is intentionally not released via defer: shutdown closes it
+	// last, after HTTP request handling and the outbox worker have quiesced.
 	pool, err := database.Open(ctx, cfg.DatabaseURL)
 	if err != nil {
 		logger.Error("database connection failed", "error", err)
 		os.Exit(1)
 	}
-	defer pool.Close()
 
 	queries := store.New(pool)
 	announcementService := announcement.NewService(announcement.NewPostgresRepository(queries))
@@ -165,8 +164,18 @@ func main() {
 		logger.Info("shutdown requested")
 	}
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 	defer cancel()
+
+	// Shutdown first closes the listener and then waits for active HTTP
+	// requests. Only after request handling is quiesced do background workers
+	// stop, so their database work cannot race with a request that is still
+	// enqueueing an outbox event. The pool is deliberately last.
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		logger.Error("http server graceful shutdown failed", "error", err)
+	} else {
+		logger.Info("http server stopped")
+	}
 
 	if outboxWorker != nil {
 		if err := outboxWorker.Stop(shutdownCtx); err != nil {
@@ -176,11 +185,8 @@ func main() {
 		}
 	}
 
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		logger.Error("graceful shutdown failed", "error", err)
-		os.Exit(1)
-	}
-	logger.Info("http server stopped")
+	pool.Close()
+	logger.Info("database connection pool closed")
 }
 
 func healthcheck(addr string) error {
