@@ -23,10 +23,7 @@ func NewPostgresClaimer(queries *store.Queries) *PostgresClaimer {
 }
 
 func (c *PostgresClaimer) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return c.queries.WithTx(tx)
-	}
-	return c.queries
+	return database.Queries(ctx, c.queries)
 }
 
 // ClaimDueEvents claims a batch of due events with claimToken and claimTimeout.

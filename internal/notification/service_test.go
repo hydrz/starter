@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
+	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -257,6 +261,141 @@ func TestService_VerificationRequested_Success(t *testing.T) {
 	if repo.processed["event-1"] != claimToken {
 		t.Errorf("expected outbox event processed with claimToken, got %s", repo.processed["event-1"])
 	}
+}
+
+func TestService_EmailOTPRequested_SendsSMTPMessage(t *testing.T) {
+	repo := newFakeRepository()
+	renderer, err := delivery.NewTemplateRenderer("Starter")
+	if err != nil {
+		t.Fatalf("NewTemplateRenderer: %v", err)
+	}
+	smtpChan := newFakeChannel("smtp")
+	clock := &fakeClock{now: time.Date(2026, 9, 26, 12, 0, 0, 0, time.UTC)}
+
+	svc, err := notification.NewService(notification.Dependencies{
+		Repository: repo,
+		Renderer:   renderer,
+		Channels:   map[string]delivery.Channel{"smtp": smtpChan},
+		Clock:      clock,
+	})
+	if err != nil {
+		t.Fatalf("NewService: %v", err)
+	}
+
+	payload, err := json.Marshal(struct {
+		UserID string `json:"user_id"`
+		Email  string `json:"email"`
+		Code   string `json:"code"`
+	}{
+		UserID: "usr-otp",
+		Email:  "otp@example.com",
+		Code:   "123456",
+	})
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+	claimToken := "claim-otp"
+	event := delivery.OutboxEvent{
+		ID:         "event-otp",
+		Topic:      notification.TopicAuthEmailOTPRequested,
+		Payload:    payload,
+		Attempts:   1,
+		ClaimToken: &claimToken,
+	}
+
+	if err := svc.Handle(context.Background(), event); err != nil {
+		t.Fatalf("Handle: %v", err)
+	}
+
+	if len(repo.intents) != 1 {
+		t.Fatalf("expected one notification intent, got %d", len(repo.intents))
+	}
+	if got, want := repo.intents[0].Kind, notification.KindEmailOTP; got != want {
+		t.Errorf("intent kind = %q, want %q", got, want)
+	}
+	if len(smtpChan.delivered) != 1 {
+		t.Fatalf("expected one SMTP delivery, got %d", len(smtpChan.delivered))
+	}
+	message := smtpChan.delivered[0]
+	if got, want := message.Recipient, "otp@example.com"; got != want {
+		t.Errorf("recipient = %q, want %q", got, want)
+	}
+	if !strings.Contains(message.Subject, "sign-in code") {
+		t.Errorf("email subject missing OTP purpose: %q", message.Subject)
+	}
+	for _, body := range []string{message.TextBody, message.HTMLBody} {
+		if !strings.Contains(body, "123456") {
+			t.Errorf("email body missing OTP code: %q", body)
+		}
+		if !strings.Contains(body, "10 minutes") {
+			t.Errorf("email body missing OTP validity period: %q", body)
+		}
+	}
+	if got := repo.processed[event.ID]; got != claimToken {
+		t.Errorf("processed claim token = %q, want %q", got, claimToken)
+	}
+}
+
+func TestService_HandlesEveryAuthOutboxTopic(t *testing.T) {
+	authDir := filepath.Join(repositoryRoot(t), "internal", "auth")
+	topicPattern := regexp.MustCompile(`outboxTopic\w+\s*=\s*"([^"]+)"`)
+
+	entries, err := os.ReadDir(authDir)
+	if err != nil {
+		t.Fatalf("read auth directory: %v", err)
+	}
+
+	topics := make(map[string]string)
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".go" || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		source, err := os.ReadFile(filepath.Join(authDir, entry.Name()))
+		if err != nil {
+			t.Fatalf("read %s: %v", entry.Name(), err)
+		}
+		for _, match := range topicPattern.FindAllStringSubmatch(string(source), -1) {
+			topics[match[1]] = entry.Name()
+		}
+	}
+
+	for topic, sourceFile := range topics {
+		t.Run(topic, func(t *testing.T) {
+			repo := newFakeRepository()
+			svc, err := notification.NewService(notification.Dependencies{
+				Repository: repo,
+				Renderer:   mustNewTemplateRenderer(t),
+				Channels:   map[string]delivery.Channel{"smtp": newFakeChannel("smtp")},
+			})
+			if err != nil {
+				t.Fatalf("NewService: %v", err)
+			}
+
+			payload := []byte(`{"user_id":"usr-topic","email":"topic@example.com","token":"token","code":"123456"}`)
+			err = svc.Handle(context.Background(), delivery.OutboxEvent{ID: "event-" + topic, Topic: topic, Payload: payload})
+			if err != nil {
+				t.Errorf("notification cannot handle auth outbox topic %q from %s: %v", topic, sourceFile, err)
+			}
+		})
+	}
+}
+
+func mustNewTemplateRenderer(t *testing.T) *delivery.TemplateRenderer {
+	t.Helper()
+	renderer, err := delivery.NewTemplateRenderer("Starter")
+	if err != nil {
+		t.Fatalf("NewTemplateRenderer: %v", err)
+	}
+	return renderer
+}
+
+func repositoryRoot(t *testing.T) string {
+	t.Helper()
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("determine test source path")
+	}
+	return filepath.Clean(filepath.Join(filepath.Dir(file), "..", ".."))
 }
 
 func TestService_PasswordResetRequested_Success(t *testing.T) {

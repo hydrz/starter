@@ -66,10 +66,7 @@ func NewPostgresBillingAccountRepository(queries *store.Queries) *PostgresBillin
 }
 
 func (r *PostgresBillingAccountRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return r.queries.WithTx(tx)
-	}
-	return r.queries
+	return database.Queries(ctx, r.queries)
 }
 
 func (r *PostgresBillingAccountRepository) GetOrCreate(ctx context.Context, organizationID, stripeCustomerID string) (BillingAccount, error) {
@@ -133,10 +130,7 @@ func NewPostgresCheckoutSessionRepository(queries *store.Queries) *PostgresCheck
 }
 
 func (r *PostgresCheckoutSessionRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return r.queries.WithTx(tx)
-	}
-	return r.queries
+	return database.Queries(ctx, r.queries)
 }
 
 func (r *PostgresCheckoutSessionRepository) Create(ctx context.Context, billingAccountID, stripeCheckoutSessionID, priceKey, mode string) (CheckoutSession, error) {
@@ -202,10 +196,7 @@ func NewPostgresSubscriptionRepository(queries *store.Queries) *PostgresSubscrip
 }
 
 func (r *PostgresSubscriptionRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return r.queries.WithTx(tx)
-	}
-	return r.queries
+	return database.Queries(ctx, r.queries)
 }
 
 func (r *PostgresSubscriptionRepository) Upsert(ctx context.Context, input UpsertSubscriptionInput) (Subscription, bool, error) {
@@ -284,10 +275,7 @@ func NewPostgresOneTimePurchaseRepository(queries *store.Queries) *PostgresOneTi
 }
 
 func (r *PostgresOneTimePurchaseRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return r.queries.WithTx(tx)
-	}
-	return r.queries
+	return database.Queries(ctx, r.queries)
 }
 
 func (r *PostgresOneTimePurchaseRepository) Insert(ctx context.Context, input InsertOneTimePurchaseInput) (OneTimePurchase, bool, error) {
@@ -336,10 +324,7 @@ func NewPostgresWebhookEventRepository(queries *store.Queries) *PostgresWebhookE
 }
 
 func (r *PostgresWebhookEventRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return r.queries.WithTx(tx)
-	}
-	return r.queries
+	return database.Queries(ctx, r.queries)
 }
 
 func (r *PostgresWebhookEventRepository) Insert(ctx context.Context, stripeEventID, eventType string, eventCreatedAt time.Time) (bool, error) {
@@ -368,10 +353,7 @@ func NewPostgresEntitlementRepository(queries *store.Queries) *PostgresEntitleme
 }
 
 func (r *PostgresEntitlementRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return r.queries.WithTx(tx)
-	}
-	return r.queries
+	return database.Queries(ctx, r.queries)
 }
 
 func (r *PostgresEntitlementRepository) Upsert(ctx context.Context, input UpsertEntitlementInput) (Entitlement, error) {
@@ -460,10 +442,7 @@ func NewPostgresOutboxWriter(queries *store.Queries) *PostgresOutboxWriter {
 }
 
 func (w *PostgresOutboxWriter) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return w.queries.WithTx(tx)
-	}
-	return w.queries
+	return database.Queries(ctx, w.queries)
 }
 
 func (w *PostgresOutboxWriter) WriteEvent(ctx context.Context, topic, aggregateType, aggregateID string, payload []byte, idempotencyKey string) error {

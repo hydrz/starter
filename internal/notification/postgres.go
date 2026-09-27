@@ -25,10 +25,7 @@ func NewPostgresRepository(queries *store.Queries) *PostgresRepository {
 }
 
 func (r *PostgresRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return r.queries.WithTx(tx)
-	}
-	return r.queries
+	return database.Queries(ctx, r.queries)
 }
 
 func (r *PostgresRepository) CreateNotificationIntent(ctx context.Context, recipientUserID *string, kind string, payload []byte) (string, error) {
