@@ -130,4 +130,4 @@ ORDER BY feature_key, source;
 INSERT INTO outbox_events (topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at)
 VALUES ($1, $2, $3, $4, $5, $6)
 ON CONFLICT (idempotency_key) DO NOTHING
-RETURNING id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, last_error, created_at;
+RETURNING id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, dead_lettered_at, last_error, created_at;

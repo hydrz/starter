@@ -14,6 +14,7 @@ ADR 记录影响多个模块、难以撤销或需要保存取舍背景的决策�
 | [0006](0006-stripe-payments-subscriptions-and-entitlements.md) | Stripe 支付、订阅与 entitlement 投影 | 已接受 | 2026-09-26 |
 | [0007](0007-postgres-outbox-and-in-process-worker.md) | PostgreSQL outbox 与进程内 worker | 已接受 | 2026-09-26 |
 | [0008](0008-mfa-enforcement-and-oauth-account-linking-policy.md) | MFA 强制策略与 OAuth 账户关联策略 | 已接受 | 2026-09-26 |
+| [0009](0009-outbox-retry-and-dead-letter-policy.md) | Outbox 重试与死信策略 | 已接受 | 2026-09-27 |
 | [0010](0010-module-registration-and-contract-permissions.md) | 模块注册与契约内权限声明 | 已接受 | 2026-09-27 |
 
 ## 决策状态定义

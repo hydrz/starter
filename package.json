@@ -38,6 +38,7 @@
     "scaffold:slice": "node tools/scaffold-slice.mjs",
     "generate:db": "go tool sqlc generate -f db/sqlc.yaml",
     "test": "go test ./... && pnpm --filter @starter/web test",
+    "test:integration": "go test -tags=integration -count=1 ./...",
     "test:embed": "pnpm build:web && go test -tags production ./internal/platform/webui/... ./internal/platform/httpserver/...",
     "test:race": "go test -race ./..."
   },

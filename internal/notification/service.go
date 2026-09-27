@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"time"
 
 	"github.com/hydrz/starter/internal/delivery"
 )
@@ -17,16 +16,14 @@ type Dependencies struct {
 	Repository Repository
 	Renderer   *delivery.TemplateRenderer
 	Channels   map[string]delivery.Channel
-	Clock      Clock
 	Logger     *slog.Logger
 }
 
-// Service routes outbox events to appropriate notification channels and tracks attempts.
+// Service handles notification events and tracks delivery attempts.
 type Service struct {
 	repo     Repository
 	renderer *delivery.TemplateRenderer
 	channels map[string]delivery.Channel
-	clock    Clock
 	logger   *slog.Logger
 }
 
@@ -41,9 +38,6 @@ func NewService(deps Dependencies) (*Service, error) {
 	if deps.Channels == nil {
 		deps.Channels = make(map[string]delivery.Channel)
 	}
-	if deps.Clock == nil {
-		deps.Clock = SystemClock{}
-	}
 	if deps.Logger == nil {
 		deps.Logger = slog.New(slog.NewJSONHandler(io.Discard, nil))
 	}
@@ -52,7 +46,6 @@ func NewService(deps Dependencies) (*Service, error) {
 		repo:     deps.Repository,
 		renderer: deps.Renderer,
 		channels: deps.Channels,
-		clock:    deps.Clock,
 		logger:   deps.Logger,
 	}, nil
 }
@@ -159,51 +152,20 @@ func (s *Service) handleAuthEvent(ctx context.Context, event delivery.OutboxEven
 		IdempotencyKey: deliveryMsg.IdempotencyKey,
 	}
 
-	claimToken := ""
-	if event.ClaimToken != nil {
-		claimToken = *event.ClaimToken
-	}
-
 	resp, deliverErr := smtpChan.Deliver(ctx, msg)
 	if deliverErr != nil {
 		errMsg := deliverErr.Error()
 		if err := s.repo.CompleteDeliveryAttempt(ctx, attemptID, StatusFailed, nil, &errMsg); err != nil {
 			s.logger.Error("failed to complete failed delivery attempt", "error", err)
 		}
-
-		backoff := CalculateBackoff(event.Attempts)
-		nextAvailableAt := s.clock.Now().UTC().Add(backoff)
-		if err := s.repo.RetryOutboxEvent(ctx, event.ID, claimToken, nextAvailableAt, &errMsg); err != nil {
-			return fmt.Errorf("retry outbox event: %w", err)
-		}
 		return deliverErr
 	}
 
-	// Success: record attempt as 'sent' and mark outbox event processed
+	// The Worker owns the outbox state transition after this business handler
+	// returns successfully. This service records only the channel outcome.
 	if err := s.repo.CompleteDeliveryAttempt(ctx, attemptID, StatusSent, &resp, nil); err != nil {
 		s.logger.Error("failed to complete sent delivery attempt", "error", err)
 	}
 
-	if err := s.repo.MarkOutboxEventProcessed(ctx, event.ID, claimToken); err != nil {
-		return fmt.Errorf("mark outbox event processed: %w", err)
-	}
-
 	return nil
-}
-
-// CalculateBackoff computes exponential retry delay based on the attempt count.
-func CalculateBackoff(attempt int) time.Duration {
-	if attempt <= 0 {
-		attempt = 1
-	}
-	base := 5 * time.Second
-	multiplier := 3
-	delay := base
-	for i := 1; i < attempt; i++ {
-		delay *= time.Duration(multiplier)
-		if delay > time.Hour {
-			return time.Hour
-		}
-	}
-	return delay
 }

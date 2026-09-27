@@ -25,6 +25,7 @@ const (
 	defaultRefreshTokenTTL    = 30 * 24 * time.Hour
 	defaultWorkerPollInterval = time.Second
 	defaultWorkerBatchSize    = 50
+	defaultWorkerMaxAttempts  = 10
 	defaultShutdownTimeout    = 10 * time.Second
 )
 
@@ -147,6 +148,7 @@ type WorkerConfig struct {
 	Enabled      bool
 	PollInterval time.Duration
 	BatchSize    int
+	MaxAttempts  int
 }
 
 // ValidationError reports configuration variable names only. It intentionally
@@ -185,6 +187,7 @@ func Load(lookup func(string) (string, bool)) (Config, error) {
 		Worker: WorkerConfig{
 			PollInterval: defaultWorkerPollInterval,
 			BatchSize:    defaultWorkerBatchSize,
+			MaxAttempts:  defaultWorkerMaxAttempts,
 		},
 	}
 
@@ -230,6 +233,9 @@ func Load(lookup func(string) (string, bool)) (Config, error) {
 	}
 	if raw, present := lookup("WORKER_BATCH_SIZE"); present {
 		cfg.Worker.BatchSize = parsePositiveInt(raw, "WORKER_BATCH_SIZE", &invalid)
+	}
+	if raw, present := lookup("WORKER_MAX_ATTEMPTS"); present {
+		cfg.Worker.MaxAttempts = parsePositiveInt(raw, "WORKER_MAX_ATTEMPTS", &invalid)
 	}
 
 	if len(invalid) > 0 {

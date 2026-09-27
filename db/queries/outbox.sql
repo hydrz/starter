@@ -6,13 +6,14 @@ RETURNING id, recipient_user_id, kind, payload, created_at;
 -- name: CreateOutboxEvent :one
 INSERT INTO outbox_events (topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, last_error, created_at;
+RETURNING id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, dead_lettered_at, last_error, created_at;
 
 -- name: ClaimOutboxEvents :many
 WITH candidates AS (
     SELECT id
     FROM outbox_events
     WHERE processed_at IS NULL
+      AND dead_lettered_at IS NULL
       AND available_at <= now()
       AND (claimed_at IS NULL OR claimed_at < now() - sqlc.arg('claim_timeout')::interval)
     ORDER BY available_at, created_at
@@ -24,17 +25,23 @@ SET claimed_at = now(), claim_token = sqlc.arg('claim_token')::uuid, attempts = 
 FROM candidates
 WHERE event.id = candidates.id
 RETURNING event.id, event.topic, event.aggregate_type, event.aggregate_id, event.payload, event.idempotency_key,
-          event.available_at, event.claimed_at, event.claim_token, event.attempts, event.processed_at, event.last_error, event.created_at;
+          event.available_at, event.claimed_at, event.claim_token, event.attempts, event.processed_at,
+          event.dead_lettered_at, event.last_error, event.created_at;
 
 -- name: MarkOutboxEventProcessed :execrows
 UPDATE outbox_events
 SET processed_at = now(), claimed_at = NULL, claim_token = NULL, last_error = NULL
-WHERE id = $1 AND claim_token = $2 AND processed_at IS NULL;
+WHERE id = $1 AND claim_token = $2 AND processed_at IS NULL AND dead_lettered_at IS NULL;
 
 -- name: RetryOutboxEvent :execrows
 UPDATE outbox_events
 SET available_at = $3, claimed_at = NULL, claim_token = NULL, last_error = $4
-WHERE id = $1 AND claim_token = $2 AND processed_at IS NULL;
+WHERE id = $1 AND claim_token = $2 AND processed_at IS NULL AND dead_lettered_at IS NULL;
+
+-- name: MarkOutboxEventDeadLettered :execrows
+UPDATE outbox_events
+SET dead_lettered_at = now(), claimed_at = NULL, claim_token = NULL, last_error = $3
+WHERE id = $1 AND claim_token = $2 AND processed_at IS NULL AND dead_lettered_at IS NULL;
 
 -- name: CreateDeliveryMessage :one
 INSERT INTO delivery_messages (notification_intent_id, outbox_event_id, channel, recipient, subject, text_body, html_body, idempotency_key)
@@ -57,7 +64,7 @@ FROM delivery_messages
 WHERE outbox_event_id = $1;
 
 -- name: GetOutboxEventByID :one
-SELECT id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, last_error, created_at
+SELECT id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, dead_lettered_at, last_error, created_at
 FROM outbox_events
 WHERE id = $1;
 

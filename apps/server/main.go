@@ -78,7 +78,12 @@ func startWorker(ctx context.Context, cfg config.Config, deps platformmodule.Dep
 	if err != nil {
 		return nil, err
 	}
-	worker := delivery.NewWorker(delivery.NewPostgresClaimer(deps.Queries), dispatcher, delivery.WorkerOptions{PollInterval: cfg.Worker.PollInterval, BatchSize: cfg.Worker.BatchSize, Logger: deps.Logger})
+	worker := delivery.NewWorker(delivery.NewPostgresStore(deps.Queries), dispatcher, delivery.WorkerOptions{
+		PollInterval: cfg.Worker.PollInterval,
+		BatchSize:    cfg.Worker.BatchSize,
+		MaxAttempts:  cfg.Worker.MaxAttempts,
+		Logger:       deps.Logger,
+	})
 	if err := worker.Start(ctx); err != nil {
 		return nil, err
 	}
