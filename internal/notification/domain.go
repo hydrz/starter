@@ -14,9 +14,11 @@ var (
 const (
 	KindEmailVerification = "email_verification"
 	KindPasswordReset     = "password_reset"
+	KindEmailOTP          = "email_otp"
 
 	TopicAuthVerificationRequested  = "auth.verification_requested"
 	TopicAuthPasswordResetRequested = "auth.password_reset_requested"
+	TopicAuthEmailOTPRequested      = "auth.email_otp_requested"
 
 	ChannelSMTP = "smtp"
 
@@ -60,9 +62,12 @@ type DeliveryAttempt struct {
 	CompletedAt       *time.Time
 }
 
-// AuthPayload matches the JSON structure emitted by internal/auth for verification and reset.
+// AuthPayload matches the JSON structure emitted by internal/auth for verification,
+// password-reset, and email-OTP delivery events. Verification and password-reset
+// events carry Token; email-OTP events carry Code.
 type AuthPayload struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
 	Token  string `json:"token"`
+	Code   string `json:"code"`
 }

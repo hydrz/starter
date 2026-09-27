@@ -304,10 +304,7 @@ func NewPostgresOAuthAccountRepository(queries *store.Queries) *PostgresOAuthAcc
 }
 
 func (repository *PostgresOAuthAccountRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return repository.queries.WithTx(tx)
-	}
-	return repository.queries
+	return database.Queries(ctx, repository.queries)
 }
 
 func (repository *PostgresOAuthAccountRepository) Find(ctx context.Context, provider, subject string) (string, bool, error) {
@@ -369,10 +366,7 @@ func NewPostgresOAuthStateRepository(queries *store.Queries) *PostgresOAuthState
 }
 
 func (repository *PostgresOAuthStateRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return repository.queries.WithTx(tx)
-	}
-	return repository.queries
+	return database.Queries(ctx, repository.queries)
 }
 
 func (repository *PostgresOAuthStateRepository) Create(ctx context.Context, provider string, stateDigest []byte, nonce, codeVerifier, intent, linkingUserID string, expiresAt time.Time) error {

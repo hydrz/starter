@@ -27,7 +27,16 @@ func TestLoadUsesCurrentApplicationDefaults(t *testing.T) {
 	if !cfg.AutoMigrate {
 		t.Error("AutoMigrate = false, want true")
 	}
-	if cfg.Auth.Enabled || cfg.OAuth.Google.Enabled || cfg.WebAuthn.Enabled || cfg.SMTP.Enabled || cfg.Stripe.Enabled || cfg.Authorization.Enabled || cfg.Worker.Enabled {
+	if cfg.App.Name != defaultAppName || cfg.App.BaseURL != defaultAppBaseURL {
+		t.Errorf("App = %#v, want default application identity", cfg.App)
+	}
+	if cfg.Billing.SuccessURL != defaultAppBaseURL+"/billing/success" || cfg.Billing.CancelURL != defaultAppBaseURL+"/billing/cancel" || cfg.Billing.PortalReturnURL != defaultAppBaseURL+"/billing" {
+		t.Errorf("Billing = %#v, want URLs derived from default app base URL", cfg.Billing)
+	}
+	if cfg.Auth.TOTPIssuer != defaultAppName {
+		t.Errorf("Auth.TOTPIssuer = %q, want %q", cfg.Auth.TOTPIssuer, defaultAppName)
+	}
+	if cfg.Auth.Enabled || cfg.OAuth.Google.Enabled || cfg.WebAuthn.Enabled || cfg.SMTP.Enabled || cfg.Stripe.Enabled || cfg.Worker.Enabled {
 		t.Error("optional integrations must be disabled when their variables are absent")
 	}
 }
@@ -120,8 +129,13 @@ func TestLoadEnablesAndValidatesOptionalGroups(t *testing.T) {
 		"STRIPE_SECRET_KEY":          "sk_test_example",
 		"STRIPE_WEBHOOK_SECRET":      "whsec_example",
 		"STRIPE_PUBLISHABLE_KEY":     "pk_test_example",
-		"AUTHORIZATION_MODEL_PATH":   "config/model.conf",
-		"AUTHORIZATION_POLICY_PATH":  "config/policy.csv",
+		"APP_NAME":                   "Example App",
+		"APP_BASE_URL":               "https://app.example.test",
+		"BILLING_PRICE_CATALOG":      `{"pro_monthly":{"stripePriceId":"price_123","featureKey":"pro","mode":"subscription"}}`,
+		"BILLING_SUCCESS_URL":        "https://app.example.test/checkout/success",
+		"BILLING_CANCEL_URL":         "https://app.example.test/checkout/cancel",
+		"BILLING_PORTAL_RETURN_URL":  "https://app.example.test/settings/billing",
+		authTOTPIssuerEnv:            "Example Authenticator",
 		"WORKER_ENABLED":             "true",
 		"WORKER_POLL_INTERVAL":       "2s",
 		"WORKER_BATCH_SIZE":          "25",
@@ -135,11 +149,20 @@ func TestLoadEnablesAndValidatesOptionalGroups(t *testing.T) {
 	if cfg.Auth.ActiveKID != "2026-09" || !cfg.Auth.SigningPrivateKey.Public().(ed25519.PublicKey).Equal(cfg.Auth.VerificationPublicKeys["2026-09"]) || len(cfg.Auth.VerificationPublicKeys) != 2 {
 		t.Errorf("Auth keyset = %#v, want active kid and both rotation keys", cfg.Auth)
 	}
-	if !cfg.OAuth.Google.Enabled || !cfg.OAuth.GitHub.Enabled || !cfg.WebAuthn.Enabled || !cfg.SMTP.Enabled || !cfg.Stripe.Enabled || !cfg.Authorization.Enabled || !cfg.Worker.Enabled {
+	if !cfg.OAuth.Google.Enabled || !cfg.OAuth.GitHub.Enabled || !cfg.WebAuthn.Enabled || !cfg.SMTP.Enabled || !cfg.Stripe.Enabled || !cfg.Worker.Enabled {
 		t.Errorf("one or more complete integrations were not enabled: %#v", cfg)
 	}
 	if cfg.Worker.PollInterval != 2*time.Second || cfg.Worker.BatchSize != 25 {
 		t.Errorf("Worker = %#v, want poll interval 2s and batch size 25", cfg.Worker)
+	}
+	if cfg.App.Name != "Example App" || cfg.App.BaseURL != "https://app.example.test" {
+		t.Errorf("App = %#v, want configured application identity", cfg.App)
+	}
+	if cfg.Auth.TOTPIssuer != "Example Authenticator" {
+		t.Errorf("Auth.TOTPIssuer = %q, want configured issuer", cfg.Auth.TOTPIssuer)
+	}
+	if cfg.Billing.PriceCatalog == "" || cfg.Billing.SuccessURL != "https://app.example.test/checkout/success" || cfg.Billing.CancelURL != "https://app.example.test/checkout/cancel" || cfg.Billing.PortalReturnURL != "https://app.example.test/settings/billing" {
+		t.Errorf("Billing = %#v, want configured billing values", cfg.Billing)
 	}
 }
 
@@ -209,6 +232,44 @@ func TestLoadDerivesIndependentSecretDigestPepper(t *testing.T) {
 	}
 	if bytes.Equal(cfg.Auth.SecretDigestPepper, cfg.Auth.SigningPrivateKey) {
 		t.Error("SecretDigestPepper must not equal or be derived from SigningPrivateKey")
+	}
+}
+
+func TestLoadDerivesBillingURLsAndTOTPIssuerFromApplicationConfig(t *testing.T) {
+	t.Parallel()
+
+	cfg, err := Load(mapLookup(map[string]string{
+		"APP_NAME":     "Acme",
+		"APP_BASE_URL": "https://app.acme.test",
+	}))
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.Auth.TOTPIssuer != "Acme" {
+		t.Errorf("Auth.TOTPIssuer = %q, want Acme", cfg.Auth.TOTPIssuer)
+	}
+	if cfg.Billing.SuccessURL != "https://app.acme.test/billing/success" || cfg.Billing.CancelURL != "https://app.acme.test/billing/cancel" || cfg.Billing.PortalReturnURL != "https://app.acme.test/billing" {
+		t.Errorf("Billing = %#v, want URLs derived from APP_BASE_URL", cfg.Billing)
+	}
+}
+
+func TestLoadRejectsInvalidApplicationAndBillingConfiguration(t *testing.T) {
+	t.Parallel()
+
+	_, err := Load(mapLookup(map[string]string{
+		"APP_BASE_URL":              "not-a-url",
+		"BILLING_PRICE_CATALOG":     "not-json",
+		"BILLING_SUCCESS_URL":       "/relative-success",
+		"BILLING_CANCEL_URL":        "not-a-url",
+		"BILLING_PORTAL_RETURN_URL": "relative",
+	}))
+	if err == nil {
+		t.Fatal("Load() error = nil, want validation error")
+	}
+	for _, name := range []string{"APP_BASE_URL", "BILLING_PRICE_CATALOG", "BILLING_SUCCESS_URL", "BILLING_CANCEL_URL", "BILLING_PORTAL_RETURN_URL"} {
+		if !strings.Contains(err.Error(), name) {
+			t.Errorf("validation error %q does not name %s", err, name)
+		}
 	}
 }
 

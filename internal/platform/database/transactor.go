@@ -7,6 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/hydrz/starter/internal/store"
 )
 
 const rollbackTimeout = 3 * time.Second
@@ -70,4 +72,12 @@ func (t *PgxTransactor) WithinTransaction(ctx context.Context, fn func(ctx conte
 func TxFromContext(ctx context.Context) (pgx.Tx, bool) {
 	tx, ok := ctx.Value(txContextKey{}).(pgx.Tx)
 	return tx, ok
+}
+
+// Queries returns transaction-bound queries when ctx carries an active transaction.
+func Queries(ctx context.Context, queries *store.Queries) *store.Queries {
+	if tx, ok := TxFromContext(ctx); ok {
+		return queries.WithTx(tx)
+	}
+	return queries
 }
