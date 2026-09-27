@@ -9,6 +9,7 @@ import (
 	"errors"
 	"net"
 	"net/mail"
+	"net/netip"
 	"net/url"
 	"strconv"
 	"strings"
@@ -34,6 +35,7 @@ type Config struct {
 	Address         string
 	AutoMigrate     bool
 	ShutdownTimeout time.Duration
+	TrustedProxies  []netip.Prefix
 	App             AppConfig
 	Billing         BillingConfig
 
@@ -198,6 +200,7 @@ func Load(lookup func(string) (string, bool)) (Config, error) {
 	if raw, present := lookup("SHUTDOWN_TIMEOUT"); present {
 		cfg.ShutdownTimeout = parseDuration(raw, "SHUTDOWN_TIMEOUT", &invalid)
 	}
+	cfg.TrustedProxies = parseCIDRList(valueOr(lookup, "TRUSTED_PROXIES", ""), "TRUSTED_PROXIES", &invalid)
 	if !validAbsoluteURL(cfg.App.BaseURL) {
 		invalid = append(invalid, "APP_BASE_URL")
 	}
@@ -254,6 +257,24 @@ func parseDatabaseURL(raw string) (string, bool) {
 		return "", false
 	}
 	return raw, true
+}
+
+func parseCIDRList(raw, name string, invalid *[]string) []netip.Prefix {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+
+	items := strings.Split(raw, ",")
+	prefixes := make([]netip.Prefix, 0, len(items))
+	for _, item := range items {
+		prefix, err := netip.ParsePrefix(strings.TrimSpace(item))
+		if err != nil || !prefix.Addr().IsValid() {
+			*invalid = append(*invalid, name)
+			return nil
+		}
+		prefixes = append(prefixes, prefix.Masked())
+	}
+	return prefixes
 }
 
 func validAddress(raw string) bool {

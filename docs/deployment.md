@@ -42,9 +42,20 @@ Compose 按以下顺序运行：
 | `APP_PORT` | `8080` | Compose 宿主机发布端口（仅当宿主机 8080 冲突时指定） |
 | `AUTO_MIGRATE` | `true` | 进程启动时是否自动执行待处理 migration（生产多副本集群推荐独立 `migrate` 一次性任务并设为 `false`，见下文“数据库迁移”） |
 | `HTTP_ADDRESS` | 无 | 可选：完整监听地址（默认 `:PORT`） |
+| `TRUSTED_PROXIES` | 空 | 逗号分隔的可信反向代理 CIDR；仅当直连对端命中此列表时才使用 `X-Forwarded-For` 解析客户端 IP |
 | `SHUTDOWN_TIMEOUT` | `10s` | 收到 SIGTERM/SIGINT 后等待在途 HTTP 请求、outbox worker 与连接池关闭的总预算 |
 
 默认凭据只适用于本地。共享环境使用 secret manager 或受控环境注入，不将 `.env`、连接串或凭据提交到 Git。
+
+### 反向代理与客户端 IP
+
+默认情况下应用忽略全部转发头，并以 TCP 直连对端作为客户端 IP。因此，公网反向代理部署必须只配置实际会直接连接应用的代理网段，例如：
+
+```dotenv
+TRUSTED_PROXIES=10.0.0.0/8,fd00::/8
+```
+
+当且仅当直连对端属于 `TRUSTED_PROXIES` 时，应用才读取 `X-Forwarded-For`，从右向左跳过可信代理并采用第一个非可信地址。不要将公网网段配置为可信代理；否则外部客户端能够伪造 IP，影响按 IP 记录的会话元数据和 webhook 限流。代理必须追加（而非覆盖）`X-Forwarded-For`。
 
 ## 健康语义
 

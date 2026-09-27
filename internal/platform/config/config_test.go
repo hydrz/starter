@@ -30,6 +30,9 @@ func TestLoadUsesCurrentApplicationDefaults(t *testing.T) {
 	if cfg.ShutdownTimeout != 10*time.Second {
 		t.Errorf("ShutdownTimeout = %s, want 10s", cfg.ShutdownTimeout)
 	}
+	if len(cfg.TrustedProxies) != 0 {
+		t.Errorf("TrustedProxies = %#v, want empty", cfg.TrustedProxies)
+	}
 	if cfg.App.Name != defaultAppName || cfg.App.BaseURL != defaultAppBaseURL {
 		t.Errorf("App = %#v, want default application identity", cfg.App)
 	}
@@ -58,6 +61,35 @@ func TestLoadReadsServerSettings(t *testing.T) {
 	}
 	if cfg.Address != ":9090" || cfg.AutoMigrate || cfg.ShutdownTimeout != 25*time.Second {
 		t.Errorf("server config = %#v, want address :9090, auto migrate false, and a 25s shutdown timeout", cfg)
+	}
+}
+
+func TestLoadParsesTrustedProxyCIDRs(t *testing.T) {
+	t.Parallel()
+
+	cfg, err := Load(mapLookup(map[string]string{
+		"TRUSTED_PROXIES": "10.0.0.0/8, 2001:db8:feed::/48",
+	}))
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if got, want := len(cfg.TrustedProxies), 2; got != want {
+		t.Fatalf("len(TrustedProxies) = %d, want %d", got, want)
+	}
+	if got, want := cfg.TrustedProxies[0].String(), "10.0.0.0/8"; got != want {
+		t.Errorf("TrustedProxies[0] = %q, want %q", got, want)
+	}
+	if got, want := cfg.TrustedProxies[1].String(), "2001:db8:feed::/48"; got != want {
+		t.Errorf("TrustedProxies[1] = %q, want %q", got, want)
+	}
+}
+
+func TestLoadRejectsInvalidTrustedProxyCIDR(t *testing.T) {
+	t.Parallel()
+
+	_, err := Load(mapLookup(map[string]string{"TRUSTED_PROXIES": "10.0.0.0/8,not-a-cidr"}))
+	if err == nil || !strings.Contains(err.Error(), "TRUSTED_PROXIES") {
+		t.Fatalf("Load() error = %v, want validation error naming TRUSTED_PROXIES", err)
 	}
 }
 

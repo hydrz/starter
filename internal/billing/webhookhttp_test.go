@@ -8,7 +8,17 @@ import (
 	"time"
 
 	"github.com/hydrz/starter/internal/billing"
+	"github.com/hydrz/starter/internal/platform/httpserver/clientipcontext"
 )
+
+// requestFromIP returns a webhook request whose context carries ip as the
+// resolved client address, the way the global httpserver.ClientIP middleware
+// does in production. The webhook handler rate-limits on that context value,
+// never on raw forwarding headers.
+func requestFromIP(ip string) *http.Request {
+	req := httptest.NewRequest(http.MethodPost, "/api/billing/webhooks/stripe", bytes.NewBufferString(`{}`))
+	return req.WithContext(clientipcontext.WithClientIP(req.Context(), ip))
+}
 
 func TestWebhookHTTPHandler_ValidEventReturns200(t *testing.T) {
 	t.Parallel()
@@ -117,11 +127,9 @@ func TestWebhookHTTPHandler_RateLimitsPerSourceIP(t *testing.T) {
 	const limit = 300
 
 	newRequest := func() *http.Request {
-		req := httptest.NewRequest(http.MethodPost, "/api/billing/webhooks/stripe", bytes.NewBufferString(`{}`))
-		// httptest.NewRequest defaults RemoteAddr to a fixed value, so every
-		// call in this test shares one source IP key.
-		req.RemoteAddr = "203.0.113.7:54321"
-		return req
+		// Every call shares one resolved client IP key, the same way requests
+		// from a single source share it behind the middleware.
+		return requestFromIP("203.0.113.7")
 	}
 
 	sawTooManyRequests := false
@@ -156,16 +164,14 @@ func TestWebhookHTTPHandler_RateLimitIsPerIP(t *testing.T) {
 	const limit = 300
 	exhaust := func(ip string) {
 		for i := 0; i < limit; i++ {
-			req := httptest.NewRequest(http.MethodPost, "/api/billing/webhooks/stripe", bytes.NewBufferString(`{}`))
-			req.RemoteAddr = ip + ":1"
+			req := requestFromIP(ip)
 			rec := httptest.NewRecorder()
 			handler.ServeHTTP(rec, req)
 		}
 	}
 	exhaust("198.51.100.1")
 
-	req := httptest.NewRequest(http.MethodPost, "/api/billing/webhooks/stripe", bytes.NewBufferString(`{}`))
-	req.RemoteAddr = "198.51.100.2:1"
+	req := requestFromIP("198.51.100.2")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
