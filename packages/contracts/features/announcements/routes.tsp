@@ -1,6 +1,7 @@
 import "@typespec/http";
 import "@typespec/openapi";
 import "../../common/models.tsp";
+import "../../common/permissions.tsp";
 import "../../common/responses.tsp";
 import "./models.tsp";
 
@@ -13,6 +14,7 @@ namespace Starter.Announcements;
 @tag("Announcements")
 interface Announcements {
   @TypeSpec.Http.get
+  @permission("announcements:read")
   @operationId("listAnnouncements")
   @summary("List announcements")
   list(
@@ -26,6 +28,7 @@ interface Announcements {
     | ForbiddenResponse;
 
   @TypeSpec.Http.post
+  @permission("announcements:create")
   @operationId("createAnnouncement")
   @summary("Create an announcement")
   create(
@@ -39,6 +42,7 @@ interface Announcements {
 
   @TypeSpec.Http.route("/{id}")
   @TypeSpec.Http.get
+  @permission("announcements:read")
   @operationId("getAnnouncement")
   @summary("Get an announcement")
   get(
@@ -53,6 +57,7 @@ interface Announcements {
 
   @TypeSpec.Http.route("/{id}")
   @TypeSpec.Http.put
+  @permission("announcements:update")
   @operationId("updateAnnouncement")
   @summary("Update an announcement")
   update(
@@ -68,6 +73,7 @@ interface Announcements {
 
   @TypeSpec.Http.route("/{id}")
   @TypeSpec.Http.delete
+  @permission("announcements:delete")
   @operationId("deleteAnnouncement")
   @summary("Delete an announcement")
   delete(

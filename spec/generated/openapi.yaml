@@ -949,6 +949,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Organizations
+      x-permission: organizations:read
     put:
       operationId: updateOrganization
       summary: Update organization details
@@ -1004,6 +1005,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateOrganizationInput'
+      x-permission: organizations:update
     delete:
       operationId: deleteOrganization
       summary: Delete an organization
@@ -1037,6 +1039,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Organizations
+      x-permission: organizations:delete
   /api/organizations/{organizationId}/announcements:
     get:
       operationId: listAnnouncements
@@ -1083,6 +1086,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Announcements
+      x-permission: announcements:read
     post:
       operationId: createAnnouncement
       summary: Create an announcement
@@ -1126,6 +1130,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AnnouncementInput'
+      x-permission: announcements:create
   /api/organizations/{organizationId}/announcements/{id}:
     get:
       operationId: getAnnouncement
@@ -1176,6 +1181,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Announcements
+      x-permission: announcements:read
     put:
       operationId: updateAnnouncement
       summary: Update an announcement
@@ -1231,6 +1237,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AnnouncementInput'
+      x-permission: announcements:update
     delete:
       operationId: deleteAnnouncement
       summary: Delete an announcement
@@ -1276,6 +1283,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Announcements
+      x-permission: announcements:delete
   /api/organizations/{organizationId}/billing/checkout-sessions:
     post:
       operationId: createCheckoutSession
@@ -1326,6 +1334,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateCheckoutSessionInput'
+      x-permission: billing:checkout
   /api/organizations/{organizationId}/billing/portal-sessions:
     post:
       operationId: createPortalSession
@@ -1364,6 +1373,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Billing
+      x-permission: billing:portal
   /api/organizations/{organizationId}/billing/summary:
     get:
       operationId: getBillingSummary
@@ -1402,6 +1412,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Billing
+      x-permission: billing:read
   /api/organizations/{organizationId}/invitations:
     get:
       operationId: listInvitations
@@ -1442,6 +1453,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Organizations
+      x-permission: invitations:read
     post:
       operationId: createInvitation
       summary: Invite a member to the organization
@@ -1497,6 +1509,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateInvitationInput'
+      x-permission: invitations:create
   /api/organizations/{organizationId}/invitations/{invitationId}:
     delete:
       operationId: revokeInvitation
@@ -1537,6 +1550,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Organizations
+      x-permission: invitations:delete
   /api/organizations/{organizationId}/members:
     get:
       operationId: listMembers
@@ -1577,6 +1591,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Organizations
+      x-permission: members:read
   /api/organizations/{organizationId}/members/{userId}:
     put:
       operationId: updateMemberRole
@@ -1633,6 +1648,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateMembershipRoleInput'
+      x-permission: members:update
     delete:
       operationId: removeMember
       summary: Remove a member from the organization
@@ -1678,6 +1694,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Organizations
+      x-permission: members:delete
   /api/readyz:
     get:
       operationId: getReadiness

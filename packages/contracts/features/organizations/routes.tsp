@@ -1,6 +1,7 @@
 import "@typespec/http";
 import "@typespec/openapi";
 import "../../common/models.tsp";
+import "../../common/permissions.tsp";
 import "../../common/responses.tsp";
 import "./models.tsp";
 
@@ -38,6 +39,7 @@ interface Organizations {
 
   @TypeSpec.Http.route("/{organizationId}")
   @TypeSpec.Http.get
+  @permission("organizations:read")
   @operationId("getOrganization")
   @summary("Get organization details")
   getOrganization(@TypeSpec.Http.path @format("uuid") organizationId: string):
@@ -48,6 +50,7 @@ interface Organizations {
 
   @TypeSpec.Http.route("/{organizationId}")
   @TypeSpec.Http.put
+  @permission("organizations:update")
   @operationId("updateOrganization")
   @summary("Update organization details")
   updateOrganization(
@@ -63,6 +66,7 @@ interface Organizations {
 
   @TypeSpec.Http.route("/{organizationId}")
   @TypeSpec.Http.delete
+  @permission("organizations:delete")
   @operationId("deleteOrganization")
   @summary("Delete an organization")
   deleteOrganization(
@@ -75,6 +79,7 @@ interface Organizations {
 
   @TypeSpec.Http.route("/{organizationId}/members")
   @TypeSpec.Http.get
+  @permission("members:read")
   @operationId("listMembers")
   @summary("List organization members")
   listMembers(@TypeSpec.Http.path @format("uuid") organizationId: string):
@@ -85,6 +90,7 @@ interface Organizations {
 
   @TypeSpec.Http.route("/{organizationId}/members/{userId}")
   @TypeSpec.Http.put
+  @permission("members:update")
   @operationId("updateMemberRole")
   @summary("Update a member's role")
   updateMemberRole(
@@ -100,6 +106,7 @@ interface Organizations {
 
   @TypeSpec.Http.route("/{organizationId}/members/{userId}")
   @TypeSpec.Http.delete
+  @permission("members:delete")
   @operationId("removeMember")
   @summary("Remove a member from the organization")
   removeMember(
@@ -114,6 +121,7 @@ interface Organizations {
 
   @TypeSpec.Http.route("/{organizationId}/invitations")
   @TypeSpec.Http.get
+  @permission("invitations:read")
   @operationId("listInvitations")
   @summary("List active organization invitations")
   listInvitations(@TypeSpec.Http.path @format("uuid") organizationId: string):
@@ -124,6 +132,7 @@ interface Organizations {
 
   @TypeSpec.Http.route("/{organizationId}/invitations")
   @TypeSpec.Http.post
+  @permission("invitations:create")
   @operationId("createInvitation")
   @summary("Invite a member to the organization")
   createInvitation(
@@ -139,6 +148,7 @@ interface Organizations {
 
   @TypeSpec.Http.route("/{organizationId}/invitations/{invitationId}")
   @TypeSpec.Http.delete
+  @permission("invitations:delete")
   @operationId("revokeInvitation")
   @summary("Revoke an organization invitation")
   revokeInvitation(

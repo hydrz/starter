@@ -21,6 +21,7 @@ import (
 	"github.com/hydrz/starter/internal/billing"
 	"github.com/hydrz/starter/internal/organization"
 	"github.com/hydrz/starter/internal/platform/httpserver"
+	platformmodule "github.com/hydrz/starter/internal/platform/module"
 )
 
 type announcementRepository struct{}
@@ -198,7 +199,16 @@ func TestReadiness(t *testing.T) {
 
 func newHandler(t *testing.T, service *announcement.Service, checker httpserver.HealthChecker) http.Handler {
 	t.Helper()
-	handler, err := httpserver.NewHandler(service, checker, nil, nil, nil, nil, nil)
+	var modules []platformmodule.Module
+	if service != nil {
+		modules = append(modules, announcement.NewServiceModule(service))
+	}
+	return newModuleHandler(t, modules, checker)
+}
+
+func newModuleHandler(t *testing.T, modules []platformmodule.Module, checker httpserver.HealthChecker) http.Handler {
+	t.Helper()
+	handler, err := httpserver.NewHandler(modules, checker, nil)
 	if err != nil {
 		t.Fatalf("NewHandler() error = %v", err)
 	}
@@ -330,10 +340,11 @@ func TestOrganizationAndAuthorizationRouting(t *testing.T) {
 
 	annService := announcement.NewService(&announcementRepository{})
 
-	handler, err := httpserver.NewHandler(annService, healthChecker{}, nil, orgService, authzService, nil, nil)
-	if err != nil {
-		t.Fatalf("NewHandler() error = %v", err)
-	}
+	handler := newModuleHandler(t, []platformmodule.Module{
+		platformmodule.NewMiddlewareModule(authzService),
+		organization.NewServiceModule(orgService),
+		announcement.NewServiceModule(annService),
+	}, healthChecker{})
 
 	t.Run("GET /api/organizations requires authentication", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/organizations", nil)
@@ -544,10 +555,10 @@ func TestBillingRouting(t *testing.T) {
 	}
 	authzService := authorization.NewService(enforcer)
 
-	handler, err := httpserver.NewHandler(nil, healthChecker{}, nil, nil, authzService, testBillingService(t), nil)
-	if err != nil {
-		t.Fatalf("NewHandler() error = %v", err)
-	}
+	handler := newModuleHandler(t, []platformmodule.Module{
+		platformmodule.NewMiddlewareModule(authzService),
+		billing.NewServiceModule(testBillingService(t)),
+	}, healthChecker{})
 
 	t.Run("GET billing summary requires authentication", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/organizations/"+orgID+"/billing/summary", nil)

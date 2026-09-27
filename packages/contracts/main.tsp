@@ -3,6 +3,7 @@ import "@typespec/openapi";
 import "@typespec/openapi3";
 
 import "./common/models.tsp";
+import "./common/permissions.tsp";
 import "./common/responses.tsp";
 import "./features/system/routes.tsp";
 import "./features/announcements/routes.tsp";

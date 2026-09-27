@@ -55,6 +55,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateCheckoutSessionInput'
+      x-permission: billing:checkout
   /api/organizations/{organizationId}/billing/portal-sessions:
     post:
       operationId: createPortalSession
@@ -93,6 +94,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Billing
+      x-permission: billing:portal
   /api/organizations/{organizationId}/billing/summary:
     get:
       operationId: getBillingSummary
@@ -131,6 +133,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Billing
+      x-permission: billing:read
 components:
   schemas:
     ApiError:

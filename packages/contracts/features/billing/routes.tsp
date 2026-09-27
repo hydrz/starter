@@ -1,6 +1,7 @@
 import "@typespec/http";
 import "@typespec/openapi";
 import "../../common/models.tsp";
+import "../../common/permissions.tsp";
 import "../../common/responses.tsp";
 import "./models.tsp";
 
@@ -14,6 +15,7 @@ namespace Starter.Billing;
 interface Billing {
   @TypeSpec.Http.route("/summary")
   @TypeSpec.Http.get
+  @permission("billing:read")
   @operationId("getBillingSummary")
   @summary("Get the organization's current billing/entitlement summary")
   getBillingSummary(
@@ -26,6 +28,7 @@ interface Billing {
 
   @TypeSpec.Http.route("/checkout-sessions")
   @TypeSpec.Http.post
+  @permission("billing:checkout")
   @operationId("createCheckoutSession")
   @summary("Create a Stripe Checkout session for a server-controlled price")
   createCheckoutSession(
@@ -40,6 +43,7 @@ interface Billing {
 
   @TypeSpec.Http.route("/portal-sessions")
   @TypeSpec.Http.post
+  @permission("billing:portal")
   @operationId("createPortalSession")
   @summary("Create a Stripe Customer Portal session")
   createPortalSession(
