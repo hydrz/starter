@@ -22,14 +22,16 @@ const (
 	defaultRefreshTokenTTL    = 30 * 24 * time.Hour
 	defaultWorkerPollInterval = time.Second
 	defaultWorkerBatchSize    = 50
+	defaultShutdownTimeout    = 10 * time.Second
 )
 
 // Config is the application configuration. Integrations whose Enabled field is
 // false are deliberately not initialized by the application.
 type Config struct {
-	DatabaseURL string
-	Address     string
-	AutoMigrate bool
+	DatabaseURL     string
+	Address         string
+	AutoMigrate     bool
+	ShutdownTimeout time.Duration
 
 	Auth          AuthConfig
 	OAuth         OAuthConfig
@@ -148,9 +150,10 @@ func Load(lookup func(string) (string, bool)) (Config, error) {
 	}
 
 	cfg := Config{
-		DatabaseURL: valueOr(lookup, "DATABASE_URL", defaultDatabaseURL),
-		Address:     address(lookup),
-		AutoMigrate: valueOr(lookup, "AUTO_MIGRATE", "true") != "false",
+		DatabaseURL:     valueOr(lookup, "DATABASE_URL", defaultDatabaseURL),
+		Address:         address(lookup),
+		AutoMigrate:     valueOr(lookup, "AUTO_MIGRATE", "true") != "false",
+		ShutdownTimeout: defaultShutdownTimeout,
 		Auth: AuthConfig{
 			JWTIssuer:       valueOr(lookup, authIssuerEnv, "starter"),
 			AccessTokenTTL:  defaultAccessTokenTTL,
@@ -170,6 +173,9 @@ func Load(lookup func(string) (string, bool)) (Config, error) {
 	}
 	if !validAddress(cfg.Address) {
 		invalid = append(invalid, "HTTP_ADDRESS")
+	}
+	if raw, present := lookup("SHUTDOWN_TIMEOUT"); present {
+		cfg.ShutdownTimeout = parseDuration(raw, "SHUTDOWN_TIMEOUT", &invalid)
 	}
 
 	cfg.Auth = loadAuth(lookup, &invalid, cfg.Auth)
