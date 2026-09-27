@@ -1,10 +1,12 @@
 package webui
 
 import (
+	"io"
 	"io/fs"
 	"net/http"
 	"path"
 	"strings"
+	"time"
 )
 
 func NewHandler() (http.Handler, error) {
@@ -27,10 +29,15 @@ func NewHandler() (http.Handler, error) {
 		requestedPath := strings.TrimPrefix(path.Clean(request.URL.Path), "/")
 		if requestedPath == "." || requestedPath == "" {
 			requestedPath = "index.html"
+		} else if path.Ext(requestedPath) == "" {
+			if _, err := fs.Stat(public, path.Join(requestedPath, "index.html")); err == nil {
+				requestedPath = path.Join(requestedPath, "index.html")
+			}
 		}
-		if _, err := fs.Stat(public, requestedPath); err == nil {
+		if file, err := public.Open(requestedPath); err == nil {
+			defer file.Close()
 			setCacheHeader(response, requestedPath)
-			files.ServeHTTP(response, request)
+			serveFile(response, request, requestedPath, file)
 			return
 		}
 		if path.Ext(requestedPath) != "" {
@@ -43,6 +50,22 @@ func NewHandler() (http.Handler, error) {
 		fallback.URL.Path = "/"
 		files.ServeHTTP(response, fallback)
 	}), nil
+}
+
+func serveFile(response http.ResponseWriter, request *http.Request, requestedPath string, file fs.File) {
+	if reader, ok := file.(io.ReadSeeker); ok {
+		http.ServeContent(response, request, path.Base(requestedPath), fileInfoModTime(file), reader)
+		return
+	}
+	_, _ = io.Copy(response, file)
+}
+
+func fileInfoModTime(file fs.File) (modTime time.Time) {
+	info, err := file.Stat()
+	if err != nil {
+		return modTime
+	}
+	return info.ModTime()
 }
 
 func setCacheHeader(response http.ResponseWriter, requestedPath string) {
