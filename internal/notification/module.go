@@ -41,7 +41,6 @@ func (m *Module) Init(_ context.Context, deps platformmodule.Deps) error {
 		Repository: NewPostgresRepository(deps.Queries),
 		Renderer:   renderer,
 		Channels:   channels,
-		Clock:      SystemClock{},
 		Logger:     deps.Logger,
 	})
 	if err != nil {
