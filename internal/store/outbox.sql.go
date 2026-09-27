@@ -16,6 +16,7 @@ WITH candidates AS (
     SELECT id
     FROM outbox_events
     WHERE processed_at IS NULL
+      AND dead_lettered_at IS NULL
       AND available_at <= now()
       AND (claimed_at IS NULL OR claimed_at < now() - $2::interval)
     ORDER BY available_at, created_at
@@ -27,7 +28,8 @@ SET claimed_at = now(), claim_token = $1::uuid, attempts = attempts + 1
 FROM candidates
 WHERE event.id = candidates.id
 RETURNING event.id, event.topic, event.aggregate_type, event.aggregate_id, event.payload, event.idempotency_key,
-          event.available_at, event.claimed_at, event.claim_token, event.attempts, event.processed_at, event.last_error, event.created_at
+          event.available_at, event.claimed_at, event.claim_token, event.attempts, event.processed_at,
+          event.dead_lettered_at, event.last_error, event.created_at
 `
 
 type ClaimOutboxEventsParams struct {
@@ -36,15 +38,32 @@ type ClaimOutboxEventsParams struct {
 	BatchSize    int32           `db:"batch_size" json:"batch_size"`
 }
 
-func (q *Queries) ClaimOutboxEvents(ctx context.Context, arg ClaimOutboxEventsParams) ([]OutboxEvent, error) {
+type ClaimOutboxEventsRow struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	Topic          string             `db:"topic" json:"topic"`
+	AggregateType  string             `db:"aggregate_type" json:"aggregate_type"`
+	AggregateID    pgtype.UUID        `db:"aggregate_id" json:"aggregate_id"`
+	Payload        []byte             `db:"payload" json:"payload"`
+	IdempotencyKey string             `db:"idempotency_key" json:"idempotency_key"`
+	AvailableAt    pgtype.Timestamptz `db:"available_at" json:"available_at"`
+	ClaimedAt      pgtype.Timestamptz `db:"claimed_at" json:"claimed_at"`
+	ClaimToken     pgtype.UUID        `db:"claim_token" json:"claim_token"`
+	Attempts       int32              `db:"attempts" json:"attempts"`
+	ProcessedAt    pgtype.Timestamptz `db:"processed_at" json:"processed_at"`
+	DeadLetteredAt pgtype.Timestamptz `db:"dead_lettered_at" json:"dead_lettered_at"`
+	LastError      *string            `db:"last_error" json:"last_error"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+func (q *Queries) ClaimOutboxEvents(ctx context.Context, arg ClaimOutboxEventsParams) ([]ClaimOutboxEventsRow, error) {
 	rows, err := q.db.Query(ctx, claimOutboxEvents, arg.ClaimToken, arg.ClaimTimeout, arg.BatchSize)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []OutboxEvent{}
+	items := []ClaimOutboxEventsRow{}
 	for rows.Next() {
-		var i OutboxEvent
+		var i ClaimOutboxEventsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Topic,
@@ -57,6 +76,7 @@ func (q *Queries) ClaimOutboxEvents(ctx context.Context, arg ClaimOutboxEventsPa
 			&i.ClaimToken,
 			&i.Attempts,
 			&i.ProcessedAt,
+			&i.DeadLetteredAt,
 			&i.LastError,
 			&i.CreatedAt,
 		); err != nil {
@@ -196,7 +216,7 @@ func (q *Queries) CreateNotificationIntent(ctx context.Context, arg CreateNotifi
 const createOutboxEvent = `-- name: CreateOutboxEvent :one
 INSERT INTO outbox_events (topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, last_error, created_at
+RETURNING id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, dead_lettered_at, last_error, created_at
 `
 
 type CreateOutboxEventParams struct {
@@ -208,7 +228,24 @@ type CreateOutboxEventParams struct {
 	AvailableAt    pgtype.Timestamptz `db:"available_at" json:"available_at"`
 }
 
-func (q *Queries) CreateOutboxEvent(ctx context.Context, arg CreateOutboxEventParams) (OutboxEvent, error) {
+type CreateOutboxEventRow struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	Topic          string             `db:"topic" json:"topic"`
+	AggregateType  string             `db:"aggregate_type" json:"aggregate_type"`
+	AggregateID    pgtype.UUID        `db:"aggregate_id" json:"aggregate_id"`
+	Payload        []byte             `db:"payload" json:"payload"`
+	IdempotencyKey string             `db:"idempotency_key" json:"idempotency_key"`
+	AvailableAt    pgtype.Timestamptz `db:"available_at" json:"available_at"`
+	ClaimedAt      pgtype.Timestamptz `db:"claimed_at" json:"claimed_at"`
+	ClaimToken     pgtype.UUID        `db:"claim_token" json:"claim_token"`
+	Attempts       int32              `db:"attempts" json:"attempts"`
+	ProcessedAt    pgtype.Timestamptz `db:"processed_at" json:"processed_at"`
+	DeadLetteredAt pgtype.Timestamptz `db:"dead_lettered_at" json:"dead_lettered_at"`
+	LastError      *string            `db:"last_error" json:"last_error"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+func (q *Queries) CreateOutboxEvent(ctx context.Context, arg CreateOutboxEventParams) (CreateOutboxEventRow, error) {
 	row := q.db.QueryRow(ctx, createOutboxEvent,
 		arg.Topic,
 		arg.AggregateType,
@@ -217,7 +254,7 @@ func (q *Queries) CreateOutboxEvent(ctx context.Context, arg CreateOutboxEventPa
 		arg.IdempotencyKey,
 		arg.AvailableAt,
 	)
-	var i OutboxEvent
+	var i CreateOutboxEventRow
 	err := row.Scan(
 		&i.ID,
 		&i.Topic,
@@ -230,6 +267,7 @@ func (q *Queries) CreateOutboxEvent(ctx context.Context, arg CreateOutboxEventPa
 		&i.ClaimToken,
 		&i.Attempts,
 		&i.ProcessedAt,
+		&i.DeadLetteredAt,
 		&i.LastError,
 		&i.CreatedAt,
 	)
@@ -261,14 +299,31 @@ func (q *Queries) GetDeliveryMessageByOutboxEvent(ctx context.Context, outboxEve
 }
 
 const getOutboxEventByID = `-- name: GetOutboxEventByID :one
-SELECT id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, last_error, created_at
+SELECT id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, dead_lettered_at, last_error, created_at
 FROM outbox_events
 WHERE id = $1
 `
 
-func (q *Queries) GetOutboxEventByID(ctx context.Context, id pgtype.UUID) (OutboxEvent, error) {
+type GetOutboxEventByIDRow struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	Topic          string             `db:"topic" json:"topic"`
+	AggregateType  string             `db:"aggregate_type" json:"aggregate_type"`
+	AggregateID    pgtype.UUID        `db:"aggregate_id" json:"aggregate_id"`
+	Payload        []byte             `db:"payload" json:"payload"`
+	IdempotencyKey string             `db:"idempotency_key" json:"idempotency_key"`
+	AvailableAt    pgtype.Timestamptz `db:"available_at" json:"available_at"`
+	ClaimedAt      pgtype.Timestamptz `db:"claimed_at" json:"claimed_at"`
+	ClaimToken     pgtype.UUID        `db:"claim_token" json:"claim_token"`
+	Attempts       int32              `db:"attempts" json:"attempts"`
+	ProcessedAt    pgtype.Timestamptz `db:"processed_at" json:"processed_at"`
+	DeadLetteredAt pgtype.Timestamptz `db:"dead_lettered_at" json:"dead_lettered_at"`
+	LastError      *string            `db:"last_error" json:"last_error"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+func (q *Queries) GetOutboxEventByID(ctx context.Context, id pgtype.UUID) (GetOutboxEventByIDRow, error) {
 	row := q.db.QueryRow(ctx, getOutboxEventByID, id)
-	var i OutboxEvent
+	var i GetOutboxEventByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Topic,
@@ -281,6 +336,7 @@ func (q *Queries) GetOutboxEventByID(ctx context.Context, id pgtype.UUID) (Outbo
 		&i.ClaimToken,
 		&i.Attempts,
 		&i.ProcessedAt,
+		&i.DeadLetteredAt,
 		&i.LastError,
 		&i.CreatedAt,
 	)
@@ -323,10 +379,30 @@ func (q *Queries) ListDeliveryAttemptsByMessage(ctx context.Context, deliveryMes
 	return items, nil
 }
 
+const markOutboxEventDeadLettered = `-- name: MarkOutboxEventDeadLettered :execrows
+UPDATE outbox_events
+SET dead_lettered_at = now(), claimed_at = NULL, claim_token = NULL, last_error = $3
+WHERE id = $1 AND claim_token = $2 AND processed_at IS NULL AND dead_lettered_at IS NULL
+`
+
+type MarkOutboxEventDeadLetteredParams struct {
+	ID         pgtype.UUID `db:"id" json:"id"`
+	ClaimToken pgtype.UUID `db:"claim_token" json:"claim_token"`
+	LastError  *string     `db:"last_error" json:"last_error"`
+}
+
+func (q *Queries) MarkOutboxEventDeadLettered(ctx context.Context, arg MarkOutboxEventDeadLetteredParams) (int64, error) {
+	result, err := q.db.Exec(ctx, markOutboxEventDeadLettered, arg.ID, arg.ClaimToken, arg.LastError)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const markOutboxEventProcessed = `-- name: MarkOutboxEventProcessed :execrows
 UPDATE outbox_events
 SET processed_at = now(), claimed_at = NULL, claim_token = NULL, last_error = NULL
-WHERE id = $1 AND claim_token = $2 AND processed_at IS NULL
+WHERE id = $1 AND claim_token = $2 AND processed_at IS NULL AND dead_lettered_at IS NULL
 `
 
 type MarkOutboxEventProcessedParams struct {
@@ -345,7 +421,7 @@ func (q *Queries) MarkOutboxEventProcessed(ctx context.Context, arg MarkOutboxEv
 const retryOutboxEvent = `-- name: RetryOutboxEvent :execrows
 UPDATE outbox_events
 SET available_at = $3, claimed_at = NULL, claim_token = NULL, last_error = $4
-WHERE id = $1 AND claim_token = $2 AND processed_at IS NULL
+WHERE id = $1 AND claim_token = $2 AND processed_at IS NULL AND dead_lettered_at IS NULL
 `
 
 type RetryOutboxEventParams struct {

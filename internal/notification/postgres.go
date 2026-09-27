@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -129,48 +128,6 @@ func (r *PostgresRepository) CompleteDeliveryAttempt(ctx context.Context, attemp
 	})
 	if err != nil {
 		return fmt.Errorf("complete delivery attempt: %w", err)
-	}
-	return nil
-}
-
-func (r *PostgresRepository) MarkOutboxEventProcessed(ctx context.Context, outboxEventID, claimToken string) error {
-	eventUUID, err := uuid.Parse(outboxEventID)
-	if err != nil {
-		return fmt.Errorf("invalid outbox event uuid %q: %w", outboxEventID, err)
-	}
-	tokenUUID, err := uuid.Parse(claimToken)
-	if err != nil {
-		return fmt.Errorf("invalid claim token uuid %q: %w", claimToken, err)
-	}
-
-	_, err = r.q(ctx).MarkOutboxEventProcessed(ctx, store.MarkOutboxEventProcessedParams{
-		ID:         pgtype.UUID{Bytes: eventUUID, Valid: true},
-		ClaimToken: pgtype.UUID{Bytes: tokenUUID, Valid: true},
-	})
-	if err != nil {
-		return fmt.Errorf("mark outbox event processed: %w", err)
-	}
-	return nil
-}
-
-func (r *PostgresRepository) RetryOutboxEvent(ctx context.Context, outboxEventID, claimToken string, availableAt time.Time, lastError *string) error {
-	eventUUID, err := uuid.Parse(outboxEventID)
-	if err != nil {
-		return fmt.Errorf("invalid outbox event uuid %q: %w", outboxEventID, err)
-	}
-	tokenUUID, err := uuid.Parse(claimToken)
-	if err != nil {
-		return fmt.Errorf("invalid claim token uuid %q: %w", claimToken, err)
-	}
-
-	_, err = r.q(ctx).RetryOutboxEvent(ctx, store.RetryOutboxEventParams{
-		ID:          pgtype.UUID{Bytes: eventUUID, Valid: true},
-		ClaimToken:  pgtype.UUID{Bytes: tokenUUID, Valid: true},
-		AvailableAt: pgtype.Timestamptz{Time: availableAt, Valid: true},
-		LastError:   lastError,
-	})
-	if err != nil {
-		return fmt.Errorf("retry outbox event: %w", err)
 	}
 	return nil
 }

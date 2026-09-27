@@ -116,6 +116,7 @@ func TestLoadRejectsInvalidAndPartialConfigurationWithoutSecrets(t *testing.T) {
 		"SMTP_HOST":              "smtp.example.test",
 		"STRIPE_SECRET_KEY":      secret,
 		"WORKER_BATCH_SIZE":      "zero",
+		"WORKER_MAX_ATTEMPTS":    "zero",
 	}))
 	if err == nil {
 		t.Fatal("Load() error = nil, want validation error")
@@ -128,7 +129,7 @@ func TestLoadRejectsInvalidAndPartialConfigurationWithoutSecrets(t *testing.T) {
 	if strings.Contains(message, secret) {
 		t.Fatalf("validation error leaked secret: %q", message)
 	}
-	for _, name := range []string{"SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM_ADDRESS", "STRIPE_WEBHOOK_SECRET", "STRIPE_PUBLISHABLE_KEY", "WORKER_BATCH_SIZE"} {
+	for _, name := range []string{"SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM_ADDRESS", "STRIPE_WEBHOOK_SECRET", "STRIPE_PUBLISHABLE_KEY", "WORKER_BATCH_SIZE", "WORKER_MAX_ATTEMPTS"} {
 		if !strings.Contains(message, name) {
 			t.Errorf("validation error %q does not name %s", message, name)
 		}
@@ -175,6 +176,7 @@ func TestLoadEnablesAndValidatesOptionalGroups(t *testing.T) {
 		"WORKER_ENABLED":             "true",
 		"WORKER_POLL_INTERVAL":       "2s",
 		"WORKER_BATCH_SIZE":          "25",
+		"WORKER_MAX_ATTEMPTS":        "7",
 	}))
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
@@ -188,8 +190,8 @@ func TestLoadEnablesAndValidatesOptionalGroups(t *testing.T) {
 	if !cfg.OAuth.Google.Enabled || !cfg.OAuth.GitHub.Enabled || !cfg.WebAuthn.Enabled || !cfg.SMTP.Enabled || !cfg.Stripe.Enabled || !cfg.Worker.Enabled {
 		t.Errorf("one or more complete integrations were not enabled: %#v", cfg)
 	}
-	if cfg.Worker.PollInterval != 2*time.Second || cfg.Worker.BatchSize != 25 {
-		t.Errorf("Worker = %#v, want poll interval 2s and batch size 25", cfg.Worker)
+	if cfg.Worker.PollInterval != 2*time.Second || cfg.Worker.BatchSize != 25 || cfg.Worker.MaxAttempts != 7 {
+		t.Errorf("Worker = %#v, want poll interval 2s, batch size 25, and max attempts 7", cfg.Worker)
 	}
 	if cfg.App.Name != "Example App" || cfg.App.BaseURL != "https://app.example.test" {
 		t.Errorf("App = %#v, want configured application identity", cfg.App)

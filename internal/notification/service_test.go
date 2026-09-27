@@ -17,14 +17,6 @@ import (
 	"github.com/hydrz/starter/internal/notification"
 )
 
-type fakeClock struct {
-	now time.Time
-}
-
-func (c *fakeClock) Now() time.Time {
-	return c.now
-}
-
 type fakeChannel struct {
 	name        string
 	deliverFunc func(ctx context.Context, msg delivery.Message) (string, error)
@@ -53,26 +45,16 @@ func (c *fakeChannel) Deliver(ctx context.Context, msg delivery.Message) (string
 type fakeRepository struct {
 	mu sync.Mutex
 
-	intents   []notification.NotificationIntent
-	messages  map[string]*notification.DeliveryMessage // by outboxEventID
-	attempts  map[string]*notification.DeliveryAttempt // by ID
-	processed map[string]string                        // eventID -> claimToken
-	retried   map[string]retriedEvent                  // eventID -> details
-	nextID    int
-}
-
-type retriedEvent struct {
-	claimToken  string
-	availableAt time.Time
-	lastError   *string
+	intents  []notification.NotificationIntent
+	messages map[string]*notification.DeliveryMessage // by outboxEventID
+	attempts map[string]*notification.DeliveryAttempt // by ID
+	nextID   int
 }
 
 func newFakeRepository() *fakeRepository {
 	return &fakeRepository{
-		messages:  make(map[string]*notification.DeliveryMessage),
-		attempts:  make(map[string]*notification.DeliveryAttempt),
-		processed: make(map[string]string),
-		retried:   make(map[string]retriedEvent),
+		messages: make(map[string]*notification.DeliveryMessage),
+		attempts: make(map[string]*notification.DeliveryAttempt),
 	}
 }
 
@@ -157,26 +139,6 @@ func (r *fakeRepository) CompleteDeliveryAttempt(ctx context.Context, attemptID 
 	return nil
 }
 
-func (r *fakeRepository) MarkOutboxEventProcessed(ctx context.Context, outboxEventID, claimToken string) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	r.processed[outboxEventID] = claimToken
-	return nil
-}
-
-func (r *fakeRepository) RetryOutboxEvent(ctx context.Context, outboxEventID, claimToken string, availableAt time.Time, lastError *string) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	r.retried[outboxEventID] = retriedEvent{
-		claimToken:  claimToken,
-		availableAt: availableAt,
-		lastError:   lastError,
-	}
-	return nil
-}
-
 func TestService_VerificationRequested_Success(t *testing.T) {
 	repo := newFakeRepository()
 	renderer, err := delivery.NewTemplateRenderer("Starter")
@@ -185,13 +147,11 @@ func TestService_VerificationRequested_Success(t *testing.T) {
 	}
 
 	smtpChan := newFakeChannel("smtp")
-	clock := &fakeClock{now: time.Date(2026, 9, 26, 12, 0, 0, 0, time.UTC)}
 
 	svc, err := notification.NewService(notification.Dependencies{
 		Repository: repo,
 		Renderer:   renderer,
 		Channels:   map[string]delivery.Channel{"smtp": smtpChan},
-		Clock:      clock,
 	})
 	if err != nil {
 		t.Fatalf("NewService: %v", err)
@@ -202,14 +162,12 @@ func TestService_VerificationRequested_Success(t *testing.T) {
 		Email:  "alice@example.com",
 		Token:  "verify-token-abc",
 	})
-	claimToken := "claim-tok-1"
 
 	event := delivery.OutboxEvent{
-		ID:         "event-1",
-		Topic:      notification.TopicAuthVerificationRequested,
-		Payload:    payload,
-		Attempts:   1,
-		ClaimToken: &claimToken,
+		ID:       "event-1",
+		Topic:    notification.TopicAuthVerificationRequested,
+		Payload:  payload,
+		Attempts: 1,
 	}
 
 	if err := svc.Handle(context.Background(), event); err != nil {
@@ -256,11 +214,6 @@ func TestService_VerificationRequested_Success(t *testing.T) {
 			t.Errorf("attempt status = %s, want %s", att.Status, notification.StatusSent)
 		}
 	}
-
-	// 5. Check outbox event marked processed
-	if repo.processed["event-1"] != claimToken {
-		t.Errorf("expected outbox event processed with claimToken, got %s", repo.processed["event-1"])
-	}
 }
 
 func TestService_EmailOTPRequested_SendsSMTPMessage(t *testing.T) {
@@ -270,13 +223,11 @@ func TestService_EmailOTPRequested_SendsSMTPMessage(t *testing.T) {
 		t.Fatalf("NewTemplateRenderer: %v", err)
 	}
 	smtpChan := newFakeChannel("smtp")
-	clock := &fakeClock{now: time.Date(2026, 9, 26, 12, 0, 0, 0, time.UTC)}
 
 	svc, err := notification.NewService(notification.Dependencies{
 		Repository: repo,
 		Renderer:   renderer,
 		Channels:   map[string]delivery.Channel{"smtp": smtpChan},
-		Clock:      clock,
 	})
 	if err != nil {
 		t.Fatalf("NewService: %v", err)
@@ -294,13 +245,11 @@ func TestService_EmailOTPRequested_SendsSMTPMessage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal payload: %v", err)
 	}
-	claimToken := "claim-otp"
 	event := delivery.OutboxEvent{
-		ID:         "event-otp",
-		Topic:      notification.TopicAuthEmailOTPRequested,
-		Payload:    payload,
-		Attempts:   1,
-		ClaimToken: &claimToken,
+		ID:       "event-otp",
+		Topic:    notification.TopicAuthEmailOTPRequested,
+		Payload:  payload,
+		Attempts: 1,
 	}
 
 	if err := svc.Handle(context.Background(), event); err != nil {
@@ -331,8 +280,8 @@ func TestService_EmailOTPRequested_SendsSMTPMessage(t *testing.T) {
 			t.Errorf("email body missing OTP validity period: %q", body)
 		}
 	}
-	if got := repo.processed[event.ID]; got != claimToken {
-		t.Errorf("processed claim token = %q, want %q", got, claimToken)
+	if len(smtpChan.delivered) == 0 {
+		t.Error("expected a delivered message")
 	}
 }
 
@@ -402,13 +351,11 @@ func TestService_PasswordResetRequested_Success(t *testing.T) {
 	repo := newFakeRepository()
 	renderer, _ := delivery.NewTemplateRenderer("Starter")
 	smtpChan := newFakeChannel("smtp")
-	clock := &fakeClock{now: time.Date(2026, 9, 26, 12, 0, 0, 0, time.UTC)}
 
 	svc, err := notification.NewService(notification.Dependencies{
 		Repository: repo,
 		Renderer:   renderer,
 		Channels:   map[string]delivery.Channel{"smtp": smtpChan},
-		Clock:      clock,
 	})
 	if err != nil {
 		t.Fatalf("NewService: %v", err)
@@ -419,14 +366,12 @@ func TestService_PasswordResetRequested_Success(t *testing.T) {
 		Email:  "bob@example.com",
 		Token:  "reset-token-xyz",
 	})
-	claimToken := "claim-tok-2"
 
 	event := delivery.OutboxEvent{
-		ID:         "event-2",
-		Topic:      notification.TopicAuthPasswordResetRequested,
-		Payload:    payload,
-		Attempts:   1,
-		ClaimToken: &claimToken,
+		ID:       "event-2",
+		Topic:    notification.TopicAuthPasswordResetRequested,
+		Payload:  payload,
+		Attempts: 1,
 	}
 
 	if err := svc.Handle(context.Background(), event); err != nil {
@@ -441,9 +386,6 @@ func TestService_PasswordResetRequested_Success(t *testing.T) {
 	if msg == nil || !strings.Contains(msg.Subject, "Reset your password") {
 		t.Errorf("expected reset password subject, got %v", msg)
 	}
-	if repo.processed["event-2"] != claimToken {
-		t.Errorf("expected event-2 processed")
-	}
 }
 
 func TestService_DeliveryFailure_RetriesWithBackoff(t *testing.T) {
@@ -455,14 +397,10 @@ func TestService_DeliveryFailure_RetriesWithBackoff(t *testing.T) {
 		return "", deliveryErr
 	}
 
-	now := time.Date(2026, 9, 26, 12, 0, 0, 0, time.UTC)
-	clock := &fakeClock{now: now}
-
 	svc, err := notification.NewService(notification.Dependencies{
 		Repository: repo,
 		Renderer:   renderer,
 		Channels:   map[string]delivery.Channel{"smtp": smtpChan},
-		Clock:      clock,
 	})
 	if err != nil {
 		t.Fatalf("NewService: %v", err)
@@ -473,14 +411,12 @@ func TestService_DeliveryFailure_RetriesWithBackoff(t *testing.T) {
 		Email:  "fail@example.com",
 		Token:  "fail-token",
 	})
-	claimToken := "claim-fail"
 
 	event := delivery.OutboxEvent{
-		ID:         "event-fail",
-		Topic:      notification.TopicAuthVerificationRequested,
-		Payload:    payload,
-		Attempts:   2, // 2nd attempt
-		ClaimToken: &claimToken,
+		ID:       "event-fail",
+		Topic:    notification.TopicAuthVerificationRequested,
+		Payload:  payload,
+		Attempts: 2, // 2nd attempt
 	}
 
 	err = svc.Handle(context.Background(), event)
@@ -500,39 +436,17 @@ func TestService_DeliveryFailure_RetriesWithBackoff(t *testing.T) {
 			t.Errorf("unexpected error message: %v", att.ErrorMessage)
 		}
 	}
-
-	// Outbox event should NOT be marked processed
-	if _, ok := repo.processed["event-fail"]; ok {
-		t.Error("failed event should not be marked processed")
-	}
-
-	// Outbox event should be marked for retry with backoff
-	retry, ok := repo.retried["event-fail"]
-	if !ok {
-		t.Fatal("expected event-fail to be retried")
-	}
-	if retry.claimToken != claimToken {
-		t.Errorf("retried claimToken = %s, want %s", retry.claimToken, claimToken)
-	}
-
-	// Backoff for attempt 2: 5s * 3^1 = 15s
-	expectedAvailableAt := now.Add(15 * time.Second)
-	if !retry.availableAt.Equal(expectedAvailableAt) {
-		t.Errorf("availableAt = %v, want %v", retry.availableAt, expectedAvailableAt)
-	}
 }
 
 func TestService_Idempotency_ReusesExistingDeliveryMessage(t *testing.T) {
 	repo := newFakeRepository()
 	renderer, _ := delivery.NewTemplateRenderer("Starter")
 	smtpChan := newFakeChannel("smtp")
-	clock := &fakeClock{now: time.Date(2026, 9, 26, 12, 0, 0, 0, time.UTC)}
 
 	svc, err := notification.NewService(notification.Dependencies{
 		Repository: repo,
 		Renderer:   renderer,
 		Channels:   map[string]delivery.Channel{"smtp": smtpChan},
-		Clock:      clock,
 	})
 	if err != nil {
 		t.Fatalf("NewService: %v", err)
@@ -554,14 +468,11 @@ func TestService_Idempotency_ReusesExistingDeliveryMessage(t *testing.T) {
 		Email:  "existing@example.com",
 		Token:  "token",
 	})
-	claimToken := "claim-existing"
-
 	event := delivery.OutboxEvent{
-		ID:         "event-existing",
-		Topic:      notification.TopicAuthVerificationRequested,
-		Payload:    payload,
-		Attempts:   2, // attempt 2
-		ClaimToken: &claimToken,
+		ID:       "event-existing",
+		Topic:    notification.TopicAuthVerificationRequested,
+		Payload:  payload,
+		Attempts: 2, // attempt 2
 	}
 
 	if err := svc.Handle(context.Background(), event); err != nil {
@@ -574,29 +485,6 @@ func TestService_Idempotency_ReusesExistingDeliveryMessage(t *testing.T) {
 	}
 	if smtpChan.delivered[0].ID != preExistingMsg.ID {
 		t.Errorf("delivered message ID = %s, want pre-existing ID %s", smtpChan.delivered[0].ID, preExistingMsg.ID)
-	}
-}
-
-func TestCalculateBackoff(t *testing.T) {
-	tests := []struct {
-		attempt  int
-		expected time.Duration
-	}{
-		{attempt: 0, expected: 5 * time.Second},
-		{attempt: 1, expected: 5 * time.Second},
-		{attempt: 2, expected: 15 * time.Second},
-		{attempt: 3, expected: 45 * time.Second},
-		{attempt: 4, expected: 135 * time.Second},
-		{attempt: 5, expected: 405 * time.Second},
-		{attempt: 10, expected: 1 * time.Hour}, // capped at 1 hour
-		{attempt: 20, expected: 1 * time.Hour},
-	}
-
-	for _, tc := range tests {
-		got := notification.CalculateBackoff(tc.attempt)
-		if got != tc.expected {
-			t.Errorf("CalculateBackoff(%d) = %v, want %v", tc.attempt, got, tc.expected)
-		}
 	}
 }
 

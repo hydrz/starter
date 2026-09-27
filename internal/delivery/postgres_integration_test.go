@@ -19,7 +19,7 @@ func TestClaimOutboxEventsDoesNotDoubleClaimOrClaimFutureEvents(t *testing.T) {
 	db := testdb.New(t)
 	ctx := testdb.Context(t)
 
-	available := make([]store.OutboxEvent, 2)
+	available := make([]store.CreateOutboxEventRow, 2)
 	for i := range available {
 		event, err := db.Queries.CreateOutboxEvent(ctx, outboxEventParams(t, i, time.Now().Add(-time.Minute)))
 		if err != nil {
@@ -32,7 +32,7 @@ func TestClaimOutboxEventsDoesNotDoubleClaimOrClaimFutureEvents(t *testing.T) {
 		t.Fatalf("create future outbox event: %v", err)
 	}
 
-	results := make(chan []store.OutboxEvent, 2)
+	results := make(chan []store.ClaimOutboxEventsRow, 2)
 	errs := make(chan error, 2)
 	var ready sync.WaitGroup
 	ready.Add(2)

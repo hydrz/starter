@@ -319,7 +319,7 @@ func buildBillingService(cfg config.Config, queries *store.Queries, pool *pgxpoo
 }
 
 // buildOutboxWorker wires internal/delivery.Worker with an embedded template renderer,
-// an SMTP (or noop) delivery channel, and the notification routing service.
+// an SMTP (or noop) delivery channel, and a topic dispatcher.
 func buildOutboxWorker(cfg config.Config, queries *store.Queries, logger *slog.Logger) (*delivery.Worker, error) {
 	renderer, err := delivery.NewTemplateRenderer(cfg.App.Name)
 	if err != nil {
@@ -338,17 +338,25 @@ func buildOutboxWorker(cfg config.Config, queries *store.Queries, logger *slog.L
 		Repository: notificationRepo,
 		Renderer:   renderer,
 		Channels:   channels,
-		Clock:      notification.SystemClock{},
 		Logger:     logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create notification service: %w", err)
 	}
 
-	claimer := delivery.NewPostgresClaimer(queries)
-	worker := delivery.NewWorker(claimer, notificationService, delivery.WorkerOptions{
+	dispatcher := delivery.NewDispatcher()
+	for _, topic := range []string{
+		notification.TopicAuthVerificationRequested,
+		notification.TopicAuthPasswordResetRequested,
+		notification.TopicAuthEmailOTPRequested,
+	} {
+		dispatcher.Register(topic, notificationService)
+	}
+
+	worker := delivery.NewWorker(delivery.NewPostgresStore(queries), dispatcher, delivery.WorkerOptions{
 		PollInterval: cfg.Worker.PollInterval,
 		BatchSize:    cfg.Worker.BatchSize,
+		MaxAttempts:  cfg.Worker.MaxAttempts,
 		Logger:       logger,
 	})
 

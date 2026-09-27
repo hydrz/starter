@@ -260,6 +260,7 @@ type OutboxEvent struct {
 	ProcessedAt    pgtype.Timestamptz `db:"processed_at" json:"processed_at"`
 	LastError      *string            `db:"last_error" json:"last_error"`
 	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	DeadLetteredAt pgtype.Timestamptz `db:"dead_lettered_at" json:"dead_lettered_at"`
 }
 
 type RefreshSession struct {
