@@ -28,10 +28,7 @@ func NewPostgresRepository(queries *store.Queries) *PostgresRepository {
 }
 
 func (r *PostgresRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return r.queries.WithTx(tx)
-	}
-	return r.queries
+	return database.Queries(ctx, r.queries)
 }
 
 func isUniqueViolation(err error) bool {

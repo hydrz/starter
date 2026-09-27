@@ -29,10 +29,7 @@ func NewPostgresUserRepository(queries *store.Queries) *PostgresUserRepository {
 }
 
 func (repository *PostgresUserRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return repository.queries.WithTx(tx)
-	}
-	return repository.queries
+	return database.Queries(ctx, repository.queries)
 }
 
 func (repository *PostgresUserRepository) Create(ctx context.Context, email, passwordHash string) (User, error) {
@@ -118,10 +115,7 @@ func NewPostgresRefreshTokenRepository(queries *store.Queries) *PostgresRefreshT
 }
 
 func (repository *PostgresRefreshTokenRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return repository.queries.WithTx(tx)
-	}
-	return repository.queries
+	return database.Queries(ctx, repository.queries)
 }
 
 func (repository *PostgresRefreshTokenRepository) CreateFamily(ctx context.Context, userID string) (string, error) {
@@ -261,10 +255,7 @@ func NewPostgresOneTimeTokenRepository(queries *store.Queries) *PostgresOneTimeT
 }
 
 func (repository *PostgresOneTimeTokenRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return repository.queries.WithTx(tx)
-	}
-	return repository.queries
+	return database.Queries(ctx, repository.queries)
 }
 
 func (repository *PostgresOneTimeTokenRepository) Create(ctx context.Context, userID string, purpose OneTimeTokenPurpose, tokenDigest []byte, expiresAt time.Time) error {
@@ -302,10 +293,7 @@ func NewPostgresAPIKeyRepository(queries *store.Queries) *PostgresAPIKeyReposito
 }
 
 func (repository *PostgresAPIKeyRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return repository.queries.WithTx(tx)
-	}
-	return repository.queries
+	return database.Queries(ctx, repository.queries)
 }
 
 func (repository *PostgresAPIKeyRepository) Create(ctx context.Context, userID, name, keyPrefix string, secretDigest []byte, expiresAt *time.Time) (APIKey, error) {
@@ -404,10 +392,7 @@ func NewPostgresOutboxWriter(queries *store.Queries) *PostgresOutboxWriter {
 }
 
 func (writer *PostgresOutboxWriter) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return writer.queries.WithTx(tx)
-	}
-	return writer.queries
+	return database.Queries(ctx, writer.queries)
 }
 
 func (writer *PostgresOutboxWriter) WriteEvent(ctx context.Context, topic, aggregateType, aggregateID string, payload []byte, idempotencyKey string) error {
