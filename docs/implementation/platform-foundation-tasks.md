@@ -53,7 +53,7 @@
 | B2 | 可信代理与客户端 IP | - | http | Done | #32 |
 | B3 | 配置入口收敛 | - | main | Done | #28 |
 | F1 | 通用 outbox 分发与重试 | B1 | notify | Done | https://github.com/hydrz/starter/pull/34 |
-| F2 | 模块注册机制 | B3 | main, http | Review | |
+| F2 | 模块注册机制 | B3 | main, http | Done | https://github.com/hydrz/starter/pull/37 |
 | F3 | 仓储事务 helper | - | repo | Done | #27 |
 | F4 | 真实数据库集成测试 | F3 | repo | Done | #35 |
 | F5 | 可观测性 | F2 | http, main | Todo | |
