@@ -77,7 +77,7 @@ const createOutboxEventIfAbsent = `-- name: CreateOutboxEventIfAbsent :one
 INSERT INTO outbox_events (topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at)
 VALUES ($1, $2, $3, $4, $5, $6)
 ON CONFLICT (idempotency_key) DO NOTHING
-RETURNING id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, last_error, created_at
+RETURNING id, topic, aggregate_type, aggregate_id, payload, idempotency_key, available_at, claimed_at, claim_token, attempts, processed_at, dead_lettered_at, last_error, created_at
 `
 
 type CreateOutboxEventIfAbsentParams struct {
@@ -89,6 +89,23 @@ type CreateOutboxEventIfAbsentParams struct {
 	AvailableAt    pgtype.Timestamptz `db:"available_at" json:"available_at"`
 }
 
+type CreateOutboxEventIfAbsentRow struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	Topic          string             `db:"topic" json:"topic"`
+	AggregateType  string             `db:"aggregate_type" json:"aggregate_type"`
+	AggregateID    pgtype.UUID        `db:"aggregate_id" json:"aggregate_id"`
+	Payload        []byte             `db:"payload" json:"payload"`
+	IdempotencyKey string             `db:"idempotency_key" json:"idempotency_key"`
+	AvailableAt    pgtype.Timestamptz `db:"available_at" json:"available_at"`
+	ClaimedAt      pgtype.Timestamptz `db:"claimed_at" json:"claimed_at"`
+	ClaimToken     pgtype.UUID        `db:"claim_token" json:"claim_token"`
+	Attempts       int32              `db:"attempts" json:"attempts"`
+	ProcessedAt    pgtype.Timestamptz `db:"processed_at" json:"processed_at"`
+	DeadLetteredAt pgtype.Timestamptz `db:"dead_lettered_at" json:"dead_lettered_at"`
+	LastError      *string            `db:"last_error" json:"last_error"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
 // Declarative idempotency: ON CONFLICT DO NOTHING lets Postgres resolve a
 // duplicate idempotency_key without raising an error. A plain INSERT that
 // raises a unique-violation and gets caught at the Go layer would still
@@ -97,7 +114,7 @@ type CreateOutboxEventIfAbsentParams struct {
 // the caller checks that error), so every later statement in the same
 // transaction — including the final COMMIT — would fail too. A rejected
 // insert returns zero rows here instead: callers treat that as a no-op.
-func (q *Queries) CreateOutboxEventIfAbsent(ctx context.Context, arg CreateOutboxEventIfAbsentParams) (OutboxEvent, error) {
+func (q *Queries) CreateOutboxEventIfAbsent(ctx context.Context, arg CreateOutboxEventIfAbsentParams) (CreateOutboxEventIfAbsentRow, error) {
 	row := q.db.QueryRow(ctx, createOutboxEventIfAbsent,
 		arg.Topic,
 		arg.AggregateType,
@@ -106,7 +123,7 @@ func (q *Queries) CreateOutboxEventIfAbsent(ctx context.Context, arg CreateOutbo
 		arg.IdempotencyKey,
 		arg.AvailableAt,
 	)
-	var i OutboxEvent
+	var i CreateOutboxEventIfAbsentRow
 	err := row.Scan(
 		&i.ID,
 		&i.Topic,
@@ -119,6 +136,7 @@ func (q *Queries) CreateOutboxEventIfAbsent(ctx context.Context, arg CreateOutbo
 		&i.ClaimToken,
 		&i.Attempts,
 		&i.ProcessedAt,
+		&i.DeadLetteredAt,
 		&i.LastError,
 		&i.CreatedAt,
 	)

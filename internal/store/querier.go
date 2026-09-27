@@ -13,7 +13,7 @@ import (
 type Querier interface {
 	AcceptInvitation(ctx context.Context, id pgtype.UUID) (OrganizationInvitation, error)
 	ActivateTOTPFactor(ctx context.Context, arg ActivateTOTPFactorParams) (int64, error)
-	ClaimOutboxEvents(ctx context.Context, arg ClaimOutboxEventsParams) ([]OutboxEvent, error)
+	ClaimOutboxEvents(ctx context.Context, arg ClaimOutboxEventsParams) ([]ClaimOutboxEventsRow, error)
 	CompleteDeliveryAttempt(ctx context.Context, arg CompleteDeliveryAttemptParams) (int64, error)
 	ConsumeEmailOTPChallengeByID(ctx context.Context, id pgtype.UUID) (ConsumeEmailOTPChallengeByIDRow, error)
 	ConsumeMFAChallenge(ctx context.Context, id pgtype.UUID) (ConsumeMFAChallengeRow, error)
@@ -41,7 +41,7 @@ type Querier interface {
 	CreateOAuthAuthorizationState(ctx context.Context, arg CreateOAuthAuthorizationStateParams) (CreateOAuthAuthorizationStateRow, error)
 	CreateOneTimeToken(ctx context.Context, arg CreateOneTimeTokenParams) (OneTimeToken, error)
 	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error)
-	CreateOutboxEvent(ctx context.Context, arg CreateOutboxEventParams) (OutboxEvent, error)
+	CreateOutboxEvent(ctx context.Context, arg CreateOutboxEventParams) (CreateOutboxEventRow, error)
 	// Declarative idempotency: ON CONFLICT DO NOTHING lets Postgres resolve a
 	// duplicate idempotency_key without raising an error. A plain INSERT that
 	// raises a unique-violation and gets caught at the Go layer would still
@@ -50,7 +50,7 @@ type Querier interface {
 	// the caller checks that error), so every later statement in the same
 	// transaction — including the final COMMIT — would fail too. A rejected
 	// insert returns zero rows here instead: callers treat that as a no-op.
-	CreateOutboxEventIfAbsent(ctx context.Context, arg CreateOutboxEventIfAbsentParams) (OutboxEvent, error)
+	CreateOutboxEventIfAbsent(ctx context.Context, arg CreateOutboxEventIfAbsentParams) (CreateOutboxEventIfAbsentRow, error)
 	CreateRefreshSession(ctx context.Context, arg CreateRefreshSessionParams) (RefreshSession, error)
 	CreateRefreshTokenFamily(ctx context.Context, userID pgtype.UUID) (RefreshTokenFamily, error)
 	CreateTOTPFactor(ctx context.Context, arg CreateTOTPFactorParams) (TotpFactor, error)
@@ -80,7 +80,7 @@ type Querier interface {
 	GetMembership(ctx context.Context, arg GetMembershipParams) (OrganizationMembership, error)
 	GetOrganizationByID(ctx context.Context, id pgtype.UUID) (Organization, error)
 	GetOrganizationBySlug(ctx context.Context, slug string) (Organization, error)
-	GetOutboxEventByID(ctx context.Context, id pgtype.UUID) (OutboxEvent, error)
+	GetOutboxEventByID(ctx context.Context, id pgtype.UUID) (GetOutboxEventByIDRow, error)
 	GetSubscriptionByStripeID(ctx context.Context, stripeSubscriptionID string) (Subscription, error)
 	GetTOTPFactorByID(ctx context.Context, id pgtype.UUID) (TotpFactor, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
@@ -111,6 +111,7 @@ type Querier interface {
 	ListRefreshSessionsForUser(ctx context.Context, userID pgtype.UUID) ([]ListRefreshSessionsForUserRow, error)
 	ListSubscriptionsForBillingAccount(ctx context.Context, billingAccountID pgtype.UUID) ([]Subscription, error)
 	ListWebAuthnCredentialsForUser(ctx context.Context, userID pgtype.UUID) ([]WebauthnCredential, error)
+	MarkOutboxEventDeadLettered(ctx context.Context, arg MarkOutboxEventDeadLetteredParams) (int64, error)
 	MarkOutboxEventProcessed(ctx context.Context, arg MarkOutboxEventProcessedParams) (int64, error)
 	MarkUserEmailVerified(ctx context.Context, id pgtype.UUID) (int64, error)
 	RetryOutboxEvent(ctx context.Context, arg RetryOutboxEventParams) (int64, error)
