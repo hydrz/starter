@@ -51,6 +51,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Announcements
+      x-permission: announcements:read
     post:
       operationId: createAnnouncement
       summary: Create an announcement
@@ -94,6 +95,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AnnouncementInput'
+      x-permission: announcements:create
   /api/organizations/{organizationId}/announcements/{id}:
     get:
       operationId: getAnnouncement
@@ -144,6 +146,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Announcements
+      x-permission: announcements:read
     put:
       operationId: updateAnnouncement
       summary: Update an announcement
@@ -199,6 +202,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AnnouncementInput'
+      x-permission: announcements:update
     delete:
       operationId: deleteAnnouncement
       summary: Delete an announcement
@@ -244,6 +248,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Announcements
+      x-permission: announcements:delete
 components:
   parameters:
     Starter.Common.PaginationQuery.limit:

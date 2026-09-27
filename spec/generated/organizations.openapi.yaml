@@ -140,6 +140,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Organizations
+      x-permission: organizations:read
     put:
       operationId: updateOrganization
       summary: Update organization details
@@ -195,6 +196,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateOrganizationInput'
+      x-permission: organizations:update
     delete:
       operationId: deleteOrganization
       summary: Delete an organization
@@ -228,6 +230,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Organizations
+      x-permission: organizations:delete
   /api/organizations/{organizationId}/invitations:
     get:
       operationId: listInvitations
@@ -268,6 +271,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Organizations
+      x-permission: invitations:read
     post:
       operationId: createInvitation
       summary: Invite a member to the organization
@@ -323,6 +327,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateInvitationInput'
+      x-permission: invitations:create
   /api/organizations/{organizationId}/invitations/{invitationId}:
     delete:
       operationId: revokeInvitation
@@ -363,6 +368,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Organizations
+      x-permission: invitations:delete
   /api/organizations/{organizationId}/members:
     get:
       operationId: listMembers
@@ -403,6 +409,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Organizations
+      x-permission: members:read
   /api/organizations/{organizationId}/members/{userId}:
     put:
       operationId: updateMemberRole
@@ -459,6 +466,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateMembershipRoleInput'
+      x-permission: members:update
     delete:
       operationId: removeMember
       summary: Remove a member from the organization
@@ -504,6 +512,7 @@ paths:
                 $ref: '#/components/schemas/ApiError'
       tags:
         - Organizations
+      x-permission: members:delete
 components:
   schemas:
     AcceptInvitationInput:
