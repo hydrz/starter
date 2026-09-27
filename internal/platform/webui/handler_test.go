@@ -16,7 +16,7 @@ func TestHandlerServesIndexAndSPAFallback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewHandler() error = %v", err)
 	}
-	for _, target := range []string{"/", "/announcements/123"} {
+	for _, target := range []string{"/", "/app/acme/announcements"} {
 		request := httptest.NewRequest(http.MethodGet, target, nil)
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)

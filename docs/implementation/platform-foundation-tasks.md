@@ -49,12 +49,12 @@
 
 | ID | 名称 | 依赖 | 冲突组 | 状态 | PR |
 | --- | --- | --- | --- | --- | --- |
-| B1 | 修复 Email OTP 投递 | - | notify | Todo | |
+| B1 | 修复 Email OTP 投递 | - | notify | Review | https://github.com/hydrz/starter/pull/29 |
 | B2 | 可信代理与客户端 IP | - | http | Todo | |
-| B3 | 配置入口收敛 | - | main | Todo | |
+| B3 | 配置入口收敛 | - | main | Review | #28 |
 | F1 | 通用 outbox 分发与重试 | B1 | notify | Todo | |
 | F2 | 模块注册机制 | B3 | main, http | Todo | |
-| F3 | 仓储事务 helper | - | repo | Todo | |
+| F3 | 仓储事务 helper | - | repo | Review | #27 |
 | F4 | 真实数据库集成测试 | F3 | repo | Todo | |
 | F5 | 可观测性 | F2 | http, main | Todo | |
 | F6 | 通用 HTTP 限流 | B2, F2 | http | Todo | |
@@ -71,8 +71,8 @@
 | D1 | 完整切片生成器 | F2 | tools | Todo | |
 | D2 | 模块裁剪命令 | F2 | tools | Todo | |
 | D3 | E2E 测试 | F4 | - | Todo | |
-| D4 | 部署与迁移加固 | - | - | Review | #31 |
-| D5 | 着陆页预渲染 | - | web | Todo | |
+| D4 | 部署与迁移加固 | - | - | Done | #31 |
+| D5 | 着陆页预渲染 | - | web | Done | #30 |
 
 ## 4. 任务卡
 
