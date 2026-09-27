@@ -212,10 +212,7 @@ func NewPostgresEmailOTPRepository(queries *store.Queries) *PostgresEmailOTPRepo
 }
 
 func (repository *PostgresEmailOTPRepository) q(ctx context.Context) *store.Queries {
-	if tx, ok := database.TxFromContext(ctx); ok {
-		return repository.queries.WithTx(tx)
-	}
-	return repository.queries
+	return database.Queries(ctx, repository.queries)
 }
 
 func (repository *PostgresEmailOTPRepository) CreateChallenge(ctx context.Context, email, purpose string, codeDigest []byte, ipAddress string, expiresAt time.Time) error {
