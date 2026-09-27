@@ -27,6 +27,7 @@
 - **代码评审与自检**：读取 [`.agents/skills/review-change/SKILL.md`](.agents/skills/review-change/SKILL.md)，参考 [`docs/standards/code-review.md`](docs/standards/code-review.md)；
 - **版本发布与上线准备**：读取 [`.agents/skills/prepare-release/SKILL.md`](.agents/skills/prepare-release/SKILL.md)，参考 [`docs/deployment.md`](docs/deployment.md)；
 - **代码风格与规范**：参考 [`docs/standards/go.md`](docs/standards/go.md)（Go 后端）、[`docs/standards/web.md`](docs/standards/web.md)（React 前端）、[`docs/standards/testing.md`](docs/standards/testing.md)（测试）；
+- **平台底座增强任务**：按 [`docs/implementation/platform-foundation-tasks.md`](docs/implementation/platform-foundation-tasks.md) 领取单个任务卡执行；
 - **架构决策与背景**：参考 [`docs/engineering-blueprint.md`](docs/engineering-blueprint.md) 与 [`docs/adr/README.md`](docs/adr/README.md)；
 - **文档创建与模板使用**：按 [`docs/templates/README.md`](docs/templates/README.md) 与 [`docs/documentation-policy.md`](docs/documentation-policy.md) 规定的目标路径保存与索引登记。
 
