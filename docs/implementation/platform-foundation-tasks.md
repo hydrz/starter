@@ -55,7 +55,7 @@
 | F1 | 通用 outbox 分发与重试 | B1 | notify | Todo | |
 | F2 | 模块注册机制 | B3 | main, http | Todo | |
 | F3 | 仓储事务 helper | - | repo | Done | #27 |
-| F4 | 真实数据库集成测试 | F3 | repo | Todo | |
+| F4 | 真实数据库集成测试 | F3 | repo | Review | #35 |
 | F5 | 可观测性 | F2 | http, main | Todo | |
 | F6 | 通用 HTTP 限流 | B2, F2 | http | Todo | |
 | C1 | 后台作业与定时任务 | F1 | notify | Todo | |
