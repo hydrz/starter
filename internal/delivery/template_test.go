@@ -93,6 +93,34 @@ func TestTemplateRenderer_PasswordReset(t *testing.T) {
 	}
 }
 
+func TestTemplateRenderer_EmailOTP(t *testing.T) {
+	renderer, err := delivery.NewTemplateRenderer("Starter App")
+	if err != nil {
+		t.Fatalf("NewTemplateRenderer failed: %v", err)
+	}
+
+	rendered, err := renderer.Render(delivery.TopicAuthEmailOTPRequested, delivery.EmailTemplateData{
+		Email:     "user@example.com",
+		Token:     "123456",
+		ExpiresIn: "10 minutes",
+	})
+	if err != nil {
+		t.Fatalf("Render failed: %v", err)
+	}
+
+	if !strings.Contains(rendered.Subject, "sign-in code") {
+		t.Errorf("subject %q does not contain expected title", rendered.Subject)
+	}
+	for _, body := range []string{rendered.TextBody, rendered.HTMLBody} {
+		if !strings.Contains(body, "123456") {
+			t.Errorf("body missing OTP code: %s", body)
+		}
+		if !strings.Contains(body, "10 minutes") {
+			t.Errorf("body missing expiry: %s", body)
+		}
+	}
+}
+
 func TestTemplateRenderer_UnknownTopic(t *testing.T) {
 	renderer, err := delivery.NewTemplateRenderer("")
 	if err != nil {
