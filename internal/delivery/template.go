@@ -15,6 +15,7 @@ var templateFS embed.FS
 const (
 	TopicAuthVerificationRequested  = "auth.verification_requested"
 	TopicAuthPasswordResetRequested = "auth.password_reset_requested"
+	TopicAuthEmailOTPRequested      = "auth.email_otp_requested"
 
 	defaultAppName   = "Starter"
 	defaultExpiresIn = "15 minutes"
@@ -72,6 +73,11 @@ func NewTemplateRenderer(appName string) (*TemplateRenderer, error) {
 			htmlFile: "templates/auth_password_reset.html",
 			textFile: "templates/auth_password_reset.txt",
 		},
+		{
+			topic:    TopicAuthEmailOTPRequested,
+			htmlFile: "templates/auth_email_otp.html",
+			textFile: "templates/auth_email_otp.txt",
+		},
 	}
 
 	for _, t := range topics {
@@ -116,6 +122,8 @@ func (r *TemplateRenderer) Render(topic string, data EmailTemplateData) (Rendere
 		subject = fmt.Sprintf("Verify your email address - %s", data.AppName)
 	case TopicAuthPasswordResetRequested:
 		subject = fmt.Sprintf("Reset your password - %s", data.AppName)
+	case TopicAuthEmailOTPRequested:
+		subject = fmt.Sprintf("Your sign-in code - %s", data.AppName)
 	default:
 		subject = fmt.Sprintf("Notification from %s", data.AppName)
 	}

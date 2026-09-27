@@ -60,7 +60,7 @@ func NewService(deps Dependencies) (*Service, error) {
 // Handle processes an outbox event, fulfilling the delivery.Handler interface.
 func (s *Service) Handle(ctx context.Context, event delivery.OutboxEvent) error {
 	switch event.Topic {
-	case TopicAuthVerificationRequested, TopicAuthPasswordResetRequested:
+	case TopicAuthVerificationRequested, TopicAuthPasswordResetRequested, TopicAuthEmailOTPRequested:
 		return s.handleAuthEvent(ctx, event)
 	default:
 		s.logger.Warn("unsupported outbox event topic", "topic", event.Topic, "event_id", event.ID)
@@ -79,12 +79,19 @@ func (s *Service) handleAuthEvent(ctx context.Context, event delivery.OutboxEven
 		return fmt.Errorf("%w: %s", ErrChannelMissing, ChannelSMTP)
 	}
 
-	// Determine kind
-	var kind string
-	if event.Topic == TopicAuthVerificationRequested {
+	// Determine kind and the code/token field carried by the auth event.
+	var kind, token, expiresIn string
+	switch event.Topic {
+	case TopicAuthVerificationRequested:
 		kind = KindEmailVerification
-	} else {
+		token = payload.Token
+	case TopicAuthPasswordResetRequested:
 		kind = KindPasswordReset
+		token = payload.Token
+	case TopicAuthEmailOTPRequested:
+		kind = KindEmailOTP
+		token = payload.Code
+		expiresIn = "10 minutes"
 	}
 
 	// 1. Persist notification intent
@@ -99,8 +106,9 @@ func (s *Service) handleAuthEvent(ctx context.Context, event delivery.OutboxEven
 
 	// 2. Render template
 	rendered, err := s.renderer.Render(event.Topic, delivery.EmailTemplateData{
-		Email: payload.Email,
-		Token: payload.Token,
+		Email:     payload.Email,
+		Token:     token,
+		ExpiresIn: expiresIn,
 	})
 	if err != nil {
 		return fmt.Errorf("render email template: %w", err)

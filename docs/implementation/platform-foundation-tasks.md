@@ -49,7 +49,7 @@
 
 | ID | 名称 | 依赖 | 冲突组 | 状态 | PR |
 | --- | --- | --- | --- | --- | --- |
-| B1 | 修复 Email OTP 投递 | - | notify | Todo | |
+| B1 | 修复 Email OTP 投递 | - | notify | Review | https://github.com/hydrz/starter/pull/29 |
 | B2 | 可信代理与客户端 IP | - | http | Todo | |
 | B3 | 配置入口收敛 | - | main | Todo | |
 | F1 | 通用 outbox 分发与重试 | B1 | notify | Todo | |
