@@ -2,9 +2,10 @@ package auth
 
 import (
 	"context"
-	"net"
 	"net/http"
 	"time"
+
+	"github.com/hydrz/starter/internal/platform/httpserver/clientipcontext"
 )
 
 // RefreshCookieName is the HttpOnly cookie carrying the opaque refresh
@@ -50,13 +51,9 @@ func RequestMetadataFromContext(ctx context.Context) RefreshSessionMetadata {
 	if !ok || httpCtx.request == nil {
 		return RefreshSessionMetadata{}
 	}
-	ip := httpCtx.request.RemoteAddr
-	if host, _, err := net.SplitHostPort(ip); err == nil {
-		ip = host
-	}
 	return RefreshSessionMetadata{
 		UserAgent: httpCtx.request.UserAgent(),
-		IPAddress: ip,
+		IPAddress: clientipcontext.FromContext(ctx),
 	}
 }
 

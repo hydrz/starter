@@ -198,7 +198,7 @@ func TestReadiness(t *testing.T) {
 
 func newHandler(t *testing.T, service *announcement.Service, checker httpserver.HealthChecker) http.Handler {
 	t.Helper()
-	handler, err := httpserver.NewHandler(service, checker, nil, nil, nil, nil)
+	handler, err := httpserver.NewHandler(service, checker, nil, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("NewHandler() error = %v", err)
 	}
@@ -330,7 +330,7 @@ func TestOrganizationAndAuthorizationRouting(t *testing.T) {
 
 	annService := announcement.NewService(&announcementRepository{})
 
-	handler, err := httpserver.NewHandler(annService, healthChecker{}, nil, orgService, authzService, nil)
+	handler, err := httpserver.NewHandler(annService, healthChecker{}, nil, orgService, authzService, nil, nil)
 	if err != nil {
 		t.Fatalf("NewHandler() error = %v", err)
 	}
@@ -544,7 +544,7 @@ func TestBillingRouting(t *testing.T) {
 	}
 	authzService := authorization.NewService(enforcer)
 
-	handler, err := httpserver.NewHandler(nil, healthChecker{}, nil, nil, authzService, testBillingService(t))
+	handler, err := httpserver.NewHandler(nil, healthChecker{}, nil, nil, authzService, testBillingService(t), nil)
 	if err != nil {
 		t.Fatalf("NewHandler() error = %v", err)
 	}

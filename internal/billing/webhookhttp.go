@@ -3,8 +3,9 @@ package billing
 import (
 	"errors"
 	"io"
-	"net"
 	"net/http"
+
+	"github.com/hydrz/starter/internal/platform/httpserver/clientipcontext"
 )
 
 // maxWebhookBodyBytes bounds how much of a webhook request body is read
@@ -42,7 +43,7 @@ func (h *WebhookHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// burst above the (generous) ceiling still eventually gets through on
 	// redelivery. No diagnostic detail is ever included in the response
 	// body, consistent with never leaking internal detail to a caller.
-	if !h.limiter.Allow(clientIP(r)) {
+	if !h.limiter.Allow(clientipcontext.FromContext(r.Context())) {
 		w.WriteHeader(http.StatusTooManyRequests)
 		return
 	}
@@ -67,18 +68,4 @@ func (h *WebhookHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// Stripe retries delivery; it is never swallowed as a 2xx.
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-}
-
-// clientIP extracts the request's source IP for rate-limit keying.
-// internal/platform/httpserver.NewHandler installs chi's RealIP middleware
-// globally (ahead of every route, including this one), so r.RemoteAddr is
-// already the resolved client address by the time this handler runs; only
-// the port needs stripping. A malformed RemoteAddr falls back to the raw
-// value rather than failing the request.
-func clientIP(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return host
 }

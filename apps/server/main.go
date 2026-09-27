@@ -138,7 +138,7 @@ func main() {
 		}
 	}
 
-	handler, err := apphttp.NewHandler(announcementService, pool, identityService, orgService, authzService, billingService)
+	handler, err := apphttp.NewHandler(announcementService, pool, identityService, orgService, authzService, billingService, cfg.TrustedProxies)
 	if err != nil {
 		logger.Error("http handler initialization failed", "error", err)
 		os.Exit(1)

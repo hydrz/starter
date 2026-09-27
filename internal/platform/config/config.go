@@ -9,6 +9,7 @@ import (
 	"errors"
 	"net"
 	"net/mail"
+	"net/netip"
 	"net/url"
 	"strconv"
 	"strings"
@@ -27,9 +28,10 @@ const (
 // Config is the application configuration. Integrations whose Enabled field is
 // false are deliberately not initialized by the application.
 type Config struct {
-	DatabaseURL string
-	Address     string
-	AutoMigrate bool
+	DatabaseURL    string
+	Address        string
+	AutoMigrate    bool
+	TrustedProxies []netip.Prefix
 
 	Auth          AuthConfig
 	OAuth         OAuthConfig
@@ -171,6 +173,7 @@ func Load(lookup func(string) (string, bool)) (Config, error) {
 	if !validAddress(cfg.Address) {
 		invalid = append(invalid, "HTTP_ADDRESS")
 	}
+	cfg.TrustedProxies = parseCIDRList(valueOr(lookup, "TRUSTED_PROXIES", ""), "TRUSTED_PROXIES", &invalid)
 
 	cfg.Auth = loadAuth(lookup, &invalid, cfg.Auth)
 
@@ -221,6 +224,24 @@ func parseDatabaseURL(raw string) (string, bool) {
 		return "", false
 	}
 	return raw, true
+}
+
+func parseCIDRList(raw, name string, invalid *[]string) []netip.Prefix {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+
+	items := strings.Split(raw, ",")
+	prefixes := make([]netip.Prefix, 0, len(items))
+	for _, item := range items {
+		prefix, err := netip.ParsePrefix(strings.TrimSpace(item))
+		if err != nil || !prefix.Addr().IsValid() {
+			*invalid = append(*invalid, name)
+			return nil
+		}
+		prefixes = append(prefixes, prefix.Masked())
+	}
+	return prefixes
 }
 
 func validAddress(raw string) bool {

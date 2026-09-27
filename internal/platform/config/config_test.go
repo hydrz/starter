@@ -27,6 +27,9 @@ func TestLoadUsesCurrentApplicationDefaults(t *testing.T) {
 	if !cfg.AutoMigrate {
 		t.Error("AutoMigrate = false, want true")
 	}
+	if len(cfg.TrustedProxies) != 0 {
+		t.Errorf("TrustedProxies = %#v, want empty", cfg.TrustedProxies)
+	}
 	if cfg.Auth.Enabled || cfg.OAuth.Google.Enabled || cfg.WebAuthn.Enabled || cfg.SMTP.Enabled || cfg.Stripe.Enabled || cfg.Authorization.Enabled || cfg.Worker.Enabled {
 		t.Error("optional integrations must be disabled when their variables are absent")
 	}
@@ -45,6 +48,35 @@ func TestLoadReadsServerSettings(t *testing.T) {
 	}
 	if cfg.Address != ":9090" || cfg.AutoMigrate {
 		t.Errorf("server config = %#v, want address :9090 and auto migrate false", cfg)
+	}
+}
+
+func TestLoadParsesTrustedProxyCIDRs(t *testing.T) {
+	t.Parallel()
+
+	cfg, err := Load(mapLookup(map[string]string{
+		"TRUSTED_PROXIES": "10.0.0.0/8, 2001:db8:feed::/48",
+	}))
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if got, want := len(cfg.TrustedProxies), 2; got != want {
+		t.Fatalf("len(TrustedProxies) = %d, want %d", got, want)
+	}
+	if got, want := cfg.TrustedProxies[0].String(), "10.0.0.0/8"; got != want {
+		t.Errorf("TrustedProxies[0] = %q, want %q", got, want)
+	}
+	if got, want := cfg.TrustedProxies[1].String(), "2001:db8:feed::/48"; got != want {
+		t.Errorf("TrustedProxies[1] = %q, want %q", got, want)
+	}
+}
+
+func TestLoadRejectsInvalidTrustedProxyCIDR(t *testing.T) {
+	t.Parallel()
+
+	_, err := Load(mapLookup(map[string]string{"TRUSTED_PROXIES": "10.0.0.0/8,not-a-cidr"}))
+	if err == nil || !strings.Contains(err.Error(), "TRUSTED_PROXIES") {
+		t.Fatalf("Load() error = %v, want validation error naming TRUSTED_PROXIES", err)
 	}
 }
 

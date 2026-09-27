@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/netip"
 	"sync"
 
 	"github.com/go-chi/chi/v5"
@@ -60,10 +61,11 @@ func NewHandler(
 	orgs *organization.Service,
 	authorizer authorization.PermissionEnforcer,
 	billingService *billing.Service,
+	trustedProxies []netip.Prefix,
 ) (http.Handler, error) {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
-	router.Use(middleware.RealIP)
+	router.Use(ClientIP(trustedProxies))
 	router.Use(AccessLog(slog.Default()))
 	router.Use(middleware.Recoverer)
 	// SecurityHeaders sets baseline response headers (nosniff, referrer
