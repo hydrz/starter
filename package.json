@@ -43,6 +43,6 @@
     "test:race": "go test -race ./..."
   },
   "devDependencies": {
-    "concurrently": "10.0.5"
+    "concurrently": "10.0.6"
   }
 }
