@@ -27,7 +27,7 @@ jobs:
       # pull_request_target 使用 base 分支的 workflow 定义运行，
       # 这是让该检查能在 fork PR 上正常工作的标准方式。
       # 安全：此 job 不 checkout 任何代码，token 为只读，两者必须保持。
-      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+      - uses: amannn/action-semantic-pull-request@2252a14e810aa9b85c2d560bd7070c802206ecf6 # v6.1.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
